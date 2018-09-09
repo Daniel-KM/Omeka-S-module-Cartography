@@ -1,0 +1,73 @@
+<?php
+/** @var \Zend\View\Renderer\PhpRenderer $this */
+$translate = $this->plugin('translate');
+
+if (empty($image)):
+    echo $translate('There is no image attached to this resource.');
+else:
+
+// The module is independant from the module Mapping, but some js are the same,
+// so it is recommenced to choose one module or the other.
+$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet/leaflet.css', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet/leaflet.js', 'Cartography'));
+
+// Edition via draw.
+$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.draw/leaflet.draw.css', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.draw/leaflet.draw.js', 'Cartography'));
+
+/*
+// Geosearch.
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.providers/leaflet-providers.js', 'Cartography'));
+$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.geosearch/style.css', 'Cartography'));
+$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.geosearch/leaflet.css', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.geosearch/bundle.min.js', 'Cartography'));
+*/
+
+// Style editor.
+$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.StyleEditor/css/Leaflet.StyleEditor.min.css', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.StyleEditor/javascript/Leaflet.StyleEditor.min.js', 'Cartography'));
+
+// Leaflet paste.
+$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.paste/css/Leaflet.paste.css', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.paste/vendor/wicket.src.js', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.paste/vendor/wicket-leaflet.src.js', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.paste/js/Leaflet.Layer.WKT.js', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.paste/js/Leaflet.paste.js', 'Cartography'));
+
+// Specific libraries.
+$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.fullscreen/leaflet.fullscreen.css', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.fullscreen/Leaflet.fullscreen.min.js', 'Cartography'));
+/*
+$this->headScript()->appendFile($this->assetUrl('vendor/terraformer/terraformer.min.js', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/terraformer-arcgis-parser/terraformer-arcgis-parser.min.js', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/terraformer-wkt-parser/terraformer-wkt-parser.min.js', 'Cartography'));
+*/
+
+// Integration in Omeka S.
+$this->headLink()->appendStylesheet($this->assetUrl('css/cartography-admin.css', 'Cartography'));
+// TODO Fetch the geometries dynamically to allow to manage one js.
+$this->headScript()->appendFile($this->assetUrl('js/cartography-admin-describing.js', 'Cartography'));
+$this->headScript()->prependScript('var basePath = ' . json_encode($this->basePath(), 320) . ';
+var resourceId = ' . $resource->id() . ';');
+
+// TODO Fit bounds and default view.
+// Js from Mapping that should be appended last.
+// $this->headScript()->appendFile($this->assetUrl('js/control.opacity.js', 'Cartography'));
+// $this->headScript()->appendFile($this->assetUrl('js/control.fit-bounds.js', 'Cartography'));
+// $this->headScript()->appendFile($this->assetUrl('js/control.default-view.js', 'Cartography'));
+
+?>
+<fieldset id="describing" class="section">
+    <legend id="cartography-legend"><?php echo $translate('Visual annotation'); ?></legend>
+    <div id="cartography-media" style="height:800px;"></div>
+    <div class="description"><?php echo $this->setting('cartography_user_guide'); ?></div>
+</fieldset>
+<?php // TODO Fetch geometries dynamically. ?>
+<script type="text/javascript">
+//<!--
+var geometriesMedia = <?php echo json_encode($geometries, 320); ?>;
+var mainImage = <?php echo json_encode($image, 320); ?>;
+//-->
+</script>
+<?php
+endif;

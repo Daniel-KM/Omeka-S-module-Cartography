@@ -39,7 +39,9 @@ class Module extends AbstractModule
 
         // TODO Find a better way to disable a module when dependencies are unavailable.
         $services = $event->getApplication()->getServiceManager();
-        if (!$this->checkDependencies($services)) {
+        if ($this->checkDependencies($services)) {
+            $this->addAclRules();
+        } else {
             $this->disableModule($services);
             $translator = $services->get('MvcTranslator');
             $message = new Message($translator->translate('The module "%s" was automatically deactivated because the dependencies are unavailable.'), // @translate
@@ -176,6 +178,23 @@ class Module extends AbstractModule
         $moduleManager = $services->get('Omeka\ModuleManager');
         $module = $moduleManager->getModule(__NAMESPACE__);
         $moduleManager->deactivate($module);
+    }
+
+
+    /**
+     * Add ACL rules for this module.
+     */
+    protected function addAclRules()
+    {
+        /** @var \Omeka\Permissions\Acl $acl */
+        $services = $this->getServiceLocator();
+        $acl = $services->get('Omeka\Acl');
+
+        $roles = $acl->getRoles();
+        $acl->allow(
+            $roles,
+            Controller\Admin\CartographyController::class
+        );
     }
 
     public function attachListeners(SharedEventManagerInterface $sharedEventManager)
@@ -332,7 +351,7 @@ class Module extends AbstractModule
     {
         $services = $this->getServiceLocator();
         $acl = $services->get('Omeka\Acl');
-        $allowed = $acl->userIsAllowed(\Annotate\Entity\Annotation::class, 'create');
+        $allowed = $acl->userIsAllowed(\Annotate\Entity\Annotation::class, 'read');
         if (!$allowed) {
             return;
         }
@@ -358,7 +377,7 @@ class Module extends AbstractModule
     {
         $services = $this->getServiceLocator();
         $acl = $services->get('Omeka\Acl');
-        $allowed = $acl->userIsAllowed(\Annotate\Entity\Annotation::class, 'create');
+        $allowed = $acl->userIsAllowed(\Annotate\Entity\Annotation::class, 'read');
         if (!$allowed) {
             return;
         }
@@ -370,6 +389,7 @@ class Module extends AbstractModule
         $resource = $view->resource;
 
         $displayTab = $services->get('Omeka\Settings')->get('cartography_display_tab');
+
         if (in_array('describing', $displayTab)) {
             $config = $services->get('Config');
             $this->basePath = $config['file_store']['local']['base_path'] ?: (OMEKA_PATH . '/files');
@@ -402,6 +422,7 @@ class Module extends AbstractModule
                 'image' => $image,
             ]);
         }
+
         if (in_array('locating', $displayTab)) {
             $query = [
                 'property' => [

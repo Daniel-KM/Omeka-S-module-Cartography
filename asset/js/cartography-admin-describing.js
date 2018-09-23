@@ -193,26 +193,25 @@ var geometriesData = geometriesMedia;
 
 if (mainImage.url) {
     // Using leaflet.js to pan and zoom a big image.
-    var map = L.map('cartography-media', {
-      minZoom: 1,
-      maxZoom: 4,
-      center: [0, 0],
-      zoom: 1,
-      maxBoundsViscosity: 1,
-      crs: L.CRS.Simple
-    });
-    //zoom 4 full size image is 4608px * 3456 px
+    // TODO Compute the max zoom according to the original image.
+    // Example:
+    //zoom 4 full size image is 4608px * 3456px
     //zoom 3 2304 * 1728
     //zoom 2 1152 * 864
     //zoom 1 576 * 432
-
-    // TODO Fit to image.
-    var image = L.imageOverlay(mainImage.url, [
-      [0, 0],
-      mainImage.size
-    ]);
+    var maxZoom = 4;
+    var topRight = [mainImage.size[1] / maxZoom, mainImage.size[0] / maxZoom];
+    var map = L.map('cartography-media', {
+      minZoom: 1,
+      maxZoom: maxZoom,
+      zoom: 1,
+      center: [0, 0],
+      maxBoundsViscosity: 1,
+      crs: L.CRS.Simple
+    });
+    var image = L.imageOverlay(mainImage.url, [[0, 0], topRight]);
     image.addTo(map);
-    map.setMaxBounds(new L.LatLngBounds([0, 0], mainImage.size));
+    map.setMaxBounds(new L.LatLngBounds([0, 0], topRight));
 
     var mapMoved = false;
     var defaultBounds = null;

@@ -341,10 +341,10 @@ class Module extends AbstractModule
 
         $displayTab = $services->get('Omeka\Settings')->get('cartography_display_tab');
         if (in_array('describing', $displayTab)) {
-            $sectionNav['describing'] = 'Visualize'; // @translate
+            $sectionNav['describing'] = 'Describe'; // @translate
         }
         if (in_array('locating', $displayTab)) {
-            $sectionNav['locating'] = 'Cartography'; // @translate
+            $sectionNav['locating'] = 'Locate'; // @translate
         }
         $event->setParam('section_nav', $sectionNav);
     }

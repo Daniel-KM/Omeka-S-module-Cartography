@@ -79,4 +79,17 @@ SET value = 'locating'
 WHERE value = 'highlighting' AND property_id = $propertyId;
 SQL;
     $connection->exec($sql);
+
+    // Replace "certitude" by "uncertainty".
+    $properties = $api->search('properties', [
+        'term' => 'cartography:certitude',
+    ])->getContent();
+    $propertyId = reset($properties);
+    $propertyId = $propertyId->id();
+    $sql = <<<SQL
+UPDATE `property`
+SET `local_name` = 'uncertainty', `label` = 'Uncertainty', `comment` = 'Level of uncertainty of a data.'
+WHERE `id` = $propertyId;
+SQL;
+    $connection->exec($sql);
 }

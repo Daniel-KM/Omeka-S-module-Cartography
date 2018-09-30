@@ -11,9 +11,9 @@
     dcterms:title "Cartography" ;
     dcterms:description "Specific metadata for cartography (to be removed)." .
 
-cartography:certitude a rdf:Property ;
-    rdfs:label "Certitude" ;
-    rdfs:comment "Niveau de certitude d‘une annotation." ;
+cartography:uncertainty a rdf:Property ;
+    rdfs:label "Uncertainty" ;
+    rdfs:comment "Level of uncertainty of a data." ;
     rdfs:domain o:Resource ;
     vs:term_status "experimental" .
 

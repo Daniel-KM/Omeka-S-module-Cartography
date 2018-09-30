@@ -56,6 +56,7 @@ $script = 'var basePath = ' . json_encode($this->basePath(), 320) . ';
 var resourceId = ' . $resource->id() . ';
 var geometries = ' . json_encode($geometries, 320) . ';
 var oaHasPurposeSelect = ' . json_encode($oaHasPurposeSelect, 320) . ';
+var oaMotivatedBySelect = ' . json_encode($oaMotivatedBySelect, 320) . ';
 var cartographyUncertaintySelect = ' . json_encode($cartographyUncertaintySelect, 320) . ';'
     . $jsLocate;
 $this->headScript()->appendScript($script);
@@ -67,7 +68,7 @@ $this->headScript()->appendFile($this->assetUrl('js/cartography-admin.js', 'Cart
 #locate .editor-enabled > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) {display:none;}
 </style>
 <fieldset id="locate" class="section">
-    <legend id="cartography-legend"><?php echo $translate('Cartography'); ?></legend>
+    <legend id="cartography-legend"><?php echo $translate('Geolocate item'); ?></legend>
     <div id="cartography-map" style="height:800px;"></div>
     <div class="description"><?php echo $this->setting('cartography_user_guide'); ?></div>
 </fieldset>

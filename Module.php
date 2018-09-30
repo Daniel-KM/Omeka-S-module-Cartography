@@ -486,6 +486,8 @@ class Module extends AbstractModule
                 'oaHasPurposeSelect' => $oaHasPurpose,
                 'cartographyUncertaintySelect' => $cartographyUncertainty,
                 'jsLocate' => $settings->get('cartography_js_locate', ''),
+                // TODO Remove this js valuen added only to avoid an issue in the js of StyleEditor (see annotate-locate too).
+                'oaMotivatedBySelect' => $oaMotivatedBy,
             ]);
         }
     }

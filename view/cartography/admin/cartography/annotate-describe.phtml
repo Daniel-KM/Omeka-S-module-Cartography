@@ -2,9 +2,7 @@
 /** @var \Zend\View\Renderer\PhpRenderer $this */
 $translate = $this->plugin('translate');
 
-if (empty($image)):
-    echo $translate('There is no image attached to this resource.');
-else:
+if (!empty($image)):
 
 // The module is independant from the module Mapping, but some js are the same,
 // so it is recommenced to choose one module or the other.
@@ -61,11 +59,14 @@ $this->headScript()->appendScript($script);
 // TODO Fetch the geometries dynamically to allow to manage one js.
 $this->headScript()->appendFile($this->assetUrl('js/cartography-admin-describe.js', 'Cartography'));
 
+endif;
 ?>
 <fieldset id="describe" class="section">
-    <legend id="cartography-legend"><?php echo $translate('Visual annotation'); ?></legend>
+    <legend id="cartography-legend"><?php echo $translate('Annotate an image'); ?></legend>
+<?php if (empty($image)): ?>
+    <p><?php echo $translate('There is no image attached to this resource.'); ?></p>
+<?php else: ?>
     <div id="cartography-media" style="height:800px;"></div>
     <div class="description"><?php echo $this->setting('cartography_user_guide'); ?></div>
+<?php endif; ?>
 </fieldset>
-<?php
-endif;

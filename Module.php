@@ -79,8 +79,8 @@ class Module extends AbstractModule
 
         // Complete the annotation custom vocabularies.
         $customVocabPaths = [
-            __DIR__ . '/data/custom-vocabs/Annotation-Target-dcterms-format.json',
-            __DIR__ . '/data/custom-vocabs/Annotation-Target-rdf-type.json',
+            __DIR__ . '/data/custom-vocabs/Cartography-Target-dcterms-format.json',
+            __DIR__ . '/data/custom-vocabs/Cartography-Target-rdf-type.json',
         ];
         foreach ($customVocabPaths as $filepath) {
             $data = json_decode(file_get_contents($filepath), true);

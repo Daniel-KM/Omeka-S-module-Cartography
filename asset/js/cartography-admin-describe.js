@@ -347,7 +347,7 @@ map.on('styleeditor:changed', function(element){
 //});
 
 // Switching sections changes map dimensions, so make the necessary adjustments.
-$('#describing').one('o:section-opened', function(e) {
+$('#describe').one('o:section-opened', function(e) {
     map.invalidateSize();
     setView();
 });

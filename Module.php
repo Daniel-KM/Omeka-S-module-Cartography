@@ -370,11 +370,11 @@ class Module extends AbstractModule
         $sectionNav = $event->getParam('section_nav');
 
         $displayTab = $services->get('Omeka\Settings')->get('cartography_display_tab');
-        if (in_array('describing', $displayTab)) {
-            $sectionNav['describing'] = 'Describe'; // @translate
+        if (in_array('describe', $displayTab)) {
+            $sectionNav['describe'] = 'Describe'; // @translate
         }
-        if (in_array('locating', $displayTab)) {
-            $sectionNav['locating'] = 'Locate'; // @translate
+        if (in_array('locate', $displayTab)) {
+            $sectionNav['locate'] = 'Locate'; // @translate
         }
         $event->setParam('section_nav', $sectionNav);
     }
@@ -411,7 +411,7 @@ class Module extends AbstractModule
 
         $displayTab = $services->get('Omeka\Settings')->get('cartography_display_tab');
 
-        if (in_array('describing', $displayTab)) {
+        if (in_array('describe', $displayTab)) {
             $config = $services->get('Config');
             $this->basePath = $config['file_store']['local']['base_path'] ?: (OMEKA_PATH . '/files');
             // Add the url and the size of the file.
@@ -437,7 +437,7 @@ class Module extends AbstractModule
                 ],
             ];
             $geometries = $this->fetchGeometries($resource, $query);
-            echo $view->partial('cartography/admin/cartography/annotate-describing', [
+            echo $view->partial('cartography/admin/cartography/annotate-describe', [
                 'resource' => $resource,
                 'geometries' => $geometries,
                 'image' => $image,
@@ -445,7 +445,7 @@ class Module extends AbstractModule
             ]);
         }
 
-        if (in_array('locating', $displayTab)) {
+        if (in_array('locate', $displayTab)) {
             $query = [
                 'property' => [
                     [
@@ -456,7 +456,7 @@ class Module extends AbstractModule
                     ],
                 ],
             ];
-            echo $view->partial('cartography/admin/cartography/annotate-locating', [
+            echo $view->partial('cartography/admin/cartography/annotate-locate', [
                 'resource' => $resource,
                 'geometries' => $this->fetchGeometries($resource, $query),
                 'oaHasPurposeSelect' => $oaHasPurpose,

@@ -85,7 +85,7 @@ return [
     'cartography' => [
         'config' => [
             'cartography_user_guide' => 'Feel free to use <strong>Cartography</strong>!', // @translate
-            'cartography_display_tab' => ['describing', 'locating'],
+            'cartography_display_tab' => ['describe', 'locate'],
         ],
         'site_settings' => [
             'cartography_append_item_set_show' => true,

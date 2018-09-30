@@ -56,4 +56,14 @@ if (version_compare($oldVersion, '3.0.2', '<')) {
         $data['o:terms'] = implode(PHP_EOL, $data['o:terms']);
         $api->create('custom_vocabs', $data);
     }
+
+    $oldTabs = $settings->get('cartography_display_tab', []);
+    $newTabs = [];
+    if (in_array('describing', $oldTabs) || in_array('describe', $oldTabs)) {
+        $newTabs[] = 'describe';
+    }
+    if (in_array('locating', $oldTabs) || in_array('locate', $oldTabs)) {
+        $newTabs[] = 'locate';
+    }
+    $settings->set('cartography_display_tab', $newTabs);
 }

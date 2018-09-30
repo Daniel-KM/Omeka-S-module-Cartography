@@ -103,6 +103,17 @@ class Module extends AbstractModule
             ], [], ['is_partial' => true]);
         }
 
+        // Add a specific custom vocabularies.
+        $customVocabPaths = [
+            // TODO Move custom vocab into annotation or use a specific to Cartography?
+            __DIR__ . '/data/custom-vocabs/Annotation-Body-oa-hasPurpose.json',
+        ];
+        foreach ($customVocabPaths as $filepath) {
+            $data = json_decode(file_get_contents($filepath), true);
+            $data['o:terms'] = implode(PHP_EOL, $data['o:terms']);
+            $api->create('custom_vocabs', $data);
+        }
+
         $this->manageSettings($serviceLocator->get('Omeka\Settings'), 'install');
         $this->manageSiteSettings($serviceLocator, 'install');
     }
@@ -382,6 +393,16 @@ class Module extends AbstractModule
             return;
         }
 
+        $api = $services->get('Omeka\ApiManager');
+        try {
+            $customVocab = $api->read('custom_vocabs', [
+                'label' => 'Annotation Body oa:hasPurpose',
+            ])->getContent();
+            $oaHasPurpose = explode(PHP_EOL, $customVocab->terms());
+        } catch (NotFoundException $e) {
+            $oaHasPurpose = [];
+        }
+
         /** @var \Zend\View\Renderer\PhpRenderer $view */
         $view = $event->getTarget();
 
@@ -420,6 +441,7 @@ class Module extends AbstractModule
                 'resource' => $resource,
                 'geometries' => $geometries,
                 'image' => $image,
+                'oaHasPurposeSelect' => $oaHasPurpose,
             ]);
         }
 
@@ -437,6 +459,7 @@ class Module extends AbstractModule
             echo $view->partial('cartography/admin/cartography/annotate-locating', [
                 'resource' => $resource,
                 'geometries' => $this->fetchGeometries($resource, $query),
+                'oaHasPurposeSelect' => $oaHasPurpose,
             ]);
         }
     }
@@ -494,7 +517,9 @@ class Module extends AbstractModule
             $body = $annotation->primaryBody();
             if ($body) {
                 $value = $body->value('rdf:value');
-                $geometry['options']['popupContent'] = $value ? $body->value('rdf:value')->value() : '';
+                $geometry['options']['popupContent'] = $value ? $value->value() : '';
+                $value = $body->value('oa:hasPurpose');
+                $geometry['options']['oaHasPurpose'] = $value ? $value->value() : '';
             }
 
             $geometries[$annotation->id()] = $geometry;

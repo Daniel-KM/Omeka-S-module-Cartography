@@ -201,20 +201,26 @@ class CartographyController extends AbstractActionController
                                 '@value' => $options['popupContent'],
                             ],
                         ],
-                        // TODO Add a hasPurpose to the body text of a geometry.
-                        // 'oa:hasPurpose' => [
-                        //     [
-                        //         'property_id' => $this->propertyId('oa:hasPurpose'),
-                        //         'type' => 'customvocab:' . $this->customVocabId('Annotation oa:Motivation'),
-                        //         '@value' => '',
-                        //     ],
-                        // ],
                     ],
+                ];
+
+                if (empty($options['oaHasPurpose'])) {
+                    $data['o-module-annotate:body'][0]['oa:hasPurpose'] = [];
+                } else {
+                    $data['o-module-annotate:body'][0]['oa:hasPurpose'] = [
+                        [
+                            'property_id' => $this->propertyId('oa:hasPurpose'),
+                            'type' => 'customvocab:' . $this->customVocabId('Annotation Body oa:hasPurpose'),
+                            '@value' => $options['oaHasPurpose'],
+                        ],
                     ];
+                }
             } else {
                 $data['o-module-annotate:body'] = [];
             }
+
             unset($options['popupContent']);
+            unset($options['oaHasPurpose']);
 
             $data['oa:styledBy'][] = [
                 'property_id' => $this->propertyId('oa:styledBy'),
@@ -306,20 +312,26 @@ class CartographyController extends AbstractActionController
                                     '@value' => $options['popupContent'],
                                 ],
                             ],
-                            // TODO Add a hasPurpose to the body text of a geometry.
-                            // 'oa:hasPurpose' => [
-                            //     [
-                            //         'property_id' => $this->propertyId('oa:hasPurpose'),
-                            //         'type' => 'customvocab:' . $this->customVocabId('Annotation oa:Motivation'),
-                            //         '@value' => '',
-                            //     ],
-                            // ],
                         ],
                     ];
+
+                    if (empty($options['oaHasPurpose'])) {
+                        $data['o-module-annotate:body'][0]['oa:hasPurpose'] = [];
+                    } else {
+                        $data['o-module-annotate:body'][0]['oa:hasPurpose'] = [
+                            [
+                                'property_id' => $this->propertyId('oa:hasPurpose'),
+                                'type' => 'customvocab:' . $this->customVocabId('Annotation Body oa:hasPurpose'),
+                                '@value' => $options['oaHasPurpose'],
+                            ],
+                        ];
+                    }
                 } else {
                     $data['o-module-annotate:body'] = [];
                 }
+
                 unset($options['popupContent']);
+                unset($options['oaHasPurpose']);
 
                 $data['oa:styledBy'][] = [
                     'property_id' => $this->propertyId('oa:styledBy'),
@@ -361,6 +373,7 @@ class CartographyController extends AbstractActionController
             $values = $this->arrayValues($body);
             if (isset($data['o-module-annotate:body'][0]['rdf:value'][0]['@value'])) {
                 $values['rdf:value'] = $data['o-module-annotate:body'][0]['rdf:value'];
+                $values['oa:hasPurpose'] = $data['o-module-annotate:body'][0]['oa:hasPurpose'];
                 if ($body) {
                     $response = $api->update('annotation_bodies', $body->id(), $values, [], ['isPartial' => true]);
                 } else {

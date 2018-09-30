@@ -139,7 +139,7 @@ class CartographyController extends AbstractActionController
      */
     protected function createAnnotation($resourceId, $geometry, array $options, $motivation)
     {
-        $api = $this->viewHelpers()->get('api');
+        $api = $this->api();
 
         $data = [
             'o:is_public' => 1,
@@ -228,7 +228,7 @@ class CartographyController extends AbstractActionController
             ];
         }
 
-        $response = $this->api()->create('annotations', $data);
+        $response = $api->create('annotations', $data);
         if (!$response) {
             return $this->jsonError('An internal error occurred.', Response::STATUS_CODE_500); // @translate
         }
@@ -256,6 +256,8 @@ class CartographyController extends AbstractActionController
      */
     protected function updateAnnotation(AnnotationRepresentation $annotation, $geometry, array $options)
     {
+        $api = $this->api();
+
         // TODO Only one body, if any, and one target is managed currently.
         $body = $annotation->primaryBody();
         $target = $annotation->primaryTarget();
@@ -270,7 +272,7 @@ class CartographyController extends AbstractActionController
 //                     ],
 //                 ],
 //             ];
-//             $response = $this->api()->update('annotation_targets', $target->id(), $data, [], ['isPartial' => true]);
+//             $response = $api->update('annotation_targets', $target->id(), $data, [], ['isPartial' => true]);
 //         } else {
             $data = [
                 'o-module-annotate:target' => [
@@ -333,17 +335,17 @@ class CartographyController extends AbstractActionController
 
             // Partial update is complex, so reload the full annotation.
 
-            // $response = $this->api()->update('annotations', $annotation->id(), $data, [], ['isPartial' => true]);
+            // $response = $api->update('annotations', $annotation->id(), $data, [], ['isPartial' => true]);
 
             // // Only one target is managed.
-            // $response = $this->api()->update('annotation_targets', $target->id(), [
+            // $response = $api->update('annotation_targets', $target->id(), [
             //     'rdf:value' => $data['o-module-annotate:target'][0]['rdf:value'],
             // ], [], ['isPartial' => true]);
             // if ($options) {
-            //     $response = $this->api()->update('annotation_targets', $target->id(), [
+            //     $response = $api->update('annotation_targets', $target->id(), [
             //         'oa:styleClass' => $data['o-module-annotate:target'][0]['oa:styleClass'],
             //     ], [], ['isPartial' => true]);
-            //     $response = $this->api()->update('annotations', $annotation->id(), [
+            //     $response = $api->update('annotations', $annotation->id(), [
             //         'oa:styledBy' => $data['oa:styledBy'],
             //     ], [], ['isPartial' => true]);
             // }
@@ -352,7 +354,7 @@ class CartographyController extends AbstractActionController
             if ($options) {
                 $values = $this->arrayValues($annotation);
                 $values['oa:styledBy'] = $data['oa:styledBy'];
-                $response = $this->api()->update('annotations', $annotation->id(), $values, [], ['isPartial' => true]);
+                $response = $api->update('annotations', $annotation->id(), $values, [], ['isPartial' => true]);
             }
 
             // There may be no body.
@@ -360,13 +362,13 @@ class CartographyController extends AbstractActionController
             if (isset($data['o-module-annotate:body'][0]['rdf:value'][0]['@value'])) {
                 $values['rdf:value'] = $data['o-module-annotate:body'][0]['rdf:value'];
                 if ($body) {
-                    $response = $this->api()->update('annotation_bodies', $body->id(), $values, [], ['isPartial' => true]);
+                    $response = $api->update('annotation_bodies', $body->id(), $values, [], ['isPartial' => true]);
                 } else {
                     $values['o-module-annotate:annotation'] = $annotation;
-                    $response = $this->api()->create('annotation_bodies', $values, []);
+                    $response = $api->create('annotation_bodies', $values, []);
                 }
             } elseif ($body) {
-                $response = $this->api()->delete('annotation_bodies', $body->id());
+                $response = $api->delete('annotation_bodies', $body->id());
             }
 
             // There is always one target at least.
@@ -375,7 +377,7 @@ class CartographyController extends AbstractActionController
             if ($options) {
                 $values['oa:styleClass'] = $data['o-module-annotate:target'][0]['oa:styleClass'];
             }
-            $response = $this->api()->update('annotation_targets', $target->id(), $values, [], ['isPartial' => true]);
+            $response = $api->update('annotation_targets', $target->id(), $values, [], ['isPartial' => true]);
 
 //         }
         if (!$response) {

@@ -370,7 +370,7 @@ class Module extends AbstractModule
 
         $sectionNav = $event->getParam('section_nav');
 
-        $displayTab = $services->get('Omeka\Settings')->get('cartography_display_tab');
+        $displayTab = $services->get('Omeka\Settings')->get('cartography_display_tab', []);
         if (in_array('describe', $displayTab)) {
             $sectionNav['describe'] = 'Describe'; // @translate
         }
@@ -429,7 +429,8 @@ class Module extends AbstractModule
         /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource */
         $resource = $view->resource;
 
-        $displayTab = $services->get('Omeka\Settings')->get('cartography_display_tab');
+        $settings = $services->get('Omeka\Settings');
+        $displayTab = $settings->get('cartography_display_tab', []);
 
         if (in_array('describe', $displayTab)) {
             $config = $services->get('Config');
@@ -464,6 +465,7 @@ class Module extends AbstractModule
                 'oaMotivatedBySelect' => $oaMotivatedBy,
                 'oaHasPurposeSelect' => $oaHasPurpose,
                 'cartographyUncertaintySelect' => $cartographyUncertainty,
+                'jsDescribe' => $settings->get('cartography_js_describe', ''),
             ]);
         }
 
@@ -483,6 +485,7 @@ class Module extends AbstractModule
                 'geometries' => $this->fetchGeometries($resource, $query),
                 'oaHasPurposeSelect' => $oaHasPurpose,
                 'cartographyUncertaintySelect' => $cartographyUncertainty,
+                'jsLocate' => $settings->get('cartography_js_locate', ''),
             ]);
         }
     }

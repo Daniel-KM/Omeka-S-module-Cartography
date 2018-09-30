@@ -47,14 +47,19 @@ $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.TileLayer.WMTS/l
 
 // Integration in Omeka S.
 $this->headLink()->appendStylesheet($this->assetUrl('css/cartography-admin.css', 'Cartography'));
-$this->headScript()->appendFile($this->assetUrl('js/cartography-admin.js', 'Cartography'));
+$jsLocate = empty($jsLocate) ? '' : '
+$(document).ready( function() {
+' . $jsLocate . '
+});';
 // TODO Fetch geometries dynamically.
-$this->headScript()->appendScript('var basePath = ' . json_encode($this->basePath(), 320) . ';
+$script = 'var basePath = ' . json_encode($this->basePath(), 320) . ';
 var resourceId = ' . $resource->id() . ';
 var geometries = ' . json_encode($geometries, 320) . ';
 var oaHasPurposeSelect = ' . json_encode($oaHasPurposeSelect, 320) . ';
-var cartographyUncertaintySelect = ' . json_encode($cartographyUncertaintySelect, 320) . ';
-var ignKey = ' . json_encode('choisirgeoportail') . ';');
+var cartographyUncertaintySelect = ' . json_encode($cartographyUncertaintySelect, 320) . ';'
+    . $jsLocate;
+$this->headScript()->appendScript($script);
+$this->headScript()->appendFile($this->assetUrl('js/cartography-admin.js', 'Cartography'));
 
 ?>
 <?php // TODO Find a better way to disable location motivation (via module config and js). ?>

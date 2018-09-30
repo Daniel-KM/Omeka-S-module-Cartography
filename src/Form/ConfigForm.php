@@ -38,6 +38,29 @@ class ConfigForm extends Form
             ],
         ]);
 
+        $this->add([
+            'name' => 'cartography_js_describe',
+            'type' => Element\Textarea::class,
+            'options' => [
+                'label' => 'Specific parameters for Describe (js)', // @translate
+                'info' => 'See readme.', // @translate
+            ],
+            'attributes' => [
+                'id' => 'cartography_js_describe',
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'cartography_js_locate',
+            'type' => Element\Textarea::class,
+            'options' => [
+                'label' => 'Specific parameters for Locate (js)', // @translate
+                'info' => 'This js code allows to replace the default maps. See readme.', // @translate
+            ],
+            'attributes' => [
+                'id' => 'cartography_js_locate',
+            ],
+        ]);
 
         $inputFilter = $this->getInputFilter();
         $inputFilter->add([

@@ -182,22 +182,6 @@ var setView = function() {
 
 /* Initialization */
 
-/**
- * Define the layer type:
- * - GEOGRAPHICALGRIDSYSTEMS.MAPS
- * - GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.CLASSIQUE
- * - GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD
- */
-var layerIGNScanStd = 'GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD';
-var url = 'https://wxs.ign.fr/' + ignKey + '/geoportail/wmts';
-var ign = new L.TileLayer.WMTS(url, {
-   layer: layerIGNScanStd,
-   style: 'normal',
-   tilematrixSet: 'PM',
-   format: 'image/jpeg',
-   attribution: '<a href="https://github.com/mylen/leaflet.TileLayer.WMTS">GitHub</a>&copy; <a href="https://www.ign.fr">IGN</a>',
-});
-
 // Get map data.
 var mappingMap = $('#cartography-map');
 // Geometries are currently defined as a simple variable.
@@ -216,13 +200,17 @@ var defaultBounds = null;
 // defaultBounds = [southWest, northEast];
 
 // Add layers and controls to the map.
-var baseMaps = {
-    'Streets': L.tileLayer.provider('OpenStreetMap.Mapnik'),
-    'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'),
-    'Satellite': L.tileLayer.provider('Esri.WorldImagery'),
-    'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief'),
-    'IGN': ign,
-};
+if (typeof baseMaps === 'undefined') {
+    let baseMaps = {};
+}
+if (typeof baseMaps !== 'object' || $.isEmptyObject(baseMaps)) {
+    baseMaps = {
+        'Streets': L.tileLayer.provider('OpenStreetMap.Mapnik'),
+        'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'),
+        'Satellite': L.tileLayer.provider('Esri.WorldImagery'),
+        'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief'),
+    };
+}
 var layerControl = L.control.layers(baseMaps);
 // Geometries are displayed and edited on the drawnItems layer.
 var drawnItems = new L.FeatureGroup();

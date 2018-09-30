@@ -31,6 +31,47 @@ The class `ogc:WKTLiteral` and the property `geo:asWKT` of the ontologies of the
 [Open Geospatial consortium] are used. They may be converted into the [geovocab]
 vocabulary (`ngeo:Geometry`) if needed.
 
+### Options
+
+#### Locate
+
+The base maps of the tab "Locate" can be customized. Just set it as js in the
+config. For example, to include the French [IGN map service] with the default
+map, fill the text area with the code below.
+
+```js
+/**
+ * Define the layer type:
+ * - GEOGRAPHICALGRIDSYSTEMS.MAPS
+ * - GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.CLASSIQUE
+ * - GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD
+ *
+ * @url https://geoservices.ign.fr
+ */
+var layerIGNScanStd = 'GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD';
+// For test only. Get a free key for production on https://geoservices.ign.fr/blog/2018/09/06/acces_geoportail_sans_compte.html.
+var ignKey = 'choisirgeoportail';
+var url = 'https://wxs.ign.fr/' + ignKey + '/geoportail/wmts';
+var ign = new L.TileLayer.WMTS(url, {
+   layer: layerIGNScanStd,
+   style: 'normal',
+   tilematrixSet: 'PM',
+   format: 'image/jpeg',
+   attribution: '&copy; <a href="https://www.ign.fr">IGN</a>',
+});
+
+baseMaps = {
+    'Streets': L.tileLayer.provider('OpenStreetMap.Mapnik'),
+    'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'),
+    'Satellite': L.tileLayer.provider('Esri.WorldImagery'),
+    'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief'),
+    'IGN': ign,
+};
+```
+
+Note: the key provided here for access to IGN services must be used for test
+purpose only. In production, you must register to get a [free ign key].
+
 
 Warning
 -------
@@ -76,6 +117,11 @@ conditions as regards security.
 The fact that you are presently reading this means that you have had knowledge
 of the CeCILL license and that you accept its terms.
 
+### Libraries
+
+This module uses many open source leaflet libraries. See [asset/vendor] for
+details.
+
 
 Contact
 -------
@@ -98,9 +144,12 @@ Copyright
 [Annotate]: https://github.com/Daniel-KM/Omeka-S-module-Annotate
 [Open Geospatial consortium]: http://www.opengeospatial.org/
 [geovocab]: http://geovocab.org/
+[IGN map service]: https://geoservices.ign.fr
+[free ign key]: https://geoservices.ign.fr/blog/2018/09/06/acces_geoportail_sans_compte.html
 [module issues]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/issues
 [CeCILL v2.1]: https://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org
 [OSI]: http://opensource.org
+[asset/vendor]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/tree/master/asset/vendor
 [Daniel-KM]: https://github.com/Daniel-KM "Daniel Berthereau"

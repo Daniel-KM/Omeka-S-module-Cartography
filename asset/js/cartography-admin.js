@@ -182,6 +182,22 @@ var setView = function() {
 
 /* Initialization */
 
+/**
+ * Define the layer type:
+ * - GEOGRAPHICALGRIDSYSTEMS.MAPS
+ * - GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.CLASSIQUE
+ * - GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD
+ */
+var layerIGNScanStd = 'GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD';
+var url = 'https://wxs.ign.fr/' + ignKey + '/geoportail/wmts';
+var ign = new L.TileLayer.WMTS(url, {
+   layer: layerIGNScanStd,
+   style: 'normal',
+   tilematrixSet: 'PM',
+   format: 'image/jpeg',
+   attribution: '<a href="https://github.com/mylen/leaflet.TileLayer.WMTS">GitHub</a>&copy; <a href="https://www.ign.fr">IGN</a>',
+});
+
 // Get map data.
 var mappingMap = $('#cartography-map');
 // Geometries are currently defined as a simple variable.
@@ -205,6 +221,7 @@ var baseMaps = {
     'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'),
     'Satellite': L.tileLayer.provider('Esri.WorldImagery'),
     'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief'),
+    'IGN': ign,
 };
 var layerControl = L.control.layers(baseMaps);
 // Geometries are displayed and edited on the drawnItems layer.
@@ -234,6 +251,7 @@ map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
 map.addControl(drawControl);
 map.addControl(geoSearchControl);
 map.addControl(new L.Control.Layers(baseMaps));
+map.addControl(new L.control.scale({'position':'bottomleft','metric':true,'imperial':false}));
 // TODO Fix and add the fit bound control with geometries, not markers.
 //map.addControl(new L.Control.FitBounds(markers));
 

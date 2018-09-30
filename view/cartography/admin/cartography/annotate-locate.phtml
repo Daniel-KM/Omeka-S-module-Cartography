@@ -41,6 +41,10 @@ $this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.geosearch/st
 $this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.geosearch/leaflet.css', 'Cartography'));
 $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.geosearch/bundle.min.js', 'Cartography'));
 
+// Integration of wmts layer.
+// $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.TileLayer.WMTS/leaflet-tilelayer-wmts.js', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.TileLayer.WMTS/leaflet-tilelayer-wmts-src.js', 'Cartography'));
+
 // Integration in Omeka S.
 $this->headLink()->appendStylesheet($this->assetUrl('css/cartography-admin.css', 'Cartography'));
 $this->headScript()->appendFile($this->assetUrl('js/cartography-admin.js', 'Cartography'));
@@ -63,5 +67,6 @@ var resourceId = ' . $resource->id() . ';');
 var geometries = <?php echo json_encode($geometries, 320); ?>;
 var oaHasPurposeSelect = <?php echo json_encode($oaHasPurposeSelect, 320); ?>;
 var cartographyUncertaintySelect = <?php echo json_encode($cartographyUncertaintySelect, 320); ?>;
+var ignKey = 'choisirgeoportail';
 //-->
 </script>

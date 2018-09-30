@@ -190,7 +190,9 @@ var mappingMap = $('#cartography-map');
 var geometriesData = geometries;
 
 // Initialize the map and set default view.
-var map = L.map('cartography-map');
+var map = L.map('cartography-map', {
+    pasteControl: true,
+});
 map.setView([20, 0], 2);
 var mapMoved = false;
 
@@ -239,6 +241,10 @@ map.addControl(new L.Control.Layers(baseMaps));
 map.addLayer(baseMaps['Satellite']);
 map.addLayer(drawnItems);
 // map.addLayer(markers);
+
+map.on('paste:layer-created', function (e) {
+    map.addLayer(e.layer);
+});
 
 setView();
 
@@ -298,6 +304,11 @@ map.on(L.Draw.Event.DELETED, function(element) {
 // Handle styling of a geometry.
 map.on('styleeditor:changed', function(element){
     editGeometry(element);
+});
+
+// Handle paste wkt/geojson.
+map.on('paste:layer-created', function(element){
+    addGeometry(element.layer);
 });
 
 /* Various methods. */

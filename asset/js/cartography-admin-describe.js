@@ -208,7 +208,8 @@ if (mainImage.url) {
       zoom: 1,
       center: [0, 0],
       maxBoundsViscosity: 1,
-      crs: L.CRS.Simple
+      crs: L.CRS.Simple,
+      pasteControl: true,
     });
     var image = L.imageOverlay(mainImage.url, [[0, 0], topRight]);
     image.addTo(map);
@@ -218,8 +219,10 @@ if (mainImage.url) {
     var defaultBounds = null;
 
 } else {
-  // Initialize the map and set default view.
-    var map = L.map('cartography-media', { pasteControl: true });
+    // Initialize the map and set default view.
+    var map = L.map('cartography-media', {
+        pasteControl: true,
+    });
     map.setView([20, 0], 2);
     var mapMoved = false;
 
@@ -333,6 +336,11 @@ map.on(L.Draw.Event.DELETED, function(element) {
 // Handle styling of a geometry.
 map.on('styleeditor:changed', function(element){
     editGeometry(element);
+});
+
+// Handle paste wkt/geojson.
+map.on('paste:layer-created', function(element){
+    addGeometry(element.layer);
 });
 
 /* Various methods. */

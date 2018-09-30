@@ -15,14 +15,6 @@ $this->headScript()->appendFile($this->assetUrl('vendor/leaflet/leaflet.js', 'Ca
 $this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.draw/leaflet.draw.css', 'Cartography'));
 $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.draw/leaflet.draw.js', 'Cartography'));
 
-/*
-// Geosearch.
-$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.providers/leaflet-providers.js', 'Cartography'));
-$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.geosearch/style.css', 'Cartography'));
-$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.geosearch/leaflet.css', 'Cartography'));
-$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.geosearch/bundle.min.js', 'Cartography'));
-*/
-
 // Style editor.
 $this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.StyleEditor/css/Leaflet.StyleEditor.min.css', 'Cartography'));
 $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.StyleEditor/javascript/Leaflet.StyleEditor.min.js', 'Cartography'));
@@ -33,15 +25,22 @@ $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.paste/vendor/wic
 $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.paste/vendor/wicket-leaflet.src.js', 'Cartography'));
 $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.paste/js/Leaflet.Layer.WKT.js', 'Cartography'));
 $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.paste/js/Leaflet.paste.js', 'Cartography'));
+/*
+ // Currently, leaflet.paste is used.
+ $this->headScript()->appendFile($this->assetUrl('vendor/terraformer/terraformer.min.js', 'Cartography'));
+ $this->headScript()->appendFile($this->assetUrl('vendor/terraformer-arcgis-parser/terraformer-arcgis-parser.min.js', 'Cartography'));
+ $this->headScript()->appendFile($this->assetUrl('vendor/terraformer-wkt-parser/terraformer-wkt-parser.min.js', 'Cartography'));
+*/
 
 // Specific libraries.
 $this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.fullscreen/leaflet.fullscreen.css', 'Cartography'));
 $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.fullscreen/Leaflet.fullscreen.min.js', 'Cartography'));
-/*
-$this->headScript()->appendFile($this->assetUrl('vendor/terraformer/terraformer.min.js', 'Cartography'));
-$this->headScript()->appendFile($this->assetUrl('vendor/terraformer-arcgis-parser/terraformer-arcgis-parser.min.js', 'Cartography'));
-$this->headScript()->appendFile($this->assetUrl('vendor/terraformer-wkt-parser/terraformer-wkt-parser.min.js', 'Cartography'));
-*/
+
+// TODO Fit bounds and default view.
+// Js from Mapping that should be appended last.
+// $this->headScript()->appendFile($this->assetUrl('js/control.opacity.js', 'Cartography'));
+// $this->headScript()->appendFile($this->assetUrl('js/control.fit-bounds.js', 'Cartography'));
+// $this->headScript()->appendFile($this->assetUrl('js/control.default-view.js', 'Cartography'));
 
 // Integration in Omeka S.
 $this->headLink()->appendStylesheet($this->assetUrl('css/cartography-admin.css', 'Cartography'));
@@ -49,12 +48,6 @@ $this->headLink()->appendStylesheet($this->assetUrl('css/cartography-admin.css',
 $this->headScript()->appendFile($this->assetUrl('js/cartography-admin-describe.js', 'Cartography'));
 $this->headScript()->prependScript('var basePath = ' . json_encode($this->basePath(), 320) . ';
 var resourceId = ' . $resource->id() . ';');
-
-// TODO Fit bounds and default view.
-// Js from Mapping that should be appended last.
-// $this->headScript()->appendFile($this->assetUrl('js/control.opacity.js', 'Cartography'));
-// $this->headScript()->appendFile($this->assetUrl('js/control.fit-bounds.js', 'Cartography'));
-// $this->headScript()->appendFile($this->assetUrl('js/control.default-view.js', 'Cartography'));
 
 ?>
 <fieldset id="describe" class="section">

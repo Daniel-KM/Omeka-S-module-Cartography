@@ -66,4 +66,17 @@ if (version_compare($oldVersion, '3.0.2', '<')) {
         $newTabs[] = 'locate';
     }
     $settings->set('cartography_display_tab', $newTabs);
+
+    // Replace "highlighting" by "locating".
+    $properties = $api->search('properties', [
+        'term' => 'oa:motivatedBy',
+    ])->getContent();
+    $propertyId = reset($properties);
+    $propertyId = $propertyId->id();
+    $sql = <<<SQL
+UPDATE value
+SET value = 'locating'
+WHERE value = 'highlighting' AND property_id = $propertyId;
+SQL;
+    $connection->exec($sql);
 }

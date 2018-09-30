@@ -42,7 +42,7 @@ var addGeometry = function(layer, identifier) {
         // Identifier is always empty.
         id : identifier,
         resourceId: resourceId,
-        motivation: 'describing',
+        motivation: 'highlighting',
         wkt: wkt,
         // Options are saved only when updated: some people don't need styles
         // so it will be lighter in that case.
@@ -94,7 +94,7 @@ var editGeometry = function(layer) {
         id: identifier,
         wkt: wkt,
         // Note: motivation is not udpatable.
-        motivation: 'describing',
+        motivation: 'highlighting',
         options: layer.options
     };
 
@@ -183,7 +183,7 @@ var setView = function() {
 
 /* Initialization */
 
- // Get map data.
+// Get map data.
 var mappingMap = $('#cartography-media');
 // Geometries are currently defined as a simple variable.
 // TODO Fetch existing values instead of reading.
@@ -191,6 +191,7 @@ var geometriesData = geometriesMedia;
 
 // Add layers and controls to the map.
 
+// TODO Manage only the case where there is a url (this js is not loaded without it).
 if (mainImage.url) {
     // Using leaflet.js to pan and zoom a big image.
     // TODO Compute the max zoom according to the original image.
@@ -217,7 +218,7 @@ if (mainImage.url) {
     var defaultBounds = null;
 
 } else {
-  //Initialize the map and set default view.
+  // Initialize the map and set default view.
     var map = L.map('cartography-media', { pasteControl: true });
     map.setView([20, 0], 2);
     var mapMoved = false;
@@ -230,7 +231,7 @@ if (mainImage.url) {
         'Streets': L.tileLayer.provider('OpenStreetMap.Mapnik'),
         'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'),
         'Satellite': L.tileLayer.provider('Esri.WorldImagery'),
-        'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief')
+        'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief'),
     };
     var layerControl = L.control.layers(baseMaps);
 }

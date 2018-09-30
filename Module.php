@@ -431,8 +431,8 @@ class Module extends AbstractModule
                     [
                         'joiner' => 'and',
                         'property' => 'oa:motivatedBy',
-                        'type' => 'eq',
-                        'text' => 'describing',
+                        'type' => 'neq',
+                        'text' => 'locating',
                     ],
                 ],
             ];
@@ -452,7 +452,7 @@ class Module extends AbstractModule
                         'joiner' => 'and',
                         'property' => 'oa:motivatedBy',
                         'type' => 'eq',
-                        'text' => 'highlighting',
+                        'text' => 'locating',
                     ],
                 ],
             ];

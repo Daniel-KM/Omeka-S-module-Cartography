@@ -40,8 +40,8 @@ var addGeometry = function(layer, identifier) {
         // Identifier is always empty.
         id : identifier,
         resourceId: resourceId,
-        // TODO Use "locating" (not standard) as motivation?
-        motivation: 'highlighting',
+        // "locating" is a not standard motivation.
+        motivation: 'locating',
         wkt: wkt,
         // Options are saved only when updated: some people don't need styles
         // so it will be lighter in that case.
@@ -93,7 +93,8 @@ var editGeometry = function(layer) {
         id: identifier,
         wkt: wkt,
         // Note: motivation is not udpatable.
-        motivation: 'highlighting',
+        // "locating" is a not standard motivation.
+        motivation: 'locating',
         options: layer.options
     };
 
@@ -182,13 +183,13 @@ var setView = function() {
 
 /* Initialization */
 
- // Get map data.
+// Get map data.
 var mappingMap = $('#cartography-map');
 // Geometries are currently defined as a simple variable.
 // TODO Fetch existing values instead of reading.
 var geometriesData = geometries;
 
-//Initialize the map and set default view.
+// Initialize the map and set default view.
 var map = L.map('cartography-map');
 map.setView([20, 0], 2);
 var mapMoved = false;
@@ -202,7 +203,7 @@ var baseMaps = {
     'Streets': L.tileLayer.provider('OpenStreetMap.Mapnik'),
     'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'),
     'Satellite': L.tileLayer.provider('Esri.WorldImagery'),
-    'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief')
+    'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief'),
 };
 var layerControl = L.control.layers(baseMaps);
 // Geometries are displayed and edited on the drawnItems layer.

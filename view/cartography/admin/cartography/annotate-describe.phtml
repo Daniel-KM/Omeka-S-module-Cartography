@@ -46,8 +46,14 @@ $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.fullscreen/Leafl
 $this->headLink()->appendStylesheet($this->assetUrl('css/cartography-admin.css', 'Cartography'));
 // TODO Fetch the geometries dynamically to allow to manage one js.
 $this->headScript()->appendFile($this->assetUrl('js/cartography-admin-describe.js', 'Cartography'));
-$this->headScript()->prependScript('var basePath = ' . json_encode($this->basePath(), 320) . ';
-var resourceId = ' . $resource->id() . ';');
+// TODO Fetch geometries dynamically.
+$this->headScript()->appendScript('var basePath = ' . json_encode($this->basePath(), 320) . ';
+var resourceId = ' . $resource->id() . ';
+var geometriesMedia = ' . json_encode($geometries, 320) . ';
+var mainImage = ' . json_encode($image, 320) . ';
+var oaMotivatedBySelect = ' . json_encode($oaMotivatedBySelect, 320) . ';
+var oaHasPurposeSelect = ' . json_encode($oaHasPurposeSelect, 320) . ';
+var cartographyUncertaintySelect = ' . json_encode($cartographyUncertaintySelect, 320) . ';');
 
 ?>
 <fieldset id="describe" class="section">
@@ -55,15 +61,5 @@ var resourceId = ' . $resource->id() . ';');
     <div id="cartography-media" style="height:800px;"></div>
     <div class="description"><?php echo $this->setting('cartography_user_guide'); ?></div>
 </fieldset>
-<?php // TODO Fetch geometries dynamically. ?>
-<script type="text/javascript">
-//<!--
-var geometriesMedia = <?php echo json_encode($geometries, 320); ?>;
-var mainImage = <?php echo json_encode($image, 320); ?>;
-var oaMotivatedBySelect = <?php echo json_encode($oaMotivatedBySelect, 320); ?>;
-var oaHasPurposeSelect = <?php echo json_encode($oaHasPurposeSelect, 320); ?>;
-var cartographyUncertaintySelect = <?php echo json_encode($cartographyUncertaintySelect, 320); ?>;
-//-->
-</script>
 <?php
 endif;

@@ -48,8 +48,13 @@ $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.TileLayer.WMTS/l
 // Integration in Omeka S.
 $this->headLink()->appendStylesheet($this->assetUrl('css/cartography-admin.css', 'Cartography'));
 $this->headScript()->appendFile($this->assetUrl('js/cartography-admin.js', 'Cartography'));
-$this->headScript()->prependScript('var basePath = ' . json_encode($this->basePath(), 320) . ';
-var resourceId = ' . $resource->id() . ';');
+// TODO Fetch geometries dynamically.
+$this->headScript()->appendScript('var basePath = ' . json_encode($this->basePath(), 320) . ';
+var resourceId = ' . $resource->id() . ';
+var geometries = ' . json_encode($geometries, 320) . ';
+var oaHasPurposeSelect = ' . json_encode($oaHasPurposeSelect, 320) . ';
+var cartographyUncertaintySelect = ' . json_encode($cartographyUncertaintySelect, 320) . ';
+var ignKey = ' . json_encode('choisirgeoportail') . ';');
 
 ?>
 <?php // TODO Find a better way to disable location motivation (via module config and js). ?>
@@ -61,12 +66,3 @@ var resourceId = ' . $resource->id() . ';');
     <div id="cartography-map" style="height:800px;"></div>
     <div class="description"><?php echo $this->setting('cartography_user_guide'); ?></div>
 </fieldset>
-<?php // TODO Fetch geometries dynamically. ?>
-<script type="text/javascript">
-//<!--
-var geometries = <?php echo json_encode($geometries, 320); ?>;
-var oaHasPurposeSelect = <?php echo json_encode($oaHasPurposeSelect, 320); ?>;
-var cartographyUncertaintySelect = <?php echo json_encode($cartographyUncertaintySelect, 320); ?>;
-var ignKey = 'choisirgeoportail';
-//-->
-</script>

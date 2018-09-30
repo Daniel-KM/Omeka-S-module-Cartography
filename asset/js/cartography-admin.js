@@ -41,7 +41,7 @@ var addGeometry = function(layer, identifier) {
         id : identifier,
         resourceId: resourceId,
         // "locating" is a not standard motivation.
-        motivation: 'locating',
+        oaMotivatedBy: 'locating',
         wkt: wkt,
         // Options are saved only when updated: some people don't need styles
         // so it will be lighter in that case.
@@ -92,9 +92,8 @@ var editGeometry = function(layer) {
     var data = {
         id: identifier,
         wkt: wkt,
-        // Note: motivation is not udpatable.
         // "locating" is a not standard motivation.
-        motivation: 'locating',
+        oaMotivatedBy: 'locating',
         options: layer.options
     };
 

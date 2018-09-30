@@ -71,12 +71,12 @@ class CartographyController extends AbstractActionController
             return $this->jsonError('An internal error occurred from the client.', Response::STATUS_CODE_400); // @translate
         }
 
-        // Currently, motivation is not an option.
-        // TODO Make the motivation a standard option for geometry (or purpose)?
-        $motivation = empty($data['motivation']) ? 'highlighting' : $data['motivation'];
+        // Default motivation for the module Cartography is "highlighting".
+        // Note: it can be bypassed by data options.
+        $oaMotivatedBy = empty($data['oaMotivatedBy']) ? 'highlighting' : $data['oaMotivatedBy'];
 
         $resourceId = $data['resourceId'];
-        return $this->createAnnotation($resourceId, $geometry, $options, $motivation);
+        return $this->createAnnotation($resourceId, $geometry, $options, $oaMotivatedBy);
     }
 
     /**
@@ -134,10 +134,10 @@ class CartographyController extends AbstractActionController
      * @param int $resourceId
      * @param string $geometry
      * @param array $options
-     * @param string $motivation
+     * @param string $oaMotivatedBy
      * @return \Zend\View\Model\JsonModel
      */
-    protected function createAnnotation($resourceId, $geometry, array $options, $motivation)
+    protected function createAnnotation($resourceId, $geometry, array $options, $oaMotivatedBy)
     {
         $api = $this->api();
 
@@ -149,7 +149,7 @@ class CartographyController extends AbstractActionController
                 [
                     'property_id' => $this->propertyId('oa:motivatedBy'),
                     'type' => 'customvocab:' . $this->customVocabId('Annotation oa:Motivation'),
-                    '@value' => $motivation,
+                    '@value' => $oaMotivatedBy,
                 ],
             ],
             'o-module-annotate:target' => [
@@ -191,6 +191,16 @@ class CartographyController extends AbstractActionController
         if ($options) {
             unset($options['annotationIdentifier']);
 
+            if (!empty($options['oaMotivatedBy'])) {
+                $data['oa:motivatedBy'] = [
+                    [
+                        'property_id' => $this->propertyId('oa:motivatedBy'),
+                        'type' => 'customvocab:' . $this->customVocabId('Annotation oa:Motivation'),
+                        '@value' => $options['oaMotivatedBy'],
+                    ],
+                ];
+            }
+
             if (isset($options['popupContent']) && strlen($options['popupContent'])) {
                 $data['o-module-annotate:body'] = [
                     [
@@ -219,6 +229,7 @@ class CartographyController extends AbstractActionController
                 $data['o-module-annotate:body'] = [];
             }
 
+            unset($options['oaMotivatedBy']);
             unset($options['popupContent']);
             unset($options['oaHasPurpose']);
 
@@ -302,6 +313,16 @@ class CartographyController extends AbstractActionController
                 unset($options['editing']);
                 unset($options['annotationIdentifier']);
 
+                if (!empty($options['oaMotivatedBy'])) {
+                    $data['oa:motivatedBy'] = [
+                        [
+                            'property_id' => $this->propertyId('oa:motivatedBy'),
+                            'type' => 'customvocab:' . $this->customVocabId('Annotation oa:Motivation'),
+                            '@value' => $options['oaMotivatedBy'],
+                        ],
+                    ];
+                }
+
                 if (isset($options['popupContent']) && strlen($options['popupContent'])) {
                     $data['o-module-annotate:body'] = [
                         [
@@ -330,6 +351,7 @@ class CartographyController extends AbstractActionController
                     $data['o-module-annotate:body'] = [];
                 }
 
+                unset($options['oaMotivatedBy']);
                 unset($options['popupContent']);
                 unset($options['oaHasPurpose']);
 
@@ -366,6 +388,9 @@ class CartographyController extends AbstractActionController
             if ($options) {
                 $values = $this->arrayValues($annotation);
                 $values['oa:styledBy'] = $data['oa:styledBy'];
+                if (!empty($data['oa:motivatedBy'])) {
+                    $values['oa:motivatedBy'] = $data['oa:motivatedBy'];
+                }
                 $response = $api->update('annotations', $annotation->id(), $values, [], ['isPartial' => true]);
             }
 

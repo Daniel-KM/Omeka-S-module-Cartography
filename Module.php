@@ -394,6 +394,16 @@ class Module extends AbstractModule
         }
 
         $api = $services->get('Omeka\ApiManager');
+
+        try {
+            $customVocab = $api->read('custom_vocabs', [
+                'label' => 'Annotation oa:Motivation',
+            ])->getContent();
+            $oaMotivatedBy = explode(PHP_EOL, $customVocab->terms());
+        } catch (NotFoundException $e) {
+            $oaMotivatedBy = [];
+        }
+
         try {
             $customVocab = $api->read('custom_vocabs', [
                 'label' => 'Annotation Body oa:hasPurpose',
@@ -441,6 +451,7 @@ class Module extends AbstractModule
                 'resource' => $resource,
                 'geometries' => $geometries,
                 'image' => $image,
+                'oaMotivatedBySelect' => $oaMotivatedBy,
                 'oaHasPurposeSelect' => $oaHasPurpose,
             ]);
         }
@@ -496,6 +507,7 @@ class Module extends AbstractModule
             }
 
             $geometry = [];
+
             $format = $format->value();
             if ($format === 'application/wkt') {
                 $value = $target->value('rdf:value');
@@ -513,6 +525,9 @@ class Module extends AbstractModule
                     }
                 }
             }
+
+            $value = $annotation->value('oa:motivatedBy');
+            $geometry['options']['oaMotivatedBy'] = $value ? $value->value() : '';
 
             $body = $annotation->primaryBody();
             if ($body) {

@@ -48,6 +48,10 @@ $this->headScript()->prependScript('var basePath = ' . json_encode($this->basePa
 var resourceId = ' . $resource->id() . ';');
 
 ?>
+<?php // TODO Find a better way to disable location motivation (via module config and js). ?>
+<style>
+#locate .editor-enabled > div:nth-child(2) > div:nth-child(2) > div:nth-child(7) {display:none;}
+</style>
 <fieldset id="locate" class="section">
     <legend id="cartography-legend"><?php echo $translate('Cartography'); ?></legend>
     <div id="cartography-map" style="height:800px;"></div>

@@ -42,7 +42,7 @@ var addGeometry = function(layer, identifier) {
         // Identifier is always empty.
         id : identifier,
         resourceId: resourceId,
-        motivation: 'highlighting',
+        oaMotivatedBy: 'highlighting',
         wkt: wkt,
         // Options are saved only when updated: some people don't need styles
         // so it will be lighter in that case.
@@ -93,8 +93,7 @@ var editGeometry = function(layer) {
     var data = {
         id: identifier,
         wkt: wkt,
-        // Note: motivation is not udpatable.
-        motivation: 'highlighting',
+        oaMotivatedBy: 'highlighting',
         options: layer.options
     };
 

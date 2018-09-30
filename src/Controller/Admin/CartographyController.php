@@ -229,9 +229,20 @@ class CartographyController extends AbstractActionController
                 $data['o-module-annotate:body'] = [];
             }
 
+            if (!empty($options['cartographyUncertainty'])) {
+                $data['o-module-annotate:target'][0]['cartography:uncertainty'] = [
+                    [
+                        'property_id' => $this->propertyId('cartography:uncertainty'),
+                        'type' => 'customvocab:' . $this->customVocabId('Cartography cartography:uncertainty'),
+                        '@value' => $options['cartographyUncertainty'],
+                    ],
+                ];
+            }
+
             unset($options['oaMotivatedBy']);
             unset($options['popupContent']);
             unset($options['oaHasPurpose']);
+            unset($options['cartographyUncertainty']);
 
             $data['oa:styledBy'][] = [
                 'property_id' => $this->propertyId('oa:styledBy'),
@@ -351,9 +362,22 @@ class CartographyController extends AbstractActionController
                     $data['o-module-annotate:body'] = [];
                 }
 
+                if (empty($options['cartographyUncertainty'])) {
+                    $data['o-module-annotate:target'][0]['cartography:uncertainty'] = [];
+                } else {
+                    $data['o-module-annotate:target'][0]['cartography:uncertainty'] = [
+                        [
+                            'property_id' => $this->propertyId('cartography:uncertainty'),
+                            'type' => 'customvocab:' . $this->customVocabId('Cartography cartography:uncertainty'),
+                            '@value' => $options['cartographyUncertainty'],
+                        ],
+                    ];
+                }
+
                 unset($options['oaMotivatedBy']);
                 unset($options['popupContent']);
                 unset($options['oaHasPurpose']);
+                unset($options['cartographyUncertainty']);
 
                 $data['oa:styledBy'][] = [
                     'property_id' => $this->propertyId('oa:styledBy'),
@@ -414,6 +438,7 @@ class CartographyController extends AbstractActionController
             $values['rdf:value'] = $data['o-module-annotate:target'][0]['rdf:value'];
             if ($options) {
                 $values['oa:styleClass'] = $data['o-module-annotate:target'][0]['oa:styleClass'];
+                $values['cartography:uncertainty'] = $data['o-module-annotate:target'][0]['cartography:uncertainty'];
             }
             $response = $api->update('annotation_targets', $target->id(), $values, [], ['isPartial' => true]);
 

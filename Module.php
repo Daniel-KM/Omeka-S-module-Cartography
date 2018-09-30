@@ -414,6 +414,15 @@ class Module extends AbstractModule
             $oaHasPurpose = [];
         }
 
+        try {
+            $customVocab = $api->read('custom_vocabs', [
+                'label' => 'Cartography cartography:uncertainty',
+            ])->getContent();
+            $cartographyUncertainty = explode(PHP_EOL, $customVocab->terms());
+        } catch (NotFoundException $e) {
+            $cartographyUncertainty = [];
+        }
+
         /** @var \Zend\View\Renderer\PhpRenderer $view */
         $view = $event->getTarget();
 
@@ -454,6 +463,7 @@ class Module extends AbstractModule
                 'image' => $image,
                 'oaMotivatedBySelect' => $oaMotivatedBy,
                 'oaHasPurposeSelect' => $oaHasPurpose,
+                'cartographyUncertaintySelect' => $cartographyUncertainty,
             ]);
         }
 
@@ -472,6 +482,7 @@ class Module extends AbstractModule
                 'resource' => $resource,
                 'geometries' => $this->fetchGeometries($resource, $query),
                 'oaHasPurposeSelect' => $oaHasPurpose,
+                'cartographyUncertaintySelect' => $cartographyUncertainty,
             ]);
         }
     }
@@ -537,6 +548,9 @@ class Module extends AbstractModule
                 $value = $body->value('oa:hasPurpose');
                 $geometry['options']['oaHasPurpose'] = $value ? $value->value() : '';
             }
+
+            $value = $target->value('cartography:uncertainty');
+            $geometry['options']['cartographyUncertainty'] = $value ? $value->value() : '';
 
             $geometries[$annotation->id()] = $geometry;
         }

@@ -50,6 +50,7 @@ if (version_compare($oldVersion, '3.0.2', '<')) {
 
      $customVocabPaths = [
         dirname(dirname(__DIR__)) . '/data/custom-vocabs/Annotation-Body-oa-hasPurpose.json',
+        dirname(dirname(__DIR__)) . '/data/custom-vocabs/Cartography-cartography-uncertainty.json',
     ];
     foreach ($customVocabPaths as $filepath) {
         $data = json_decode(file_get_contents($filepath), true);

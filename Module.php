@@ -103,10 +103,11 @@ class Module extends AbstractModule
             ], [], ['is_partial' => true]);
         }
 
-        // Add a specific custom vocabularies.
+        // Add specific custom vocabularies.
         $customVocabPaths = [
             // TODO Move custom vocab into annotation or use a specific to Cartography?
             __DIR__ . '/data/custom-vocabs/Annotation-Body-oa-hasPurpose.json',
+            __DIR__ . '/data/custom-vocabs/Cartography-cartography-uncertainty.json',
         ];
         foreach ($customVocabPaths as $filepath) {
             $data = json_decode(file_get_contents($filepath), true);

@@ -447,26 +447,32 @@ class Module extends AbstractModule
                     }
                 }
             }
-            $query = [
-                'property' => [
-                    [
-                        'joiner' => 'and',
-                        'property' => 'oa:motivatedBy',
-                        'type' => 'neq',
-                        'text' => 'locating',
+            if ($image) {
+                $query = [
+                    'property' => [
+                        [
+                            'joiner' => 'and',
+                            'property' => 'oa:motivatedBy',
+                            'type' => 'neq',
+                            'text' => 'locating',
+                        ],
                     ],
-                ],
-            ];
-            $geometries = $this->fetchGeometries($resource, $query);
-            echo $view->partial('cartography/admin/cartography/annotate-describe', [
-                'resource' => $resource,
-                'geometries' => $geometries,
-                'image' => $image,
-                'oaMotivatedBySelect' => $oaMotivatedBy,
-                'oaHasPurposeSelect' => $oaHasPurpose,
-                'cartographyUncertaintySelect' => $cartographyUncertainty,
-                'jsDescribe' => $settings->get('cartography_js_describe', ''),
-            ]);
+                ];
+                $geometries = $this->fetchGeometries($resource, $query);
+                echo $view->partial('cartography/admin/cartography/annotate-describe', [
+                    'resource' => $resource,
+                    'geometries' => $geometries,
+                    'image' => $image,
+                    'oaMotivatedBySelect' => $oaMotivatedBy,
+                    'oaHasPurposeSelect' => $oaHasPurpose,
+                    'cartographyUncertaintySelect' => $cartographyUncertainty,
+                    'jsDescribe' => $settings->get('cartography_js_describe', ''),
+                ]);
+            } else {
+                echo $view->partial('cartography/admin/cartography/annotate-describe', [
+                    'image' => $image,
+                ]);
+            }
         }
 
         if (in_array('locate', $displayTab)) {

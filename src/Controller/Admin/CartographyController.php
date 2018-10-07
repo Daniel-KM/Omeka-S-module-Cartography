@@ -544,6 +544,7 @@ class CartographyController extends AbstractActionController
             'TIN',
             'TRIANGLE',
             'CIRCLE',
+            'CIRCLEMARKER',
             'GEODESICSTRING',
             'ELLIPTICALCURVE',
             'NURBSCURVE',

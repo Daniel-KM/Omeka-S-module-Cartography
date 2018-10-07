@@ -259,7 +259,17 @@ class Module extends AbstractModule
         $data = [];
         $defaultSettings = $config[strtolower(__NAMESPACE__)]['config'];
         foreach ($defaultSettings as $name => $value) {
-            $data[$name] = $settings->get($name, $value);
+            $value = $settings->get($name, $value);
+            switch ($name) {
+                case 'cartography_locate_wms':
+                    $values = '';
+                    foreach ($value as $v) {
+                        $values .= $v['url'] . ' ' . $v['label'] . PHP_EOL;
+                    }
+                    $value = $values;
+                    break;
+            }
+            $data[$name] = $value;
         }
 
         $renderer->ckEditor();
@@ -287,6 +297,23 @@ class Module extends AbstractModule
         }
 
         $params = $form->getData();
+
+        // The str_replace() allows to fix Apple copy/paste.
+        $list = array_filter(array_map('trim', explode(
+            PHP_EOL,
+            str_replace(["\r\n", "\n\r", "\r", "\n"], PHP_EOL, $params['cartography_locate_wms'])
+        )));
+        $params['cartography_locate_wms'] = [];
+        foreach ($list as $line) {
+            list($wmsUrl, $wmsLabel) = array_map('trim', explode(' ', $line, 2));
+            if ($wmsUrl) {
+                $params['cartography_locate_wms'][] = [
+                    'url' => $wmsUrl,
+                    'label' => $wmsLabel ?: '',
+                ];
+            }
+        }
+
         $defaultSettings = $config[strtolower(__NAMESPACE__)]['config'];
         $params = array_intersect_key($params, $defaultSettings);
         foreach ($params as $name => $value) {
@@ -479,9 +506,9 @@ class Module extends AbstractModule
         if (in_array('locate', $displayTab)) {
             // Display wms layers, if any. The url should finish with "?", and
             // one layer may be required. Style and format can be added too.
-            $wmsLayers = [];
+            $wmsLayers = $settings->get('cartography_locate_wms', []);
             // Manage wms layers as uri only.
-            $values = $resource->value('dcterms:spatial', ['type' => 'uri', 'all' => true]);
+            $values = $resource->value('dcterms:spatial', ['type' => 'uri', 'all' => true, 'default' => []]);
             foreach ($values as $value) {
                 $url = $value->uri();
                 if (parse_url($url)) {

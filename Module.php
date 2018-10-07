@@ -470,12 +470,28 @@ class Module extends AbstractModule
                 ]);
             } else {
                 echo $view->partial('cartography/admin/cartography/annotate-describe', [
+                    'resource' => $resource,
                     'image' => $image,
                 ]);
             }
         }
 
         if (in_array('locate', $displayTab)) {
+            // Display wms layers, if any. The url should finish with "?", and
+            // one layer may be required. Style and format can be added too.
+            $wmsLayers = [];
+            // Manage wms layers as uri only.
+            $values = $resource->value('dcterms:spatial', ['type' => 'uri', 'all' => true]);
+            foreach ($values as $value) {
+                $url = $value->uri();
+                if (parse_url($url)) {
+                    $wmsLayers[] = [
+                        'url' => $url,
+                        'label' => $value->value(),
+                    ];
+                }
+            }
+
             $query = [
                 'property' => [
                     [
@@ -486,9 +502,12 @@ class Module extends AbstractModule
                     ],
                 ],
             ];
+            $geometries = $this->fetchGeometries($resource, $query);
+
             echo $view->partial('cartography/admin/cartography/annotate-locate', [
                 'resource' => $resource,
-                'geometries' => $this->fetchGeometries($resource, $query),
+                'wmsLayers' => $wmsLayers,
+                'geometries' => $geometries,
                 'oaHasPurposeSelect' => $oaHasPurpose,
                 'cartographyUncertaintySelect' => $cartographyUncertainty,
                 'jsLocate' => $settings->get('cartography_js_locate', ''),

@@ -211,7 +211,75 @@ if (typeof baseMaps !== 'object' || $.isEmptyObject(baseMaps)) {
         'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief'),
     };
 }
-var layerControl = L.control.layers(baseMaps);
+
+if (!wmsLayers.length) {
+    var layerControl = L.control.layers(baseMaps);
+    map.addControl(new L.Control.Layers(baseMaps));
+} else {
+    //Adapted from mapping-block.js (module Mapping).
+    // TODO Remove the "no overlay" when there is no overlay.
+    // TODO Use multi-checkboxes, not radios.
+    var noOverlayLayer = new L.GridLayer();
+    var groupedOverlays = {
+        'Overlays': {
+            'No overlay': noOverlayLayer,
+        },
+    };
+
+    // Set and prepare opacity control, if there is an overlay layer.
+    var openWmsLayer, openWmsLabel;
+    var opacityControl;
+    var handleOpacityControl = function(overlay, label) {
+        if (opacityControl) {
+            // Only one control at a time.
+            map.removeControl(opacityControl);
+            opacityControl = null;
+        }
+        if (overlay !== noOverlayLayer) {
+            // The "No overlay" overlay gets no control.
+            opacityControl =  new L.Control.Opacity(overlay, label);
+            map.addControl(opacityControl);
+        }
+    };
+
+    // Add grouped WMS overlay layers.
+    map.addLayer(noOverlayLayer);
+    $.each(wmsLayers, function(index, data) {
+        var wmsLabel = data.label.length ? data.label : (Omeka.jsTranslate('Layer') + ' ' + (index + 1));
+        // Leaflet requires the layers and the styles separated.
+        // Require a recent browser (@url https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams#Browser_compatibility#Browser_compatibility).
+        // TODO Add a check and pure js to bypass missing URL interface.
+        var url =  new URL(data.url);
+        var searchParams = url.searchParams;
+        var wmsLayers = '';
+        wmsLayers = searchParams.get('LAYERS') || searchParams.get('Layers') || searchParams.get('layers') || wmsLayers;
+        searchParams.delete('LAYERS'); searchParams.delete('Layers'); searchParams.delete('layers');
+        var wmsStyles = '';
+        wmsStyles = searchParams.get('STYLES') || searchParams.get('Styles') || searchParams.get('styles') || wmsStyles;
+        searchParams.delete('STYLES'); searchParams.delete('Styles'); searchParams.delete('styles');
+        url.search = searchParams;
+        var wmsUrl = url.toString();
+        if (wmsUrl.indexOf('?') === -1) {
+            wmsUrl += '?';
+        }
+        wmsLayer = L.tileLayer.wms(wmsUrl, {
+            layers: wmsLayers,
+            styles: wmsStyles,
+            format: 'image/png',
+            transparent: true,
+        });
+        // Open the first wms overlay by default.
+        if (index === 0) {
+            openWmsLayer = wmsLayer;
+            openWmsLabel = wmsLabel;
+        }
+        groupedOverlays['Overlays'][wmsLabel] = wmsLayer;
+    });
+    L.control.groupedLayers(baseMaps, groupedOverlays, {
+        exclusiveGroups: ['Overlays']
+    }).addTo(map);
+}
+
 // Geometries are displayed and edited on the drawnItems layer.
 var drawnItems = new L.FeatureGroup();
 // TODO Remove all references to markers of the standard mapping map.
@@ -234,11 +302,9 @@ var drawControl = new L.Control.Draw({
         remove: true
     }
 });
-// map.addControl(layerControl);
 map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
 map.addControl(drawControl);
 map.addControl(geoSearchControl);
-map.addControl(new L.Control.Layers(baseMaps));
 map.addControl(new L.control.scale({'position':'bottomleft','metric':true,'imperial':false}));
 // TODO Fix and add the fit bound control with geometries, not markers.
 //map.addControl(new L.Control.FitBounds(markers));
@@ -246,12 +312,6 @@ map.addControl(new L.control.scale({'position':'bottomleft','metric':true,'imper
 map.addLayer(baseMaps['Satellite']);
 map.addLayer(drawnItems);
 // map.addLayer(markers);
-
-map.on('paste:layer-created', function (e) {
-    map.addLayer(e.layer);
-});
-
-setView();
 
 /* Style Editor (https://github.com/dwilhelm89/Leaflet.StyleEditor) */
 // Initialize the StyleEditor
@@ -269,6 +329,24 @@ var styleEditor = L.control.styleEditor({
     useGrouping: false,
 });
 map.addControl(styleEditor);
+
+// Append the opacity control at the end of the toolbar for better ux.
+if (typeof openWmsLayer !== 'undefined' && openWmsLayer) {
+    map.removeLayer(noOverlayLayer);
+    map.addLayer(openWmsLayer);
+    handleOpacityControl(openWmsLayer, openWmsLabel);
+
+    // Handle the overlay opacity control.
+    map.on('overlayadd', function(e) {
+        handleOpacityControl(e.layer, e.name);
+    });
+}
+
+map.on('paste:layer-created', function (e) {
+    map.addLayer(e.layer);
+});
+
+setView();
 
 /* Manage edition of geometries. */
 

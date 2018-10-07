@@ -82,6 +82,9 @@ return [
             ],
         ],
     ],
+    'js_translate_strings' => [
+        'Layer', // @translate
+    ],
     'cartography' => [
         'config' => [
             'cartography_user_guide' => 'Feel free to use <strong>Cartography</strong>!', // @translate

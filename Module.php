@@ -79,6 +79,7 @@ class Module extends AbstractModule
 
         // Complete the annotation custom vocabularies.
         $customVocabPaths = [
+            __DIR__ . '/data/custom-vocabs/Cartography-Body-oa-motivatedBy.json',
             __DIR__ . '/data/custom-vocabs/Cartography-Target-dcterms-format.json',
             __DIR__ . '/data/custom-vocabs/Cartography-Target-rdf-type.json',
         ];
@@ -100,7 +101,7 @@ class Module extends AbstractModule
             $api->update('custom_vocabs', $customVocab->id(), [
                 'o:label' => $label,
                 'o:terms' => implode(PHP_EOL, $terms),
-            ], [], ['is_partial' => true]);
+            ], [], ['isPartial' => true]);
         }
 
         // Add specific custom vocabularies.
@@ -425,7 +426,7 @@ class Module extends AbstractModule
 
         try {
             $customVocab = $api->read('custom_vocabs', [
-                'label' => 'Annotation oa:Motivation',
+                'label' => 'Annotation oa:motivatedBy',
             ])->getContent();
             $oaMotivatedBy = explode(PHP_EOL, $customVocab->terms());
         } catch (NotFoundException $e) {

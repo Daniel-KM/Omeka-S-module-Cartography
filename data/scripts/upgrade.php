@@ -21,7 +21,7 @@ if (version_compare($oldVersion, '3.0.1', '<')) {
     $settings->set('cartography_user_guide', $config['cartography']['config']['cartography_user_guide']);
 }
 
-if (version_compare($oldVersion, '3.0.2', '<')) {
+if (version_compare($oldVersion, '3.0.2-alpha', '<')) {
    // Complete the annotation custom vocabularies.
     $customVocabPaths = [
         dirname(dirname(__DIR__)) . '/data/custom-vocabs/Cartography-Target-dcterms-format.json',
@@ -45,7 +45,7 @@ if (version_compare($oldVersion, '3.0.2', '<')) {
         $api->update('custom_vocabs', $customVocab->id(), [
             'o:label' => $label,
             'o:terms' => implode(PHP_EOL, $terms),
-        ], [], ['is_partial' => true]);
+        ], [], ['isPartial' => true]);
     }
 
      $customVocabPaths = [
@@ -93,4 +93,55 @@ SET `local_name` = 'uncertainty', `label` = 'Uncertainty', `comment` = 'Level of
 WHERE `id` = $propertyId;
 SQL;
     $connection->exec($sql);
+}
+
+if (version_compare($oldVersion, '3.0.3-alpha', '<')) {
+    $moduleManager = $services->get('Omeka\ModuleManager');
+    $moduleClass = 'Annotate';
+    $version = '3.0.3';
+    $module = $moduleManager->getModule($moduleClass);
+    if (empty($module)
+        || $module->getState() !== \Omeka\Module\Manager::STATE_ACTIVE
+        || version_compare($module->getDb('version'), $version, '<')
+    ) {
+        throw new \Omeka\Module\Exception\ModuleCannotInstallException(
+            new \Omeka\Stdlib\Message(
+                'The module "%s" must be upgraded to version %s first.', // @translate
+                $moduleClass, $version
+            ));
+    }
+
+    // Complete the annotation custom vocabularies.
+    $customVocabPaths = [
+        dirname(dirname(__DIR__)) . '/data/custom-vocabs/Cartography-Body-oa-motivatedBy.json',
+    ];
+    foreach ($customVocabPaths as $filepath) {
+        $data = json_decode(file_get_contents($filepath), true);
+        $label = $data['o:label'];
+        try {
+            $customVocab = $api
+                ->read('custom_vocabs', ['label' => $label])->getContent();
+        } catch (\Omeka\Api\Exception\NotFoundException $e) {
+            // Manage the case where Annotate is updated later.
+            if ($label === 'Annotation oa:motivatedBy') {
+                $label = 'Annotation oa:Motivation';
+            }
+            try {
+                $customVocab = $api
+                    ->read('custom_vocabs', ['label' => $label])->getContent();
+            } catch (\Omeka\Api\Exception\NotFoundException $e) {
+                throw new \Omeka\Module\Exception\ModuleCannotInstallException(
+                    sprintf(
+                        'The custom vocab named "%s" is not available.', // @translate
+                        $label
+                    ));
+            }
+        }
+        $terms = array_map('trim', explode(PHP_EOL, $customVocab->terms()));
+        $terms = array_unique(array_merge($terms, $data['o:terms']));
+        $api->update('custom_vocabs', $customVocab->id(), [
+            'o:label' => $label,
+            'o:terms' => implode(PHP_EOL, $terms),
+        ], [], ['isPartial' => true]);
+    }
 }

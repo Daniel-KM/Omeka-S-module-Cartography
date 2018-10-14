@@ -148,7 +148,7 @@ class CartographyController extends AbstractActionController
             'oa:motivatedBy' => [
                 [
                     'property_id' => $this->propertyId('oa:motivatedBy'),
-                    'type' => 'customvocab:' . $this->customVocabId('Annotation oa:Motivation'),
+                    'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
                     '@value' => $oaMotivatedBy,
                 ],
             ],
@@ -195,7 +195,7 @@ class CartographyController extends AbstractActionController
                 $data['oa:motivatedBy'] = [
                     [
                         'property_id' => $this->propertyId('oa:motivatedBy'),
-                        'type' => 'customvocab:' . $this->customVocabId('Annotation oa:Motivation'),
+                        'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
                         '@value' => $options['oaMotivatedBy'],
                     ],
                 ];
@@ -328,7 +328,7 @@ class CartographyController extends AbstractActionController
                     $data['oa:motivatedBy'] = [
                         [
                             'property_id' => $this->propertyId('oa:motivatedBy'),
-                            'type' => 'customvocab:' . $this->customVocabId('Annotation oa:Motivation'),
+                            'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
                             '@value' => $options['oaMotivatedBy'],
                         ],
                     ];

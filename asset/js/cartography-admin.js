@@ -303,8 +303,9 @@ var drawControl = new L.Control.Draw({
         polyline: true,
         polygon: true,
         rectangle: true,
-        circle: true,
-        circlemarker: true
+        circle: false,
+        marker: true,
+        circlemarker: false,
     },
     edit: {
         featureGroup: drawnItems,

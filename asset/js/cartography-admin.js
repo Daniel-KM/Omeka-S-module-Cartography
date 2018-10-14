@@ -72,8 +72,7 @@ var addGeometry = function(layer, identifier) {
  * @param layer
  */
 var editGeometry = function(layer) {
-    identifier = layer.annotationIdentifier;
-    identifier2 = layer.options.annotationIdentifier;
+    var identifier = layer.annotationIdentifier || getMarkerIdentifier(layer);
     if (!identifier) {
         alert('Unable to save the edited geometry.');
         return;
@@ -105,8 +104,6 @@ var editGeometry = function(layer) {
             return;
         }
         console.log('Geometry updated.');
-//        identifier = data.result.id;
-//        drawnItems.addLayer(layer);
     })
     .fail(function(jqxhr) {
         var message = JSON.parse(jqxhr.responseText).message || 'Unable to update the geometry.';
@@ -121,9 +118,7 @@ var editGeometry = function(layer) {
  */
 var deleteGeometry = function(layer) {
     var url = basePath + '/admin/cartography/delete-annotation';
-    console.log(layer);
-    var identifier = layer.annotationIdentifier;
-    var identifier2 = layer.options.annotationIdentifier;
+    var identifier = layer.annotationIdentifier || getMarkerIdentifier(layer);
     if (!identifier) {
         console.log('No identifier to delete.')
         return;
@@ -137,7 +132,6 @@ var deleteGeometry = function(layer) {
             return;
         }
         console.log('Geometry deleted.')
-//        drawnItems.removeLayer(layer);
     })
     .fail(function(jqxhr) {
         var message = JSON.parse(jqxhr.responseText).message || 'Unable to delete the geometry.';
@@ -160,6 +154,21 @@ var addNonGroupLayers = function(sourceLayer, targetGroup) {
         targetGroup.addLayer(sourceLayer);
         sourceLayer.annotationIdentifier = sourceLayer.options.annotationIdentifier;
     }
+}
+
+/**
+ * Get marker identifier.
+ *
+ * @todo Fix this process, too hacky: the identifier should be simple to save and find.
+ * @param layer
+ */
+var getMarkerIdentifier = function(layer) {
+    var identifier = layer.options.annotationIdentifier;
+    if (identifier) {
+        return identifier;
+    }
+    var parents = Object.values(layer._eventParents);
+    return parents[parents.length - 1].annotationIdentifier;
 }
 
 /**
@@ -377,9 +386,7 @@ map.on(L.Draw.Event.EDITED, function(element) {
 // Handle deleting geometries (when the delete button "save" is clicked).
 map.on(L.Draw.Event.DELETED, function(element) {
     // TODO Don't delete geometry if issue on server.
-    console.log('delete');
     element.layers.eachLayer(function(layer) {
-        console.log('delete layer');
         deleteGeometry(layer);
     });
 });

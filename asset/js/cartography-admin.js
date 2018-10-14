@@ -404,16 +404,6 @@ map.on('paste:layer-created', function(element){
 
 /* Various methods. */
 
-// TODO Remove standard markers.
-// Add the standard mapping map markers.
-//$('.mapping-marker-popup-content').each(function() {
-//    var popup = $(this).clone().show();
-//    var latLng = new L.LatLng(popup.data('marker-lat'), popup.data('marker-lng'));
-//    var marker = new L.Marker(latLng);
-//    marker.bindPopup(popup[0]);
-//    markers.addLayer(marker);
-//});
-
 // Switching sections changes map dimensions, so make the necessary adjustments.
 $('#locate').one('o:section-opened', function(e) {
     map.invalidateSize();

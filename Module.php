@@ -512,6 +512,12 @@ class Module extends AbstractModule
             foreach ($values as $value) {
                 $url = $value->uri();
                 if (parse_url($url)) {
+                    // Don't add the same url two times.
+                    foreach ($wmsLayers as $wmsLayer) {
+                        if ($wmsLayer['url'] === $url) {
+                            continue 2;
+                        }
+                    }
                     $wmsLayers[] = [
                         'url' => $url,
                         'label' => $value->value(),

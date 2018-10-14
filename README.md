@@ -1,9 +1,12 @@
-Cartography (module for Omeka S)
-================================
+Cartography annotate (module for Omeka S)
+=========================================
 
 [Cartography] is a module for [Omeka S] that allows to annotate (to draw points,
-lines, polylines, polygons, etc.) images with the [web annotation vocabulary]
-and the [web annotation data model].
+lines, polylines, polygons, etc.) maps with the [web annotation vocabulary] and
+the [web annotation data model].
+
+Maps can be georeferenced ([wms]) or ungeoreferenced images, so it is possible
+to annotate any images, even not cartagraphic ones.
 
 **This is a work in progress (ALPHA release).**
 
@@ -35,10 +38,38 @@ the module to `Cartography`, go to the root module, and run:
 ```
 
 
-Usage
------
+Quick start
+-----------
 
-Simply open an item with a map, go to the tab "Cartography", and annotate.
+The module allows to annotate standard images and georeferenced maps.
+- To annotate a still image, simply upload it as media.
+- To annotate a georeferenced image, the [wms] url should be set as URI in
+  `dcterms:spatial`, for example: `https://mapwarper.net/maps/wms/14068? Us and territories`.
+
+Then, simply open the item (the display view, not the edition view, because the
+annotations are saved outside of the resource metadata), go to the tabs
+`Describe` or `Locate`, then annotate.
+
+There may be multiple images and georeferenced maps.
+
+Notes
+- A geometry can have only one description, because there is only one popup. So
+  only one body is managed, except when there are links.
+- According to the Annotation data model, when a geometry is linked to a
+  resource, the motivation is forced to "linking". Furthermore, the annotation
+  body is the related resource and the target is the geometry, like all other
+  motivations.
+
+
+Configuration
+-------------
+
+### List of terms
+
+The list of terms for the motivation, the purpose and the uncertainty can be
+changed via the module `Custom vocab`. The title of the vocabularies must be
+kept as they are, because they are used internally.
+
 
 ### Ontologies
 
@@ -48,9 +79,8 @@ The class `ogc:WKTLiteral` and the property `geo:asWKT` of the ontologies of the
 [Open Geospatial consortium] are used. They may be converted into the [geovocab]
 vocabulary (`ngeo:Geometry`) if needed.
 
-### Options
 
-#### Locate
+#### Locate georeferenced images
 
 The base maps of the tab "Locate" can be customized. Just set it as js in the
 config. For example, to include the French [IGN map service] with the default
@@ -88,6 +118,11 @@ baseMaps = {
 
 Note: the key provided here for access to IGN services must be used for test
 purpose only. In production, you must register to get a [free ign key].
+
+#### Describe still images
+
+A similar js can be added for images to describe, but is not managed directly by
+the module.
 
 
 Warning

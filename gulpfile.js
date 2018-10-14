@@ -4,6 +4,7 @@ const del = require('del');
 const gulp = require('gulp');
 const gulpif = require('gulp-if');
 const uglify = require('gulp-uglify');
+const pump = require('pump');
 const rename = require('gulp-rename');
 
 const bundles = [
@@ -87,10 +88,12 @@ gulp.task('clean', function(done) {
 
 gulp.task('sync', function (done) {
     bundles.map(function (bundle) {
-        return gulp.src(bundle.source)
-            .pipe(gulpif(bundle.rename, rename({suffix:'.min'})))
-            .pipe(gulpif(bundle.uglify, uglify()))
-            .pipe(gulp.dest(bundle.dest));
+        pump([
+            gulp.src(bundle.source),
+            gulpif(bundle.rename, rename({suffix:'.min'})),
+            gulpif(bundle.uglify, uglify()),
+            gulp.dest(bundle.dest),
+        ]);
     });
     done();
 });

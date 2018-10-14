@@ -399,9 +399,12 @@ class Module extends AbstractModule
             return;
         }
 
-        $sectionNav = $event->getParam('section_nav');
-
         $displayTab = $services->get('Omeka\Settings')->get('cartography_display_tab', []);
+        if (empty($displayTab)) {
+            return;
+        }
+
+        $sectionNav = $event->getParam('section_nav');
         if (in_array('describe', $displayTab)) {
             $sectionNav['describe'] = 'Describe'; // @translate
         }
@@ -425,7 +428,19 @@ class Module extends AbstractModule
             return;
         }
 
+        $settings = $services->get('Omeka\Settings');
+        $displayTab = $settings->get('cartography_display_tab', []);
+        if (empty($displayTab)) {
+            return;
+        }
+
         $api = $services->get('Omeka\ApiManager');
+
+        /** @var \Zend\View\Renderer\PhpRenderer $view */
+        $view = $event->getTarget();
+
+        /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource */
+        $resource = $view->resource;
 
         try {
             $customVocab = $api->read('custom_vocabs', [
@@ -454,13 +469,13 @@ class Module extends AbstractModule
             $cartographyUncertainty = [];
         }
 
-        /** @var \Zend\View\Renderer\PhpRenderer $view */
-        $view = $event->getTarget();
+        echo $view->partial('cartography/admin/cartography/annotate', [
+            'resource' => $resource,
+            'oaMotivatedBySelect' => $oaMotivatedBy,
+            'oaHasPurposeSelect' => $oaHasPurpose,
+            'cartographyUncertaintySelect' => $cartographyUncertainty,
+        ]);
 
-        /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource */
-        $resource = $view->resource;
-
-        $settings = $services->get('Omeka\Settings');
         $displayTab = $settings->get('cartography_display_tab', []);
 
         if (in_array('describe', $displayTab)) {
@@ -488,21 +503,10 @@ class Module extends AbstractModule
                 $images[] = $image;
             }
 
-            if ($images) {
-                echo $view->partial('cartography/admin/cartography/annotate-describe', [
-                    'resource' => $resource,
-                    'images' => $images,
-                    'oaMotivatedBySelect' => $oaMotivatedBy,
-                    'oaHasPurposeSelect' => $oaHasPurpose,
-                    'cartographyUncertaintySelect' => $cartographyUncertainty,
-                    'jsDescribe' => $settings->get('cartography_js_describe', ''),
-                ]);
-            } else {
-                echo $view->partial('cartography/admin/cartography/annotate-describe', [
-                    'resource' => $resource,
-                    'images' => $images,
-                ]);
-            }
+            echo $view->partial('cartography/admin/cartography/annotate-describe', [
+                'images' => $images,
+                'jsDescribe' => $settings->get('cartography_js_describe', ''),
+            ]);
         }
 
         if (in_array('locate', $displayTab)) {
@@ -528,13 +532,8 @@ class Module extends AbstractModule
             }
 
             echo $view->partial('cartography/admin/cartography/annotate-locate', [
-                'resource' => $resource,
                 'wmsLayers' => $wmsLayers,
-                'oaHasPurposeSelect' => $oaHasPurpose,
-                'cartographyUncertaintySelect' => $cartographyUncertainty,
                 'jsLocate' => $settings->get('cartography_js_locate', ''),
-                // TODO Remove this js valuen added only to avoid an issue in the js of StyleEditor (see annotate-locate too).
-                'oaMotivatedBySelect' => $oaMotivatedBy,
             ]);
         }
     }

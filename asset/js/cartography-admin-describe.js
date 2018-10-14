@@ -202,8 +202,8 @@ var geometriesData = geometriesMedia;
 // Initialize the map and set default view.
 var map = L.map('cartography-media', {
     // TODO Compute the min/max zoom according to images?
-    minZoom: -20,
-    maxZoom: 20,
+    minZoom: -4,
+    maxZoom: 8,
     zoom: 0,
     center: [0, 0],
     maxBoundsViscosity: 1,
@@ -220,22 +220,28 @@ var defaultBounds = null;
 
 //Add layers and controls to the map.
 var baseMaps = {};
+var firstMap;
 $.each(mainImages, function(index, mainImage) {
     // Compute image edges as positive coordinates.
     // TODO Choose top left as 0.0 for still images?
-    var bottomLeft = map.unproject([0, -mainImage.size[1]], 0);
-    var topRight = map.unproject([mainImage.size[0], 0], 0);
-    var bounds = new L.LatLngBounds(bottomLeft, topRight);
+    var southWest = L.latLng(0, 0);
+    var northEast = L.latLng(mainImage.size[1], mainImage.size[0]);
+    var bounds = L.latLngBounds(southWest, northEast);
     var image = L.imageOverlay(mainImage.url, bounds);
+    if (!firstMap) {
+        firstMap = image;
+    }
     baseMaps['Image #' + (index + 1)] = image;
 });
-
 if (Object.keys(baseMaps).length > 1) {
     var layerControl = L.control.layers(baseMaps);
     map.addControl(new L.Control.Layers(baseMaps));
 }
-baseMaps[Object.keys(baseMaps)[0]].addTo(map);
-// map.setMaxBounds(bounds);
+var bounds = firstMap.getBounds();
+firstMap.addTo(map);
+map.panTo([bounds.getNorthEast().lat / 2, bounds.getNorthEast().lng / 2]);
+// FIXME Fit bounds first image overlay.
+//map.fitBounds(bounds);
 
 // Geometries are displayed and edited on the drawnItems layer.
 var drawnItems = new L.FeatureGroup();
@@ -262,10 +268,6 @@ map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
 map.addControl(drawControl);
 map.addControl(geoSearchControl);
 map.addLayer(drawnItems);
-
-map.on('paste:layer-created', function (e) {
-    map.addLayer(e.layer);
-});
 
 setView();
 
@@ -328,6 +330,10 @@ map.on('styleeditor:changed', function(element){
 // Handle paste wkt/geojson.
 map.on('paste:layer-created', function(element){
     addGeometry(element.layer);
+});
+
+map.on('paste:layer-created', function(element) {
+    map.addLayer(element.layer);
 });
 
 /* Various methods. */

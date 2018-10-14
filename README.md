@@ -13,9 +13,26 @@ Installation
 
 This module requires the modules [Annotate].
 
-Uncompress files and rename module folder "Cartography".
+The module uses external libraries, so use the release zip to install it, or use
+and init the source.
 
-See general end user documentation for [Installing a module](http://dev.omeka.org/docs/s/user-manual/modules/#installing-modules)
+See general end user documentation for [installing a module].
+
+* From the zip
+
+Download the last release [`Cartography.zip`] from the list of releases (the
+master does not contain the dependency), and uncompress it in the `modules`
+directory.
+
+* From the source and for development
+
+If the module was installed from the source, rename the name of the folder of
+the module to `Cartography`, go to the root module, and run:
+
+```
+    npm install
+    gulp
+```
 
 
 Usage
@@ -142,6 +159,8 @@ Copyright
 [web annotation data model]: https://www.w3.org/TR/annotation-model/
 [web annotation vocabulary]: https://www.w3.org/TR/annotation-vocab/
 [Annotate]: https://github.com/Daniel-KM/Omeka-S-module-Annotate
+[Installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
+[`Cartography.zip`]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/releases
 [Open Geospatial consortium]: http://www.opengeospatial.org/
 [geovocab]: http://geovocab.org/
 [IGN map service]: https://geoservices.ign.fr

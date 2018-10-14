@@ -33,7 +33,7 @@ if (version_compare($oldVersion, '3.0.2', '<')) {
         try {
             $customVocab = $api
                 ->read('custom_vocabs', ['label' => $label])->getContent();
-        } catch (NotFoundException $e) {
+        } catch (\Omeka\Api\Exception\NotFoundException $e) {
             throw new \Omeka\Module\Exception\ModuleCannotInstallException(
                 sprintf(
                     'The custom vocab named "%s" is not available.', // @translate

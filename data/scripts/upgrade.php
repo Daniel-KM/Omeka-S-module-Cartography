@@ -145,3 +145,66 @@ if (version_compare($oldVersion, '3.0.3-alpha', '<')) {
         ], [], ['isPartial' => true]);
     }
 }
+
+if (version_compare($oldVersion, '3.0.4-alpha', '<')) {
+    // Add the first media id to all geometries that are not a "locating";
+    // directly related to item.
+
+    $sqlSelect = <<<'SQL'
+SELECT id FROM item;
+SQL;
+    $stmt = $connection->query($sqlSelect);
+    while ($id = $stmt->fetchColumn()) {
+        $item = $api->read('items', $id)->getContent();
+
+        // The item should have an image file.
+        $media = $item->primaryMedia();
+        if (empty($media) || !$media->hasOriginal() || strpos($media->mediaType(), 'image/') !== 0) {
+            continue;
+        }
+
+        $annotations = $api->search('annotations', ['resource_id' => $id])->getContent();
+        foreach ($annotations as $annotation) {
+            $motivatedBy = $annotation->value('oa:motivatedBy');
+            if ($motivatedBy && $motivatedBy->value() === 'locating') {
+                continue;
+            }
+
+            $target = $annotation->primaryTarget();
+            if (empty($target)) {
+                continue;
+            }
+
+            // Update geometries only.
+            $format = $target->value('dcterms:format');
+            if (empty($format) || $format->value() !== 'application/wkt') {
+                continue;
+            }
+
+            $values = $target->value('rdf:value', ['all' => true, 'default' => []]);
+            if (!count($values)) {
+                continue;
+            }
+            foreach ($values as $value) {
+                // Don't modify if it has already a media id.
+                if ($value->type() === 'resource') {
+                    continue 2;
+                }
+            }
+
+            $data = [];
+            // Save the media id first.
+            $data['rdf:value'] = [[
+                'property_id' => $value->property()->id(),
+                'type' => 'resource',
+                'value_resource_id' => $media->id(),
+            ]];
+            foreach ($values as $value) {
+                $data['rdf:value'][] = $value->jsonSerialize();
+            }
+
+            // This is an annotation "describe", without media id, so add it.
+            $api->update('annotation_targets', $target->id(), $data, [], ['isPartial' => true, 'collectionAction' => 'append']);
+        }
+    }
+}

@@ -14,9 +14,8 @@ $(document).ready( function() {
  * @return array
  */
 var fetchGeometries = function(identifier) {
-    // oa:motivatedBy eq locating.
     var url = window.location.origin + basePath + '/admin/cartography/' + identifier + '/geometries'
-        + '?property[0][joiner]=and&property[0][property]=oa:motivatedBy&property[0][type]=eq&property[0][text]=locating';
+        + '?mediaId=0';
 
     $.get(url, null,
         function(data, textStatus, jqxhr) {

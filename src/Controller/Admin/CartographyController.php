@@ -522,17 +522,26 @@ class CartographyController extends AbstractActionController
      * Prepare all geometries for a resource.
      *
      * @param AbstractResourceEntityRepresentation $resource
-     * @param array $query Query to specify the geometries.
+     * @param array $query Query to specify the geometries. May have optional
+     * argument "mediaId": if integer greater than or equal to 1, get only the
+     * geometries for that media; if equal to 0, get only geometries without
+     * media id; if equal to -1, get all geometries with a media id; if not set,
+     * get all geometries, whatever they have a media id or not.
      * @return array Associative array of geometries by annotation id.
      */
     protected function fetchGeometries(AbstractResourceEntityRepresentation $resource, array $query = [])
     {
         $geometries = [];
 
+        $mediaId = array_key_exists('mediaId', $query)
+            ? (int) $query['mediaId']
+            : null;
+
         /** @var \Annotate\Api\Representation\AnnotationRepresentation[] $annotations */
         $annotations = $this->resourceAnnotations($resource, $query);
         foreach ($annotations as $annotation) {
             // Currently, only one target by annotation.
+            // Most of the properties of the annotation are on the target.
             $target = $annotation->primaryTarget();
             if (!$target) {
                 continue;
@@ -558,6 +567,18 @@ class CartographyController extends AbstractActionController
 
             if (empty($geometry['wkt'])) {
                 continue;
+            }
+
+            if ($mediaId === 0 && !empty($geometry['mediaId'])) {
+                continue;
+            }
+            if ($mediaId) {
+                if (empty($geometry['mediaId'])) {
+                    continue;
+                }
+                if ($mediaId > 0 && $mediaId !== $geometry['mediaId']) {
+                    continue;
+                }
             }
 
             $styleClass = $target->value('oa:styleClass');

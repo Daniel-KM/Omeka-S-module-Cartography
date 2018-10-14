@@ -181,7 +181,7 @@ var deleteGeometry = function(layer) {
  * Allows to create editable layer from existing geometries.
  *
  * @see https://gis.stackexchange.com/questions/203540/how-to-edit-an-existing-layer-using-leaflet/203773#203773
- * @todo Fix: the existing groups are not draggable (but the newly created are).
+ * @todo Fix: the existing groups are not draggable (but the newly created were).
  */
 var addNonGroupLayers = function(sourceLayer, targetGroup) {
     if (sourceLayer instanceof L.LayerGroup) {
@@ -229,16 +229,8 @@ var currentMediaId = function() {
  * @todo Fit map bounds.
  */
 var setView = function() {
-    if (defaultBounds) {
-        map.fitBounds(defaultBounds);
-    } else {
-//        var bounds = markers.getBounds();
-//        if (bounds.isValid()) {
-//            map.fitBounds(bounds);
-//        } else {
-//            map.setView([20, 0], 2)
-//        }
-    }
+    var bounds;
+    // Fit bounds from the current image layer.
 };
 
 /* Initialization */
@@ -257,10 +249,6 @@ var map = L.map('cartography-media', {
 map.setView([0, 0], 0);
 
 var mapMoved = false;
-
-//TODO Create automatically the bounds from geometries.
-var defaultBounds = null;
-// defaultBounds = [southWest, northEast];
 
 //Add layers and controls to the map.
 var baseMaps = {};
@@ -308,8 +296,6 @@ map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
 map.addControl(drawControl);
 map.addLayer(drawnItems);
 
-setView();
-
 /* Style Editor (https://github.com/dwilhelm89/Leaflet.StyleEditor) */
 // Initialize the StyleEditor
 var styleEditor = L.control.styleEditor({
@@ -326,6 +312,8 @@ var styleEditor = L.control.styleEditor({
     useGrouping: false,
 });
 map.addControl(styleEditor);
+
+setView();
 
 /* Manage geometries. */
 

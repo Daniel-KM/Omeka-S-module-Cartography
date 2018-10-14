@@ -23,10 +23,9 @@ var fetchGeometries = function(identifier) {
                 alert(data.message);
                 return;
             }
-            geometriesData = data.geometries;
 
-            // Handle existing geometries.
-            $.each(geometriesData, function(index, data) {
+            // Display geometries.
+            $.each(data.geometries, function(index, data) {
                  var geojson = Terraformer.WKT.parse(data['wkt']);
                  var options = data['options'] ? data['options'] : {};
                  options.annotationIdentifier = data['id'];
@@ -179,7 +178,7 @@ var deleteGeometry = function(layer) {
  * Allows to create editable layer from existing geometries.
  *
  * @see https://gis.stackexchange.com/questions/203540/how-to-edit-an-existing-layer-using-leaflet/203773#203773
- * @todo Fix: the existing groups are not draggable (but the newly created are).
+ * @todo Fix: the existing groups are not draggable (but the newly created were).
  */
 var addNonGroupLayers = function(sourceLayer, targetGroup) {
     if (sourceLayer instanceof L.LayerGroup) {
@@ -321,8 +320,6 @@ if (!wmsLayers.length) {
 
 // Geometries are displayed and edited on the drawnItems layer.
 var drawnItems = new L.FeatureGroup();
-// TODO Remove all references to markers of the standard mapping map.
-//var markers = new L.FeatureGroup();
 var geoSearchControl = new window.GeoSearch.GeoSearchControl({
     provider: new window.GeoSearch.OpenStreetMapProvider,
     showMarker: false,
@@ -347,11 +344,9 @@ map.addControl(drawControl);
 map.addControl(geoSearchControl);
 map.addControl(new L.control.scale({'position':'bottomleft','metric':true,'imperial':false}));
 // TODO Fix and add the fit bound control with geometries, not markers.
-//map.addControl(new L.Control.FitBounds(markers));
 
 map.addLayer(baseMaps['Satellite']);
 map.addLayer(drawnItems);
-// map.addLayer(markers);
 
 /* Style Editor (https://github.com/dwilhelm89/Leaflet.StyleEditor) */
 // Initialize the StyleEditor
@@ -381,10 +376,6 @@ if (typeof openWmsLayer !== 'undefined' && openWmsLayer) {
         handleOpacityControl(e.layer, e.name);
     });
 }
-
-map.on('paste:layer-created', function (e) {
-    map.addLayer(e.layer);
-});
 
 setView();
 
@@ -422,6 +413,10 @@ map.on('styleeditor:changed', function(element){
 // Handle paste wkt/geojson.
 map.on('paste:layer-created', function(element){
     addGeometry(element.layer);
+});
+
+map.on('paste:layer-created', function(element) {
+    map.addLayer(element.layer);
 });
 
 /* Various methods. */

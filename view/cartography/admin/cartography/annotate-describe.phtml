@@ -2,7 +2,7 @@
 /** @var \Zend\View\Renderer\PhpRenderer $this */
 $translate = $this->plugin('translate');
 
-if (!empty($image)):
+if (count($images)):
 
 // The module is independant from the module Mapping, but some js are the same,
 // so it is recommenced to choose one module or the other.
@@ -42,7 +42,7 @@ $(document).ready( function() {
 $script = 'var basePath = ' . json_encode($this->basePath(), 320) . ';
 var resourceId = ' . $resource->id() . ';
 var geometriesMedia = ' . json_encode($geometries, 320) . ';
-var mainImage = ' . json_encode($image, 320) . ';
+var mainImages = ' . json_encode($images, 320) . ';
 var oaMotivatedBySelect = ' . json_encode($oaMotivatedBySelect, 320) . ';
 var oaHasPurposeSelect = ' . json_encode($oaHasPurposeSelect, 320) . ';
 var cartographyUncertaintySelect = ' . json_encode($cartographyUncertaintySelect, 320) . ';'
@@ -55,7 +55,7 @@ endif;
 ?>
 <fieldset id="describe" class="section">
     <legend id="cartography-legend"><?php echo $translate('Annotate an image'); ?></legend>
-<?php if (empty($image)): ?>
+<?php if (empty($images)): ?>
     <p><?php echo $translate('There is no image attached to this resource.'); ?></p>
 <?php else: ?>
     <div id="cartography-media" style="height:800px;"></div>

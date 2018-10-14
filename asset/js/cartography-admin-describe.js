@@ -50,21 +50,22 @@ var addGeometry = function(layer, identifier) {
     };
 
     $.post(url, data,
-    function(data, textStatus, jqxhr) {
-        // No json means error, and the only non-json error is redirect to login.
-        if (!data.result) {
-            alert('Log in to save the geometry.');
-            return;
-        }
-        identifier = data.result.id;
-        layer.annotationIdentifier = identifier;
-        layer.options.annotationIdentifier = identifier;
-        drawnItems.addLayer(layer);
-    })
-    .fail(function(jqxhr) {
-        var message = JSON.parse(jqxhr.responseText).message || 'Unable to save the geometry.';
-        // The deletion is automatic when not recorded.
-    });
+        function(data, textStatus, jqxhr) {
+            // No json means error, and the only non-json error is redirect to login.
+            if (!data.result) {
+                alert('Log in to save the geometry.');
+                return;
+            }
+            identifier = data.result.id;
+            layer.annotationIdentifier = identifier;
+            layer.options.annotationIdentifier = identifier;
+            drawnItems.addLayer(layer);
+        })
+        .fail(function(jqxhr) {
+            var message = JSON.parse(jqxhr.responseText).message || 'Unable to save the geometry.';
+            alert(message);
+            // The deletion is automatic when not recorded.
+        });
 };
 
 /**
@@ -97,18 +98,18 @@ var editGeometry = function(layer) {
     };
 
     $.post(url, data,
-    function(data, textStatus, jqxhr) {
-        // Not json means error, and the only non-json error is redirect to login.
-        if (!data.result) {
-            alert('Log in to edit the geometry.');
-            return;
-        }
-        console.log('Geometry updated.');
-    })
-    .fail(function(jqxhr) {
-        var message = JSON.parse(jqxhr.responseText).message || 'Unable to update the geometry.';
-        alert(message);
-    });
+        function(data, textStatus, jqxhr) {
+            // Not json means error, and the only non-json error is redirect to login.
+            if (!data.result) {
+                alert('Log in to edit the geometry.');
+                return;
+            }
+            console.log('Geometry updated.');
+        })
+        .fail(function(jqxhr) {
+            var message = JSON.parse(jqxhr.responseText).message || 'Unable to update the geometry.';
+            alert(message);
+        });
 }
 
 /**
@@ -125,18 +126,18 @@ var deleteGeometry = function(layer) {
     }
 
     $.post(url, {id: identifier},
-    function(data, textStatus, jqxhr) {
-        // Not json means error, and the only non-json error is redirect to login.
-        if (!data.result) {
-            alert('Log in to delete the geometry.');
-            return;
-        }
-        console.log('Geometry deleted.')
-    })
-    .fail(function(jqxhr) {
-        var message = JSON.parse(jqxhr.responseText).message || 'Unable to delete the geometry.';
-        alert(message);
-    });
+        function(data, textStatus, jqxhr) {
+            // Not json means error, and the only non-json error is redirect to login.
+            if (!data.result) {
+                alert('Log in to delete the geometry.');
+                return;
+            }
+            console.log('Geometry deleted.')
+        })
+        .fail(function(jqxhr) {
+            var message = JSON.parse(jqxhr.responseText).message || 'Unable to delete the geometry.';
+            alert(message);
+        });
 }
 
 /**
@@ -198,59 +199,46 @@ var mappingMap = $('#cartography-media');
 // TODO Fetch existing values instead of reading.
 var geometriesData = geometriesMedia;
 
-// Add layers and controls to the map.
+// Initialize the map and set default view.
+var map = L.map('cartography-media', {
+    // TODO Compute the min/max zoom according to images?
+    minZoom: -20,
+    maxZoom: 20,
+    zoom: 0,
+    center: [0, 0],
+    maxBoundsViscosity: 1,
+    crs: L.CRS.Simple,
+    pasteControl: true,
+});
+map.setView([0, 0], 0);
 
-// TODO Manage only the case where there is a url (this js is not loaded without it).
-if (mainImage.url) {
-    // Using leaflet.js to pan and zoom a big image.
-    // TODO Compute the max zoom according to the original image.
-    // Example:
-    //zoom 4 full size image is 4608px * 3456px
-    //zoom 3 2304 * 1728
-    //zoom 2 1152 * 864
-    //zoom 1 576 * 432
-    var maxZoom = 4;
-    var topRight = [mainImage.size[1] / maxZoom, mainImage.size[0] / maxZoom];
-    var map = L.map('cartography-media', {
-      minZoom: 1,
-      maxZoom: maxZoom,
-      zoom: 1,
-      center: [0, 0],
-      maxBoundsViscosity: 1,
-      crs: L.CRS.Simple,
-      pasteControl: true,
-    });
-    var image = L.imageOverlay(mainImage.url, [[0, 0], topRight]);
-    image.addTo(map);
-    map.setMaxBounds(new L.LatLngBounds([0, 0], topRight));
+var mapMoved = false;
 
-    var mapMoved = false;
-    var defaultBounds = null;
+//TODO Create automatically the bounds from geometries.
+var defaultBounds = null;
+// defaultBounds = [southWest, northEast];
 
-} else {
-    // Initialize the map and set default view.
-    var map = L.map('cartography-media', {
-        pasteControl: true,
-    });
-    map.setView([20, 0], 2);
-    var mapMoved = false;
+//Add layers and controls to the map.
+var baseMaps = {};
+$.each(mainImages, function(index, mainImage) {
+    // Compute image edges as positive coordinates.
+    // TODO Choose top left as 0.0 for still images?
+    var bottomLeft = map.unproject([0, -mainImage.size[1]], 0);
+    var topRight = map.unproject([mainImage.size[0], 0], 0);
+    var bounds = new L.LatLngBounds(bottomLeft, topRight);
+    var image = L.imageOverlay(mainImage.url, bounds);
+    baseMaps['Image #' + (index + 1)] = image;
+});
 
-    // TODO Create automatically the bounds from geometries.
-    var defaultBounds = null;
-    // defaultBounds = [southWest, northEast];
-
-    var baseMaps = {
-        'Streets': L.tileLayer.provider('OpenStreetMap.Mapnik'),
-        'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'),
-        'Satellite': L.tileLayer.provider('Esri.WorldImagery'),
-        'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief'),
-    };
+if (Object.keys(baseMaps).length > 1) {
     var layerControl = L.control.layers(baseMaps);
+    map.addControl(new L.Control.Layers(baseMaps));
 }
+baseMaps[Object.keys(baseMaps)[0]].addTo(map);
+// map.setMaxBounds(bounds);
+
 // Geometries are displayed and edited on the drawnItems layer.
 var drawnItems = new L.FeatureGroup();
-// TODO Remove all references to markers of the standard mapping map.
-//var markers = new L.FeatureGroup();
 var geoSearchControl = new window.GeoSearch.GeoSearchControl({
     provider: new window.GeoSearch.OpenStreetMapProvider,
     showMarker: false,
@@ -270,19 +258,10 @@ var drawControl = new L.Control.Draw({
         remove: true
     }
 });
-// map.addControl(layerControl);
 map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
 map.addControl(drawControl);
 map.addControl(geoSearchControl);
-if (baseMaps) {
-    map.addControl(new L.Control.Layers(baseMaps));
-// TODO Fix and add the fit bound control with geometries, not markers.
-//map.addControl(new L.Control.FitBounds(markers));
-
-    map.addLayer(baseMaps['Satellite']);
-}
 map.addLayer(drawnItems);
-// map.addLayer(markers);
 
 map.on('paste:layer-created', function (e) {
     map.addLayer(e.layer);

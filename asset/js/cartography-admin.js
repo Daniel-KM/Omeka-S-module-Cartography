@@ -49,21 +49,22 @@ var addGeometry = function(layer, identifier) {
     };
 
     $.post(url, data,
-    function(data, textStatus, jqxhr) {
-        // No json means error, and the only non-json error is redirect to login.
-        if (!data.result) {
-            alert('Log in to save the geometry.');
-            return;
-        }
-        identifier = data.result.id;
-        layer.annotationIdentifier = identifier;
-        layer.options.annotationIdentifier = identifier;
-        drawnItems.addLayer(layer);
-    })
-    .fail(function(jqxhr) {
-        var message = JSON.parse(jqxhr.responseText).message || 'Unable to save the geometry.';
-        // The deletion is automatic when not recorded.
-    });
+        function(data, textStatus, jqxhr) {
+            // No json means error, and the only non-json error is redirect to login.
+            if (!data.result) {
+                alert('Log in to save the geometry.');
+                return;
+            }
+            identifier = data.result.id;
+            layer.annotationIdentifier = identifier;
+            layer.options.annotationIdentifier = identifier;
+            drawnItems.addLayer(layer);
+        })
+        .fail(function(jqxhr) {
+            var message = JSON.parse(jqxhr.responseText).message || 'Unable to save the geometry.';
+            alert(message);
+            // The deletion is automatic when not recorded.
+        });
 };
 
 /**
@@ -97,18 +98,18 @@ var editGeometry = function(layer) {
     };
 
     $.post(url, data,
-    function(data, textStatus, jqxhr) {
-        // Not json means error, and the only non-json error is redirect to login.
-        if (!data.result) {
-            alert('Log in to edit the geometry.');
-            return;
-        }
-        console.log('Geometry updated.');
-    })
-    .fail(function(jqxhr) {
-        var message = JSON.parse(jqxhr.responseText).message || 'Unable to update the geometry.';
-        alert(message);
-    });
+        function(data, textStatus, jqxhr) {
+            // Not json means error, and the only non-json error is redirect to login.
+            if (!data.result) {
+                alert('Log in to edit the geometry.');
+                return;
+            }
+            console.log('Geometry updated.');
+        })
+        .fail(function(jqxhr) {
+            var message = JSON.parse(jqxhr.responseText).message || 'Unable to update the geometry.';
+            alert(message);
+        });
 }
 
 /**
@@ -125,18 +126,18 @@ var deleteGeometry = function(layer) {
     }
 
     $.post(url, {id: identifier},
-    function(data, textStatus, jqxhr) {
-        // Not json means error, and the only non-json error is redirect to login.
-        if (!data.result) {
-            alert('Log in to delete the geometry.');
-            return;
-        }
-        console.log('Geometry deleted.')
-    })
-    .fail(function(jqxhr) {
-        var message = JSON.parse(jqxhr.responseText).message || 'Unable to delete the geometry.';
-        alert(message);
-    });
+        function(data, textStatus, jqxhr) {
+            // Not json means error, and the only non-json error is redirect to login.
+            if (!data.result) {
+                alert('Log in to delete the geometry.');
+                return;
+            }
+            console.log('Geometry deleted.')
+        })
+        .fail(function(jqxhr) {
+            var message = JSON.parse(jqxhr.responseText).message || 'Unable to delete the geometry.';
+            alert(message);
+        });
 }
 
 /**

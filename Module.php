@@ -463,19 +463,28 @@ class Module extends AbstractModule
         if (in_array('describe', $displayTab)) {
             $config = $services->get('Config');
             $this->basePath = $config['file_store']['local']['base_path'] ?: (OMEKA_PATH . '/files');
-            // Add the url and the size of the file.
-            $media = $resource->primaryMedia();
-            $image = null;
-            if ($media && $media->hasOriginal()) {
-                if (strtok($media->mediaType(), '/') === 'image') {
-                    $size = $this->_getImageSize($media, 'original');
-                    if ($size) {
-                        $image['url'] = $media->originalUrl();
-                        $image['size'] = array_values($size);
-                    }
+
+            $images = [];
+            foreach ($resource->media() as $media) {
+                // Add the url and the size of the file.
+                if (!$media->hasOriginal()) {
+                    continue;
                 }
+                // TODO Manage tiles, iiif, etc.
+                if (strtok($media->mediaType(), '/') !== 'image') {
+                    continue;
+                }
+                $size = $this->_getImageSize($media, 'original');
+                if (!$size) {
+                    continue;
+                }
+                $image = [];
+                $image['url'] = $media->originalUrl();
+                $image['size'] = array_values($size);
+                $images[] = $image;
             }
-            if ($image) {
+
+            if ($images) {
                 $query = [
                     'property' => [
                         [
@@ -490,7 +499,7 @@ class Module extends AbstractModule
                 echo $view->partial('cartography/admin/cartography/annotate-describe', [
                     'resource' => $resource,
                     'geometries' => $geometries,
-                    'image' => $image,
+                    'images' => $images,
                     'oaMotivatedBySelect' => $oaMotivatedBy,
                     'oaHasPurposeSelect' => $oaHasPurpose,
                     'cartographyUncertaintySelect' => $cartographyUncertainty,
@@ -499,7 +508,7 @@ class Module extends AbstractModule
             } else {
                 echo $view->partial('cartography/admin/cartography/annotate-describe', [
                     'resource' => $resource,
-                    'image' => $image,
+                    'images' => $images,
                 ]);
             }
         }

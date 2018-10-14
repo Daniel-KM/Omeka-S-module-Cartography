@@ -60,11 +60,9 @@ $jsLocate = empty($jsLocate) ? '' : '
 $(document).ready( function() {
 ' . $jsLocate . '
 });';
-// TODO Fetch geometries dynamically.
 $script = 'var basePath = ' . json_encode($this->basePath(), 320) . ';
 var resourceId = ' . $resource->id() . ';
 var wmsLayers = ' . json_encode($wmsLayers, 320) . ';
-var geometries = ' . json_encode($geometries, 320) . ';
 var oaHasPurposeSelect = ' . json_encode($oaHasPurposeSelect, 320) . ';
 var oaMotivatedBySelect = ' . json_encode($oaMotivatedBySelect, 320) . ';
 var cartographyUncertaintySelect = ' . json_encode($cartographyUncertaintySelect, 320) . ';'

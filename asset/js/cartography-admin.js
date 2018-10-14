@@ -9,6 +9,42 @@
 $(document).ready( function() {
 
 /**
+ * Fetch geometries for a resource.
+ *
+ * @return array
+ */
+var fetchGeometries = function(identifier) {
+    // oa:motivatedBy eq locating.
+    var url = window.location.origin + basePath + '/admin/cartography/' + identifier + '/geometries'
+        + '?property[0][joiner]=and&property[0][property]=oa:motivatedBy&property[0][type]=eq&property[0][text]=locating';
+
+    $.get(url, null,
+        function(data, textStatus, jqxhr) {
+            if (data.status === 'error') {
+                alert(data.message);
+                return;
+            }
+            geometriesData = data.geometries;
+
+            // Handle existing geometries.
+            $.each(geometriesData, function(index, data) {
+                 var geojson = Terraformer.WKT.parse(data['wkt']);
+                 var options = data['options'] ? data['options'] : {};
+                 options.annotationIdentifier = data['id'];
+                 var layer = L.geoJson(geojson, options);
+                 addGeometry(layer, data['id']);
+                 layer.annotationIdentifier = data['id'];
+                 layer.options.annotationIdentifier = data['id'];
+            });
+
+        })
+        .fail(function(jqxhr) {
+            var message = JSON.parse(jqxhr.responseText).message || 'Unable to fetch the geometries.';
+            alert(message);
+        });
+}
+
+/**
  * Add a geometry to the map.
  *
  * @param layer
@@ -192,12 +228,6 @@ var setView = function() {
 
 /* Initialization */
 
-// Get map data.
-var mappingMap = $('#cartography-map');
-// Geometries are currently defined as a simple variable.
-// TODO Fetch existing values instead of reading.
-var geometriesData = geometries;
-
 // Initialize the map and set default view.
 var map = L.map('cartography-map', {
     pasteControl: true,
@@ -359,20 +389,12 @@ map.on('paste:layer-created', function (e) {
 
 setView();
 
-/* Manage edition of geometries. */
+/* Manage geometries. */
 
 // Handle existing geometries.
-$.each(geometriesData, function(index, data) {
-    var geojson = Terraformer.WKT.parse(data['wkt']);
-    var options = data['options'] ? data['options'] : {};
-    options.annotationIdentifier = data['id'];
-    var layer = L.geoJson(geojson, options);
-    addGeometry(layer, data['id']);
-    layer.annotationIdentifier = data['id'];
-    layer.options.annotationIdentifier = data['id'];
-});
+fetchGeometries(resourceId);
 
-//Handle adding new geometries.
+// Handle adding new geometries.
 map.on(L.Draw.Event.CREATED, function (element) {
     addGeometry(element.layer);
 });

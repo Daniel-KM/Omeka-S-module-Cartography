@@ -38,17 +38,14 @@ $jsDescribe = empty($jsDescribe) ? '' : '
 $(document).ready( function() {
 ' . $jsDescribe . '
 });';
-// TODO Fetch geometries dynamically.
 $script = 'var basePath = ' . json_encode($this->basePath(), 320) . ';
 var resourceId = ' . $resource->id() . ';
-var geometriesMedia = ' . json_encode($geometries, 320) . ';
 var mainImages = ' . json_encode($images, 320) . ';
 var oaMotivatedBySelect = ' . json_encode($oaMotivatedBySelect, 320) . ';
 var oaHasPurposeSelect = ' . json_encode($oaHasPurposeSelect, 320) . ';
 var cartographyUncertaintySelect = ' . json_encode($cartographyUncertaintySelect, 320) . ';'
     . $jsDescribe;
 $this->headScript()->appendScript($script);
-// TODO Fetch the geometries dynamically to allow to manage one js.
 $this->headScript()->appendFile($this->assetUrl('js/cartography-admin-describe.js', 'Cartography'));
 
 endif;

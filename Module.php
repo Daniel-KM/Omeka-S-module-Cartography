@@ -485,20 +485,8 @@ class Module extends AbstractModule
             }
 
             if ($images) {
-                $query = [
-                    'property' => [
-                        [
-                            'joiner' => 'and',
-                            'property' => 'oa:motivatedBy',
-                            'type' => 'neq',
-                            'text' => 'locating',
-                        ],
-                    ],
-                ];
-                $geometries = $this->fetchGeometries($resource, $query);
                 echo $view->partial('cartography/admin/cartography/annotate-describe', [
                     'resource' => $resource,
-                    'geometries' => $geometries,
                     'images' => $images,
                     'oaMotivatedBySelect' => $oaMotivatedBy,
                     'oaHasPurposeSelect' => $oaHasPurpose,
@@ -535,22 +523,9 @@ class Module extends AbstractModule
                 }
             }
 
-            $query = [
-                'property' => [
-                    [
-                        'joiner' => 'and',
-                        'property' => 'oa:motivatedBy',
-                        'type' => 'eq',
-                        'text' => 'locating',
-                    ],
-                ],
-            ];
-            $geometries = $this->fetchGeometries($resource, $query);
-
             echo $view->partial('cartography/admin/cartography/annotate-locate', [
                 'resource' => $resource,
                 'wmsLayers' => $wmsLayers,
-                'geometries' => $geometries,
                 'oaHasPurposeSelect' => $oaHasPurpose,
                 'cartographyUncertaintySelect' => $cartographyUncertainty,
                 'jsLocate' => $settings->get('cartography_js_locate', ''),
@@ -558,77 +533,6 @@ class Module extends AbstractModule
                 'oaMotivatedBySelect' => $oaMotivatedBy,
             ]);
         }
-    }
-
-    /**
-     * Prepare all geometries for a resource.
-     *
-     * @todo Factorize with Cartography plugin and clean the process (make it available dynamically).
-     *
-     * @param AbstractResourceEntityRepresentation $resource
-     * @param array $query
-     * @return array
-     */
-    protected function fetchGeometries(AbstractResourceEntityRepresentation $resource, array $query)
-    {
-        $geometries = [];
-
-        $services = $this->getServiceLocator();
-        $controllerPlugins = $services->get('ControllerPluginManager');
-        /** @var \Annotate\Mvc\Controller\Plugin\ResourceAnnotations $resourceAnnotationsPlugin */
-        $resourceAnnotationsPlugin = $controllerPlugins->get('resourceAnnotations');
-        /** @var \Annotate\Api\Representation\AnnotationRepresentation[] $annotations */
-        $annotations = $resourceAnnotationsPlugin($resource, $query);
-
-        foreach ($annotations as $annotation) {
-            $target = $annotation->primaryTarget();
-            if (!$target) {
-                continue;
-            }
-
-            $format = $target->value('dcterms:format');
-            if (empty($format)) {
-                continue;
-            }
-
-            $geometry = [];
-
-            $format = $format->value();
-            if ($format === 'application/wkt') {
-                $value = $target->value('rdf:value');
-                $geometry['id'] = $annotation->id();
-                $geometry['wkt'] = $value ? $value->value() : null;
-            }
-
-            $styleClass = $target->value('oa:styleClass');
-            if ($styleClass && $styleClass->value() === 'leaflet-interactive') {
-                $options = $annotation->value('oa:styledBy');
-                if ($options) {
-                    $options = json_decode($options->value(), true);
-                    if (!empty($options['leaflet-interactive'])) {
-                        $geometry['options'] = $options['leaflet-interactive'];
-                    }
-                }
-            }
-
-            $value = $annotation->value('oa:motivatedBy');
-            $geometry['options']['oaMotivatedBy'] = $value ? $value->value() : '';
-
-            $body = $annotation->primaryBody();
-            if ($body) {
-                $value = $body->value('rdf:value');
-                $geometry['options']['popupContent'] = $value ? $value->value() : '';
-                $value = $body->value('oa:hasPurpose');
-                $geometry['options']['oaHasPurpose'] = $value ? $value->value() : '';
-            }
-
-            $value = $target->value('cartography:uncertainty');
-            $geometry['options']['cartographyUncertainty'] = $value ? $value->value() : '';
-
-            $geometries[$annotation->id()] = $geometry;
-        }
-
-        return $geometries;
     }
 
     /**

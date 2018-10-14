@@ -11,6 +11,38 @@ use Zend\View\Model\JsonModel;
 class CartographyController extends AbstractActionController
 {
     /**
+     * Get the geometries for a resource.
+     *
+     * @return JsonModel
+     */
+    public function geometriesAction()
+    {
+        $id = $this->params('id');
+        if (!$id) {
+            return new JsonModel([
+                'status' => 'error',
+                'message' => 'Not found.',
+            ]);
+        }
+        $resource = $this->api()->read('resources', $id)->getContent();
+        if (!$resource) {
+            return new JsonModel([
+                'status' => 'error',
+                'message' => 'Not found.',
+            ]);
+        }
+
+        $query = $this->params()->fromQuery();
+        $geometries = $this->fetchGeometries($resource, $query);
+
+        return new JsonModel([
+            'status' => 'success',
+            'resourceId' => $id,
+            'geometries' => $geometries,
+        ]);
+    }
+
+    /**
      * Annotate a resource via ajax.
      *
      * @todo How to manage options? Some are related to target (quality of the
@@ -451,6 +483,89 @@ class CartographyController extends AbstractActionController
             'status' => 'success',
             'result' => true,
         ]);
+    }
+
+    /**
+     * Prepare all geometries for a resource.
+     *
+     * @param AbstractResourceEntityRepresentation $resource
+     * @param array $query Query to specify the geometries.
+     * @return array Associative array of geometries by annotation id.
+     */
+    protected function fetchGeometries(AbstractResourceEntityRepresentation $resource, array $query = [])
+    {
+        $geometries = [];
+
+        /** @var \Annotate\Api\Representation\AnnotationRepresentation[] $annotations */
+        $annotations = $this->resourceAnnotations($resource, $query);
+        foreach ($annotations as $annotation) {
+            // Currently, only one target by annotation.
+            $target = $annotation->primaryTarget();
+            if (!$target) {
+                continue;
+            }
+
+            $format = $target->value('dcterms:format');
+            if (empty($format)) {
+                continue;
+            }
+
+            $geometry = [];
+            $geometry['id'] = $annotation->id();
+
+            $format = $format->value();
+            if ($format === 'application/wkt') {
+                $value = $target->value('rdf:value');
+                $geometry['wkt'] = $value ? $value->value() : null;
+            }
+
+            $styleClass = $target->value('oa:styleClass');
+            if ($styleClass && $styleClass->value() === 'leaflet-interactive') {
+                $options = $annotation->value('oa:styledBy');
+                if ($options) {
+                    $options = json_decode($options->value(), true);
+                    if (!empty($options['leaflet-interactive'])) {
+                        $geometry['options'] = $options['leaflet-interactive'];
+                    }
+                }
+            }
+
+            $value = $annotation->value('oa:motivatedBy');
+            $geometry['options']['oaMotivatedBy'] = $value ? $value->value() : '';
+
+            // Links (they don't have textual description).
+            if ($geometry['options']['oaMotivatedBy'] === 'linking') {
+                $values = $annotation->value('oa:hasBody', ['type' => 'resource', 'all' => true, 'default' => []]);
+                foreach ($values as $value) {
+                    /** @var \Omeka\Api\Representation\ItemRepresentation $valueResource */
+                    $valueResource = $value->valueResource();
+                    $geometry['options']['oaLinking'][] = [
+                        'id' => $valueResource->id(),
+                        'title' => $valueResource->displayTitle(),
+                        // TODO Use linkPretty() (and use it in js).
+                        'url' => $valueResource->adminUrl(),
+                    ];
+                }
+            }
+            // Textual bodies.
+            // TODO There may be multiple bodies.
+            else {
+                $body = $annotation->primaryBody();
+                if ($body) {
+                    $value = $body->value('rdf:value');
+                    $geometry['options']['popupContent'] = $value ? $value->value() : '';
+                    $value = $body->value('oa:hasPurpose');
+                    $geometry['options']['oaHasPurpose'] = $value ? $value->value() : '';
+                }
+            }
+
+            $value = $target->value('cartography:uncertainty');
+            $geometry['options']['cartographyUncertainty'] = $value ? $value->value() : '';
+
+            $geometries[$annotation->id()] = $geometry;
+        }
+
+        return $geometries;
     }
 
     protected function propertyId($term)

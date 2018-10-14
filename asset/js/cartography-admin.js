@@ -74,8 +74,8 @@ var addGeometry = function(layer, identifier) {
         // Identifier is always empty.
         id : identifier,
         resourceId: resourceId,
-        // "locating" is a not standard motivation.
-        oaMotivatedBy: 'locating',
+        mediaId: null,
+        oaMotivatedBy: 'highlighting',
         wkt: wkt,
         // Options are saved only when updated: some people don't need styles
         // so it will be lighter in that case.
@@ -126,8 +126,8 @@ var editGeometry = function(layer) {
     var data = {
         id: identifier,
         wkt: wkt,
-        // "locating" is a not standard motivation.
-        oaMotivatedBy: 'locating',
+        mediaId: null,
+        oaMotivatedBy: 'highlighting',
         options: layer.options
     };
 

@@ -71,10 +71,6 @@ $this->headScript()->appendScript($script);
 $this->headScript()->appendFile($this->assetUrl('js/cartography-admin.js', 'Cartography'));
 
 ?>
-<?php // TODO Find a better way to disable location motivation (via module config and js). ?>
-<style>
-#locate .editor-enabled > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) {display:none;}
-</style>
 <fieldset id="locate" class="section">
     <legend id="cartography-legend"><?php echo $translate('Geolocate item'); ?></legend>
     <div id="cartography-map" style="height:800px;"></div>

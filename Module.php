@@ -79,7 +79,6 @@ class Module extends AbstractModule
 
         // Complete the annotation custom vocabularies.
         $customVocabPaths = [
-            __DIR__ . '/data/custom-vocabs/Cartography-Body-oa-motivatedBy.json',
             __DIR__ . '/data/custom-vocabs/Cartography-Target-dcterms-format.json',
             __DIR__ . '/data/custom-vocabs/Cartography-Target-rdf-type.json',
         ];

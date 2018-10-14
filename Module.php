@@ -479,6 +479,7 @@ class Module extends AbstractModule
                     continue;
                 }
                 $image = [];
+                $image['id'] = $media->id();
                 $image['url'] = $media->originalUrl();
                 $image['size'] = array_values($size);
                 $images[] = $image;

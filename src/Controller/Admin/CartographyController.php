@@ -96,6 +96,10 @@ class CartographyController extends AbstractActionController
             if (!$resource) {
                 return $this->jsonError('Resource not found.', Response::STATUS_CODE_404); // @translate
             }
+
+            // TODO Remove this value, since it cannot change.
+            $options['mediaId'] = empty($data['mediaId']) ? null : $data['mediaId'];
+
             return $this->updateAnnotation($resource, $geometry, $options);
         }
 
@@ -106,6 +110,9 @@ class CartographyController extends AbstractActionController
         // Default motivation for the module Cartography is "highlighting".
         // Note: it can be bypassed by data options.
         $oaMotivatedBy = empty($data['oaMotivatedBy']) ? 'highlighting' : $data['oaMotivatedBy'];
+
+        // Save the media id too to manage multiple media by image.
+        $options['mediaId'] = empty($data['mediaId']) ? null : $data['mediaId'];
 
         $resourceId = $data['resourceId'];
         return $this->createAnnotation($resourceId, $geometry, $options, $oaMotivatedBy);
@@ -193,31 +200,51 @@ class CartographyController extends AbstractActionController
                             'value_resource_id' => $resourceId,
                         ],
                     ],
-                    // Currently, selectors are managed as a type internally.
-                    'rdf:type' => [
-                        [
-                            'property_id' => $this->propertyId('rdf:type'),
-                            'type' => 'customvocab:' . $this->customVocabId('Annotation Target rdf:type'),
-                            // TODO Or oa:WKT, that doesn't exist? oa:Selector or Selector?
-                            '@value' => 'oa:Selector',
-                        ],
-                    ],
-                    'dcterms:format' => [
-                        [
-                            'property_id' => $this->propertyId('dcterms:format'),
-                            'type' => 'customvocab:' . $this->customVocabId('Annotation Target dcterms:format'),
-                            '@value' => 'application/wkt',
-                        ]
-                    ],
-                    'rdf:value' => [
-                        [
-                            'property_id' => $this->propertyId('rdf:value'),
-                            'type' => 'literal',
-                            '@value' => $geometry,
-                        ],
-                    ],
                 ],
             ],
+        ];
+
+        // The media id should be added, if any. It is added first only for ux.
+        $hasMediaId = !empty($options['mediaId']);
+        if ($hasMediaId) {
+            $data['o-module-annotate:target'][0]['rdf:value'][] = [
+                'property_id' => $this->propertyId('rdf:value'),
+                'type' => 'resource',
+                'value_resource_id' => $options['mediaId'],
+            ];
+            unset($options['mediaId']);
+        }
+
+        $data['o-module-annotate:target'][0] += [
+            // Currently, selectors are managed as a type internally.
+            'rdf:type' => [
+                [
+                    'property_id' => $this->propertyId('rdf:type'),
+                    'type' => 'customvocab:' . $this->customVocabId('Annotation Target rdf:type'),
+                    // TODO Or oa:WKT, that doesn't exist? oa:Selector or Selector?
+                    '@value' => 'oa:Selector',
+                ],
+            ],
+            'dcterms:format' => [
+                [
+                    'property_id' => $this->propertyId('dcterms:format'),
+                    'type' => 'customvocab:' . $this->customVocabId('Annotation Target dcterms:format'),
+                    '@value' => 'application/wkt',
+                ]
+            ],
+            // 'rdf:value' => [
+            //     [
+            //         'property_id' => $this->propertyId('rdf:value'),
+            //         'type' => 'literal',
+            //         '@value' => $geometry,
+            //     ],
+            // ],
+        ];
+
+        $data['o-module-annotate:target'][0]['rdf:value'][] = [
+            'property_id' => $this->propertyId('rdf:value'),
+            'type' => 'literal',
+            '@value' => $geometry,
         ];
 
         if ($options) {
@@ -334,18 +361,24 @@ class CartographyController extends AbstractActionController
 //             ];
 //             $response = $api->update('annotation_targets', $target->id(), $data, [], ['isPartial' => true]);
 //         } else {
-            $data = [
-                'o-module-annotate:target' => [
-                    [
-                        'rdf:value' => [
-                            [
-                                'property_id' => $this->propertyId('rdf:value'),
-                                'type' => 'literal',
-                                '@value' => $geometry,
-                            ],
-                        ],
-                    ],
-                ],
+
+            $data = [];
+
+            // The media id is not updatable, but is needed for partial update.
+            $hasMediaId = !empty($options['mediaId']);
+            if ($hasMediaId) {
+                $data['o-module-annotate:target'][0]['rdf:value'][] = [
+                    'property_id' => $this->propertyId('rdf:value'),
+                    'type' => 'resource',
+                    'value_resource_id' => $options['mediaId'],
+                ];
+                unset($options['mediaId']);
+            }
+
+            $data['o-module-annotate:target'][0]['rdf:value'][] = [
+                'property_id' => $this->propertyId('rdf:value'),
+                'type' => 'literal',
+                '@value' => $geometry,
             ];
 
             // TODO Remove a popup content.
@@ -506,17 +539,25 @@ class CartographyController extends AbstractActionController
             }
 
             $format = $target->value('dcterms:format');
-            if (empty($format)) {
+            if (empty($format) || $format->value() !== 'application/wkt') {
                 continue;
             }
 
             $geometry = [];
             $geometry['id'] = $annotation->id();
 
-            $format = $format->value();
-            if ($format === 'application/wkt') {
-                $value = $target->value('rdf:value');
-                $geometry['wkt'] = $value ? $value->value() : null;
+            $values = $target->value('rdf:value', ['all' => true, 'default' => []]);
+            foreach ($values as $value) {
+                if ($value->type() === 'resource') {
+                    $geometry['mediaId'] = $value->valueResource()->id();
+                } else {
+                    // TODO Only one target is managed currently.
+                    $geometry['wkt'] = $value->value();
+                }
+            }
+
+            if (empty($geometry['wkt'])) {
+                continue;
             }
 
             $styleClass = $target->value('oa:styleClass');

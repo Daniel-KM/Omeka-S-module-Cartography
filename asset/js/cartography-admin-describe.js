@@ -78,6 +78,7 @@ var addGeometry = function(layer, identifier) {
         // Identifier is always empty.
         id : identifier,
         resourceId: resourceId,
+        mediaId: currentMediaId(),
         oaMotivatedBy: 'highlighting',
         wkt: wkt,
         // Options are saved only when updated: some people don't need styles
@@ -128,6 +129,8 @@ var editGeometry = function(layer) {
     var url = basePath + '/admin/cartography/annotate';
     var data = {
         id: identifier,
+        // TODO Remove the media id, since it cannot change (currently needed in controller).
+        mediaId: currentMediaId(),
         wkt: wkt,
         oaMotivatedBy: 'highlighting',
         options: layer.options
@@ -207,6 +210,19 @@ var getMarkerIdentifier = function(layer) {
     }
     var parents = Object.values(layer._eventParents);
     return parents[parents.length - 1].annotationIdentifier;
+}
+
+/**
+ * Get the media id of the current image overlay.
+ *
+ * @todo Get id of the current ImageOverlay via Leaflet methods, not jQuery.
+ * @return int
+ */
+var currentMediaId = function() {
+    var mediaId = $('#cartography-media').find('.leaflet-control-layers input[name="leaflet-base-layers"]:checked').next('span').text();
+    mediaId = mediaId.substring(mediaId.lastIndexOf('#') + 1).trim();
+    mediaId = mainImages[mediaId - 1].id;
+    return mediaId;
 }
 
 /**

@@ -231,8 +231,8 @@ class Module extends AbstractModule
         // Events for the public front-end.
         $controllers = [
             'Omeka\Controller\Site\Item',
-            'Omeka\Controller\Site\ItemSet',
-            'Omeka\Controller\Site\Media',
+            // 'Omeka\Controller\Site\ItemSet',
+            // 'Omeka\Controller\Site\Media',
         ];
         foreach ($controllers as $controller) {
             // Add the cartography to the resource show public pages.
@@ -334,6 +334,7 @@ class Module extends AbstractModule
         $fieldset = new Fieldset('cartography');
         $fieldset->setLabel('Cartography'); // @translate
 
+        /*
         $fieldset->add([
             'name' => 'cartography_append_item_set_show',
             'type' => Element\Checkbox::class,
@@ -348,6 +349,7 @@ class Module extends AbstractModule
                 ),
             ],
         ]);
+        */
 
         $fieldset->add([
             'name' => 'cartography_append_item_show',
@@ -364,6 +366,7 @@ class Module extends AbstractModule
             ],
         ]);
 
+        /*
         $fieldset->add([
             'name' => 'cartography_append_media_show',
             'type' => Element\Checkbox::class,
@@ -378,6 +381,7 @@ class Module extends AbstractModule
                 ),
             ],
         ]);
+        */
 
         $form->add($fieldset);
     }

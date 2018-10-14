@@ -28,9 +28,8 @@ class ConfigForm extends Form
             'options' => [
                 'label' => 'Tabs to display', // @translate
                 'value_options' => [
-                    'describe' => 'Describe: annotate the first image of the item', // @translate
-                    'locate' => 'Locate: highlight elements on a map', // @translate
-                    // TODO Make a choice to annotate at media level when they are multiple images.
+                    'describe' => 'Describe: annotate images of the item', // @translate
+                    'locate' => 'Locate: annotate georeferenced wms (dcterms:spatial) of the item', // @translate
                 ],
             ],
             'attributes' => [

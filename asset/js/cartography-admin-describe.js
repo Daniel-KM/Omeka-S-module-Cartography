@@ -15,9 +15,9 @@ $(document).ready( function() {
  *
  * @return array
  */
-var fetchGeometries = function(identifier) {
+var fetchGeometries = function(identifier, partIdentifier) {
     var url = window.location.origin + basePath + '/admin/cartography/' + identifier + '/geometries'
-        + '?mediaId=-1';
+        + '?mediaId=' + (partIdentifier ? partIdentifier : '-1');
 
     $.get(url, null,
         function(data, textStatus, jqxhr) {
@@ -25,10 +25,9 @@ var fetchGeometries = function(identifier) {
                 alert(data.message);
                 return;
             }
-            geometriesData = data.geometries;
 
-            // Handle existing geometries.
-            $.each(geometriesData, function(index, data) {
+            // Display geometries.
+            $.each(data.geometries, function(index, data) {
                  var geojson = Terraformer.WKT.parse(data['wkt']);
                  var options = data['options'] ? data['options'] : {};
                  options.annotationIdentifier = data['id'];
@@ -287,6 +286,7 @@ firstMap.addTo(map);
 map.panTo([bounds.getNorthEast().lat / 2, bounds.getNorthEast().lng / 2]);
 // FIXME Fit bounds first image overlay.
 //map.fitBounds(bounds);
+fetchGeometries(resourceId, mainImages[0].id);
 
 // Geometries are displayed and edited on the drawnItems layer.
 var drawnItems = new L.FeatureGroup();
@@ -335,9 +335,6 @@ map.addControl(styleEditor);
 
 /* Manage geometries. */
 
-// Handle existing geometries.
-fetchGeometries(resourceId);
-
 // Handle adding new geometries.
 map.on(L.Draw.Event.CREATED, function (element) {
     addGeometry(element.layer);
@@ -371,6 +368,13 @@ map.on('paste:layer-created', function(element){
 
 map.on('paste:layer-created', function(element) {
     map.addLayer(element.layer);
+});
+
+// Handle the image change.
+map.on('baselayerchange', function(element){
+    // TODO Keep the layers in a invisible feature group layer by image? Check memory size.
+    drawnItems.clearLayers();
+    fetchGeometries(resourceId, currentMediaId());
 });
 
 /* Various methods. */

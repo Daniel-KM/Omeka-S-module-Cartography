@@ -46,20 +46,25 @@ var displayGeometries = function(geometries) {
         if (options.popupContent) {
             options.onEachFeature = function(feature, layer) {
                 layer.bindPopup(options.popupContent);
-            };
+
+                // To reserve the options from geoJson.
+                layer.options = layer.options || {};
+                // To prepare for style editor form-element initial value.
+                layer.options = $.extend(options, layer.options);
+            }
         }
 
         // Prepare the layer.
         if (geojson.type === 'Point' && typeof options.radius !== 'undefined') {
             // Warning: the coordinates are inversed on an image.
             layer = L.circle([geojson.coordinates[1], geojson.coordinates[0]], options);
+
+            // Set the content of the popup.
+            if (layer && options.popupContent) {
+                layer.bindPopup(options.popupContent);
+            }
         } else {
             layer = L.geoJson(geojson, options);
-        }
-
-        // Set the content of the popup.
-        if (layer && options.popupContent) {
-            layer.bindPopup(options.popupContent);
         }
 
         // Append the geometry to the map.
@@ -445,14 +450,40 @@ map.on(L.Draw.Event.CREATED, function (element) {
     addGeometry(element.layer);
 });
 
-// Handle editing geometries (when the edit button "save" is clicked).
-map.on(L.Draw.Event.EDITED, function(element) {
-    // TODO Check if options changed to avoid to save default ones.
-    // FIXME It doesn't work when a marker is moved or style edited.
-    element.layers.eachLayer(function(layer) {
-        editGeometry(layer);
-    });
-});
+// // Handle editing geometries (when the edit button "save" is clicked).
+// map.on(L.Draw.Event.EDITED, function(element) {
+//     // TODO Check if options changed to avoid to save default ones.
+//     // FIXME It doesn't work when a marker is moved or style edited.
+//     element.layers.eachLayer(function(layer) {
+//         editGeometry(layer);
+//     });
+// });
+handleDrawEditSave();
+// Do the save work after the edit stop, keeping previous style.
+function handleDrawEditSave() {
+    var editedLayers = {};
+
+    catchEditEvents();
+
+    // Catch the events.
+    function catchEditEvents() {
+        map.on(L.Draw.Event.EDITED, function(element) {
+            editedLayers = element.layers;
+        });
+        map.on(L.Draw.Event.EDITSTOP, function(data) {
+            saveLayerAtDrawStop();
+        });
+    }
+
+    // Save it when edit stop.
+    function saveLayerAtDrawStop() {
+        if (editedLayers && editedLayers instanceof  L.LayerGroup) {
+            editedLayers.eachLayer(function(layer) {
+                editGeometry(layer);
+            });
+        }
+    }
+}
 
 // Handle deleting geometries (when the delete button "save" is clicked).
 map.on(L.Draw.Event.DELETED, function(element) {

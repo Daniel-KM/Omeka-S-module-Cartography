@@ -29,7 +29,7 @@ var fetchGeometries = function(identifier, partIdentifier) {
             displayGeometries(data.geometries);
         })
         .fail(function(jqxhr) {
-            var message = JSON.parse(jqxhr.responseText).message || 'Unable to fetch the geometries.';
+            var message = jqxhr.responseText.substring(0, 1) !== '<' ? JSON.parse(jqxhr.responseText).message : Omeka.jsTranslate('Unable to fetch the geometries.');
             alert(message);
         });
 }
@@ -101,7 +101,7 @@ var addGeometry = function(layer, identifier) {
             drawnItems.addLayer(layer);
         })
         .fail(function(jqxhr) {
-            var message = JSON.parse(jqxhr.responseText).message || 'Unable to save the geometry.';
+            var message = jqxhr.responseText.substring(0, 1) !== '<' ? JSON.parse(jqxhr.responseText).message : Omeka.jsTranslate('Unable to save the geometry.');
             alert(message);
             // The deletion is automatic when not recorded.
         });
@@ -147,7 +147,7 @@ var editGeometry = function(layer) {
             console.log('Geometry updated.');
         })
         .fail(function(jqxhr) {
-            var message = JSON.parse(jqxhr.responseText).message || 'Unable to update the geometry.';
+            var message = jqxhr.responseText.substring(0, 1) !== '<' ? JSON.parse(jqxhr.responseText).message : Omeka.jsTranslate('Unable to update the geometry.');
             alert(message);
         });
 }
@@ -175,7 +175,7 @@ var deleteGeometry = function(layer) {
             console.log('Geometry deleted.')
         })
         .fail(function(jqxhr) {
-            var message = JSON.parse(jqxhr.responseText).message || 'Unable to delete the geometry.';
+            var message = jqxhr.responseText.substring(0, 1) !== '<' ? JSON.parse(jqxhr.responseText).message : Omeka.jsTranslate('Unable to delete the geometry.');
             alert(message);
         });
 }
@@ -445,7 +445,7 @@ $(document).on('o:prepare-value', function(e, type, value, valueObj, namePrefix)
             appendLinkedResource(valueObj);
         })
         .fail(function(jqxhr) {
-            var message = JSON.parse(jqxhr.responseText).message || 'Unable to fetch the geometries.';
+            var message = jqxhr.responseText.substring(0, 1) !== '<' ? JSON.parse(jqxhr.responseText).message : Omeka.jsTranslate('Unable to fetch the geometries.');
             alert(message);
         });
 });

@@ -134,7 +134,11 @@ var editGeometry = function(layer) {
         options: layer.options
     };
 
+    // Clean the post data (this should not be needed).
+    buildParams(data);
+
     $.post(url, data,
+        // jqPost(url, data,
         function(data, textStatus, jqxhr) {
             // Not json means error, and the only non-json error is redirect to login.
             if (!data.result) {
@@ -593,5 +597,30 @@ $('#' + section).on('o:section-closed', function(e) {
     var sidebar = $('#select-resource');
     Omeka.closeSidebar(sidebar);
 });
+
+/**
+ * Recursively remove the fonctions of an object.
+ *
+ * This is a hack to fix the edition of markers via leaflet.draw.
+ * @todo Remove this hack used to allow markers to be edited.
+ */
+function buildParams(obj, key) {
+    key = key || '';
+    obj = obj || {};
+    for (var prop in obj) {
+        var element = obj[prop];
+        if (typeof element === 'array') {
+            element.map(function (ele, idx) {
+                buildParams(ele, idx);
+            });
+        } else if (typeof element === 'object') {
+            // Recursive looping.
+            buildParams(element, prop);
+        } else if (typeof element === 'function') {
+            // Remove the fonction.
+            obj[prop] = '';
+        }
+    }
+}
 
 });

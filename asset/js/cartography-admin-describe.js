@@ -16,20 +16,21 @@ $(document).ready( function() {
  * @return array
  */
 var fetchGeometries = function(identifier, partIdentifier) {
-    var url = window.location.origin + basePath + '/admin/cartography/' + identifier + '/geometries'
+    var url = basePath + '/admin/cartography/' + identifier + '/geometries'
         + '?mediaId=' + (partIdentifier ? partIdentifier : '-1');
 
-    $.get(url, null,
-        function(data, textStatus, jqxhr) {
+    $.get(url)
+        .done(function(data) {
             if (data.status === 'error') {
                 alert(data.message);
                 return;
             }
-
             displayGeometries(data.geometries);
         })
         .fail(function(jqxhr) {
-            var message = jqxhr.responseText.substring(0, 1) !== '<' ? JSON.parse(jqxhr.responseText).message : Omeka.jsTranslate('Unable to fetch the geometries.');
+            var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
+                ? JSON.parse(jqxhr.responseText).message
+                : Omeka.jsTranslate('Unable to fetch the geometries.');
             alert(message);
         });
 }
@@ -120,20 +121,27 @@ var addGeometry = function(layer, identifier) {
         options: options,
     };
 
-    $.post(url, data,
-        function(data, textStatus, jqxhr) {
+    $.post(url, data)
+        .done(function(data) {
             // No json means error, and the only non-json error is redirect to login.
             if (!data.result) {
                 alert(Omeka.jsTranslate('Log in to save the geometry.'));
+                return;
+            }
+            if (data.status === 'error') {
+                alert(data.message);
                 return;
             }
             identifier = data.result.id;
             layer.annotationIdentifier = identifier;
             layer.options.annotationIdentifier = identifier;
             drawnItems.addLayer(layer);
+            console.log('Geometry added.');
         })
         .fail(function(jqxhr) {
-            var message = jqxhr.responseText.substring(0, 1) !== '<' ? JSON.parse(jqxhr.responseText).message : Omeka.jsTranslate('Unable to save the geometry.');
+            var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
+                ? JSON.parse(jqxhr.responseText).message
+                : Omeka.jsTranslate('Unable to save the geometry.');
             alert(message);
             // The deletion is automatic when not recorded.
         });
@@ -177,18 +185,23 @@ var editGeometry = function(layer) {
     // Clean the post data (this should not be needed).
     buildParams(data);
 
-    $.post(url, data,
-        // jqPost(url, data,
-        function(data, textStatus, jqxhr) {
-            // Not json means error, and the only non-json error is redirect to login.
+    $.post(url, data)
+        .done(function(data) {
+            // No json means error, and the only non-json error is redirect to login.
             if (!data.result) {
                 alert(Omeka.jsTranslate('Log in to edit the geometry.'));
+                return;
+            }
+            if (data.status === 'error') {
+                alert(data.message);
                 return;
             }
             console.log('Geometry updated.');
         })
         .fail(function(jqxhr) {
-            var message = jqxhr.responseText.substring(0, 1) !== '<' ? JSON.parse(jqxhr.responseText).message : Omeka.jsTranslate('Unable to update the geometry.');
+            var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
+                ? JSON.parse(jqxhr.responseText).message
+                : Omeka.jsTranslate('Unable to update the geometry.');
             alert(message);
         });
 }
@@ -205,18 +218,25 @@ var deleteGeometry = function(layer) {
         console.log('No identifier to delete.');
         return;
     }
+    var data = {id: identifier};
 
-    $.post(url, {id: identifier},
-        function(data, textStatus, jqxhr) {
-            // Not json means error, and the only non-json error is redirect to login.
+    $.post(url, data)
+        .done(function(data) {
+            // No json means error, and the only non-json error is redirect to login.
             if (!data.result) {
                 alert(Omeka.jsTranslate('Log in to delete the geometry.'));
+                return;
+            }
+            if (data.status === 'error') {
+                alert(data.message);
                 return;
             }
             console.log('Geometry deleted.');
         })
         .fail(function(jqxhr) {
-            var message = jqxhr.responseText.substring(0, 1) !== '<' ? JSON.parse(jqxhr.responseText).message : Omeka.jsTranslate('Unable to delete the geometry.');
+            var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
+                ? JSON.parse(jqxhr.responseText).message
+                : Omeka.jsTranslate('Unable to delete the geometry.');
             alert(message);
         });
 }
@@ -467,10 +487,8 @@ $(document).on('o:prepare-value', function(e, type, value, valueObj, namePrefix)
         return;
     }
     var identifier = currentAnnotation.annotationIdentifier
-        ? currentAnnotation.annotationIdentifier
-        : currentAnnotation.options.annotationIdentifier
-        ? currentAnnotation.options.annotationIdentifier
-        : null;
+        || currentAnnotation.options.annotationIdentifier
+        || null;
     if (!identifier) {
         alert(Omeka.jsTranslate('Unable to find the geometry.'));
         return;
@@ -478,10 +496,11 @@ $(document).on('o:prepare-value', function(e, type, value, valueObj, namePrefix)
 
     // Check if the selected resource is already linked.
     var partIdentifier = currentMediaId();
-    var url = window.location.origin + basePath + '/admin/cartography/' + resourceId + '/geometries'
+    var url = basePath + '/admin/cartography/' + resourceId + '/geometries'
         + '?mediaId=' + (partIdentifier ? partIdentifier : '-1') + '&annotationId=' + identifier;
-    $.get(url, null,
-        function(data, textStatus, jqxhr) {
+
+    $.get(url)
+        .done(function(data) {
             if (data.status === 'error') {
                 alert(data.message);
                 return;
@@ -512,7 +531,9 @@ $(document).on('o:prepare-value', function(e, type, value, valueObj, namePrefix)
             appendLinkedResource(valueObj);
         })
         .fail(function(jqxhr) {
-            var message = jqxhr.responseText.substring(0, 1) !== '<' ? JSON.parse(jqxhr.responseText).message : Omeka.jsTranslate('Unable to fetch the geometries.');
+            var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
+                ? JSON.parse(jqxhr.responseText).message
+                : Omeka.jsTranslate('Unable to fetch the geometries.');
             alert(message);
         });
 });

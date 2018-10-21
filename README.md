@@ -44,7 +44,10 @@ Quick start
 The module allows to annotate standard images and georeferenced maps.
 - To annotate a still image, simply upload it as media.
 - To annotate a georeferenced image, the [wms] url should be set as URI in
-  `dcterms:spatial`, for example: `https://mapwarper.net/maps/wms/14068? Us and territories`.
+  `dcterms:spatial`, for example: `https://mapwarper.net/maps/wms/14068?` with
+  label `Us and territories`. There can be multiple [wms] layers, for example
+  you can add the `Roads to Santiago de Compostela in Spain` too with the url
+  `https://www.ign.es/wms-inspire/camino-santiago?layers=PS.ProtectedSite`.
 
 Then, simply open the item (the display view, not the edition view, because the
 annotations are saved outside of the resource metadata), go to the tabs

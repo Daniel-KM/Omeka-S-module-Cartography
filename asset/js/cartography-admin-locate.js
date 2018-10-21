@@ -39,15 +39,33 @@ var displayGeometries = function(geometries) {
     $.each(geometries, function(index, data) {
         var layer;
         var geojson = Terraformer.WKT.parse(data['wkt']);
-        var options = data['options'] ? data['options'] : {};
+        var options = data['options'] || {};
         options.annotationIdentifier = data['id'];
+
+        // Prepare to set the content of the popup.
+        if (options.popupContent) {
+            options.onEachFeature = function(feature, layer) {
+                layer.bindPopup(options.popupContent);
+            };
+        }
+
+        // Prepare the layer.
         if (geojson.type === 'Point' && typeof options.radius !== 'undefined') {
             // Warning: the coordinates are inversed on an image.
             layer = L.circle([geojson.coordinates[1], geojson.coordinates[0]], options);
         } else {
             layer = L.geoJson(geojson, options);
         }
+
+        // Set the content of the popup.
+        if (layer && options.popupContent) {
+            layer.bindPopup(options.popupContent);
+        }
+
+        // Append the geometry to the map.
         addGeometry(layer, data['id']);
+
+        // TODO Remove one of the two places where the annotation identifier is saved.
         layer.annotationIdentifier = data['id'];
         layer.options.annotationIdentifier = data['id'];
     });

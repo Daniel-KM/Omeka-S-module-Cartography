@@ -37,13 +37,19 @@ var fetchGeometries = function(identifier, partIdentifier) {
  */
 var displayGeometries = function(geometries) {
     $.each(geometries, function(index, data) {
-         var geojson = Terraformer.WKT.parse(data['wkt']);
-         var options = data['options'] ? data['options'] : {};
-         options.annotationIdentifier = data['id'];
-         var layer = L.geoJson(geojson, options);
-         addGeometry(layer, data['id']);
-         layer.annotationIdentifier = data['id'];
-         layer.options.annotationIdentifier = data['id'];
+        var layer;
+        var geojson = Terraformer.WKT.parse(data['wkt']);
+        var options = data['options'] ? data['options'] : {};
+        options.annotationIdentifier = data['id'];
+        if (geojson.type === 'Point' && typeof options.radius !== 'undefined') {
+            // Warning: the coordinates are inversed on an image.
+            layer = L.circle([geojson.coordinates[1], geojson.coordinates[0]], options);
+        } else {
+            layer = L.geoJson(geojson, options);
+        }
+        addGeometry(layer, data['id']);
+        layer.annotationIdentifier = data['id'];
+        layer.options.annotationIdentifier = data['id'];
     });
 }
 
@@ -74,6 +80,11 @@ var addGeometry = function(layer, identifier) {
         wkt = Terraformer.WKT.convert(geojson.geometry);
     }
 
+    // Options are saved only when updated: some people don't need styles so it
+    // will be lighter in that case. Except for circle, that has the required
+    // option radius.
+    var options = typeof layer.getRadius === 'function' ? {'radius': layer.getRadius()} : {};
+
     var url = basePath + '/admin/cartography/annotate';
     var data = {
         // Identifier is always empty.
@@ -81,9 +92,7 @@ var addGeometry = function(layer, identifier) {
         resourceId: resourceId,
         mediaId: currentMediaId(),
         wkt: wkt,
-        // Options are saved only when updated: some people don't need styles
-        // so it will be lighter in that case.
-        // options: layer.options
+        options: options,
     };
 
     $.post(url, data,
@@ -124,6 +133,11 @@ var editGeometry = function(layer) {
         wkt = Terraformer.WKT.convert(geojson.features[0].geometry);
     } else {
         wkt = Terraformer.WKT.convert(geojson.geometry);
+    }
+
+    // Options radius should be set here, because it is updated automatically.
+    if (typeof layer.getRadius === 'function') {
+        layer.options.radius = layer.getRadius();
     }
 
     var url = basePath + '/admin/cartography/annotate';
@@ -355,7 +369,7 @@ var drawControl = new L.Control.Draw({
         polyline: true,
         polygon: true,
         rectangle: true,
-        circle: false,
+        circle: true,
         marker: true,
         circlemarker: false,
     },

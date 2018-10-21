@@ -2,8 +2,8 @@ Cartography annotate (module for Omeka S)
 =========================================
 
 [Cartography] is a module for [Omeka S] that allows to annotate (to draw points,
-lines, polylines, polygons, etc.) maps with the [web annotation vocabulary] and
-the [web annotation data model].
+lines, polylines, polygons, etc.) an image or a map with the [web annotation vocabulary]
+and the [web annotation data model].
 
 Maps can be georeferenced ([wms]) or ungeoreferenced images, so it is possible
 to annotate any images, even not cartagraphic ones.
@@ -30,7 +30,7 @@ directory.
 * From the source and for development
 
 If the module was installed from the source, rename the name of the folder of
-the module to `Cartography`, go to the root module, and run:
+the module to `Cartography`, go to the root of the module, and run:
 
 ```
     npm install
@@ -125,6 +125,14 @@ A similar js can be added for images to describe, but is not managed directly by
 the module.
 
 
+TODO
+----
+
+- Make the list of the fields of the style editor configurable.
+- Add a configurable list of styles in the style editor (or replace the fields
+  used to edit styles).
+
+
 Warning
 -------
 
@@ -193,6 +201,7 @@ Copyright
 [Omeka S]: https://omeka.org/s
 [web annotation data model]: https://www.w3.org/TR/annotation-model/
 [web annotation vocabulary]: https://www.w3.org/TR/annotation-vocab/
+[wms]: https://en.wikipedia.org/wiki/Web_Map_Service
 [Annotate]: https://github.com/Daniel-KM/Omeka-S-module-Annotate
 [Installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
 [`Cartography.zip`]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/releases

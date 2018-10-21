@@ -21,7 +21,7 @@ use Zend\View\Renderer\PhpRenderer;
 /**
  * Cartography
  *
- * Allows to annotate a map with the web annotation data model.
+ * Allows to annotate an image or a wms map with the w3c web annotation data model and vocabulary.
  *
  * @copyright Daniel Berthereau, 2018
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt

@@ -221,7 +221,7 @@ var getMarkerIdentifier = function(layer) {
  */
 var currentMediaId = function() {
     var mediaId = $('#cartography-media').find('.leaflet-control-layers input[name="leaflet-base-layers"]:checked').next('span').text();
-    mediaId = mediaId.substring(mediaId.lastIndexOf('#') + 1).trim();
+    mediaId = mediaId.length < 1 ? 1 : mediaId.substring(mediaId.lastIndexOf('#') + 1).trim();
     mediaId = mainImages[mediaId - 1].id;
     return mediaId;
 }

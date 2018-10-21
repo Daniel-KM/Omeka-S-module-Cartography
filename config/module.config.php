@@ -83,7 +83,25 @@ return [
         ],
     ],
     'js_translate_strings' => [
+        '[Untitled]', // @translate
+        'Cancel Styling', // @translate
+        'Choose another element you want to style', // @translate
+        'Click on the element you want to style', // @translate
+        'Finish', // @translate
+        'Image #', // @translate
         'Layer', // @translate
+        'Log in to delete the geometry.', // @translate
+        'Log in to edit the geometry.', // @translate
+        'Log in to save the geometry.', // @translate
+        'No overlay', // @translate
+        'Remove value', // @translate
+        'The resource is already linked to the current annotation.', // @translate
+        'Unable to delete the geometry.', // @translate
+        'Unable to fetch the geometries.', // @translate
+        'Unable to find the geometry.', // @translate
+        'Unable to save the geometry.', // @translate
+        'Unable to save the edited geometry.', // @translate
+        'Unable to update the geometry.', // @translate
     ],
     'cartography' => [
         'config' => [

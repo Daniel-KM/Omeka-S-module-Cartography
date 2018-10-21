@@ -90,7 +90,7 @@ var addGeometry = function(layer, identifier) {
         function(data, textStatus, jqxhr) {
             // No json means error, and the only non-json error is redirect to login.
             if (!data.result) {
-                alert('Log in to save the geometry.');
+                alert(Omeka.jsTranslate('Log in to save the geometry.'));
                 return;
             }
             identifier = data.result.id;
@@ -113,7 +113,7 @@ var addGeometry = function(layer, identifier) {
 var editGeometry = function(layer) {
     var identifier = layer.annotationIdentifier || getMarkerIdentifier(layer);
     if (!identifier) {
-        alert('Unable to save the edited geometry.');
+        alert(Omeka.jsTranslate('Unable to save the edited geometry.'));
         return;
     }
 
@@ -138,7 +138,7 @@ var editGeometry = function(layer) {
         function(data, textStatus, jqxhr) {
             // Not json means error, and the only non-json error is redirect to login.
             if (!data.result) {
-                alert('Log in to edit the geometry.');
+                alert(Omeka.jsTranslate('Log in to edit the geometry.'));
                 return;
             }
             console.log('Geometry updated.');
@@ -158,7 +158,7 @@ var deleteGeometry = function(layer) {
     var url = basePath + '/admin/cartography/delete-annotation';
     var identifier = layer.annotationIdentifier || getMarkerIdentifier(layer);
     if (!identifier) {
-        console.log('No identifier to delete.')
+        console.log('No identifier to delete.');
         return;
     }
 
@@ -166,10 +166,10 @@ var deleteGeometry = function(layer) {
         function(data, textStatus, jqxhr) {
             // Not json means error, and the only non-json error is redirect to login.
             if (!data.result) {
-                alert('Log in to delete the geometry.');
+                alert(Omeka.jsTranslate('Log in to delete the geometry.'));
                 return;
             }
-            console.log('Geometry deleted.')
+            console.log('Geometry deleted.');
         })
         .fail(function(jqxhr) {
             var message = jqxhr.responseText.substring(0, 1) !== '<' ? JSON.parse(jqxhr.responseText).message : Omeka.jsTranslate('Unable to delete the geometry.');
@@ -378,11 +378,11 @@ var styleEditor = L.control.styleEditor({
     // colorRamp: ['#1abc9c', '#2ecc71', '#3498db'],
     // markers: ['circle-stroked', 'circle', 'square-stroked', 'square'],
     strings: {
-        // Only cancel is updated.
-        cancel: 'Finish',
-        cancelTitle: 'Cancel Styling',
-        tooltip: 'Click on the element you want to style',
-        tooltipNext: 'Choose another element you want to style'
+        // TODO Only cancel is updated.
+        cancel: Omeka.jsTranslate('Finish'),
+        cancelTitle: Omeka.jsTranslate('Cancel Styling'),
+        tooltip: Omeka.jsTranslate('Click on the element you want to style'),
+        tooltipNext: Omeka.jsTranslate('Choose another element you want to style'),
     },
     useGrouping: false,
 });
@@ -480,7 +480,7 @@ $(document).on('o:prepare-value', function(e, type, value, valueObj, namePrefix)
         ? currentAnnotation.options.annotationIdentifier
         : null;
     if (!identifier) {
-        alert('Unable to find the geometry.');
+        alert(Omeka.jsTranslate('Unable to find the geometry.'));
         return;
     }
 
@@ -500,7 +500,7 @@ $(document).on('o:prepare-value', function(e, type, value, valueObj, namePrefix)
                 var arrayLength = oaLinking.length;
                 for (var i = 0; i < arrayLength; i++) {
                     if (oaLinking[i]['value_resource_id'] === valueObj['value_resource_id']) {
-                        alert('The resource is already linked to the current annotation.');
+                        alert(Omeka.jsTranslate('The resource is already linked to the current annotation.'));
                         return;
                     }
                 }
@@ -545,7 +545,7 @@ var appendLinkedResource = function(valueObj) {
         + '</span>'
         + '</p>'
         + '<ul class="actions">'
-        + '<li><a class="o-icon-delete remove-value" title="Remove value" href="#" aria-label="Remove value" data-value-resource-id="' + valueObj['value_resource_id'] + '"></a></li>'
+        + '<li><a class="o-icon-delete remove-value" title="' + Omeka.jsTranslate('Remove value') + '" href="#" aria-label="' + Omeka.jsTranslate('Remove value') + '" data-value-resource-id="' + valueObj['value_resource_id'] + '"></a></li>'
         + '</ul>'
         + '</div>';
     var oaLinkingDiv = $('.leaflet-styleeditor-oalinking.value.selecting-resource:visible');

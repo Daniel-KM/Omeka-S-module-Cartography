@@ -100,6 +100,7 @@ class CartographyController extends AbstractActionController
         elseif ($data['options']['oaMotivatedBy'] === 'linking' && empty($data['options']['oaLinking'])) {
             $options['oaMotivatedBy'] = 'highlighting';
         }
+        // Multiple motivations are managed in actions.
 
         if (empty($data['id'])) {
             if (empty($data['resourceId'])) {
@@ -246,13 +247,6 @@ class CartographyController extends AbstractActionController
                     '@value' => 'application/wkt',
                 ]
             ],
-            // 'rdf:value' => [
-            //     [
-            //         'property_id' => $this->propertyId('rdf:value'),
-            //         'type' => 'literal',
-            //         '@value' => $geometry,
-            //     ],
-            // ],
         ];
 
         $data['o-module-annotate:target'][0]['rdf:value'][] = [
@@ -263,50 +257,42 @@ class CartographyController extends AbstractActionController
 
         if ($options) {
             if (!empty($options['oaMotivatedBy'])) {
-                $data['oa:motivatedBy'] = [
-                    [
-                        'property_id' => $this->propertyId('oa:motivatedBy'),
-                        'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
-                        '@value' => $options['oaMotivatedBy'],
-                    ],
+                $data['oa:motivatedBy'][] = [
+                    'property_id' => $this->propertyId('oa:motivatedBy'),
+                    'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
+                    '@value' => $options['oaMotivatedBy'],
                 ];
             }
 
             if (isset($options['popupContent']) && strlen(trim($options['popupContent']))) {
-                $data['o-module-annotate:body'][] = [
-                    'rdf:value' => [
-                        [
-                            'property_id' => $this->propertyId('rdf:value'),
-                            'type' => 'literal',
-                            '@value' => $options['popupContent'],
-                        ],
-                    ],
+                $data['o-module-annotate:body'][0]['rdf:value'][] = [
+                    'property_id' => $this->propertyId('rdf:value'),
+                    'type' => 'literal',
+                    '@value' => $options['popupContent'],
                 ];
 
-                if (empty($options['oaHasPurpose'])) {
-                    $data['o-module-annotate:body'][0]['oa:hasPurpose'] = [];
-                } else {
-                    $data['o-module-annotate:body'][0]['oa:hasPurpose'] = [
-                        [
-                            'property_id' => $this->propertyId('oa:hasPurpose'),
-                            'type' => 'customvocab:' . $this->customVocabId('Annotation Body oa:hasPurpose'),
-                            '@value' => $options['oaHasPurpose'],
-                        ],
+                $data['o-module-annotate:body'][0]['oa:hasPurpose'] = [];
+                if (!empty($options['oaHasPurpose'])) {
+                    $data['o-module-annotate:body'][0]['oa:hasPurpose'][] = [
+                        'property_id' => $this->propertyId('oa:hasPurpose'),
+                        'type' => 'customvocab:' . $this->customVocabId('Annotation Body oa:hasPurpose'),
+                        '@value' => $options['oaHasPurpose'],
                     ];
                 }
             }
 
             if (!empty($options['oaLinking'])) {
-                // A link is motivated by linking.
-                // TODO There can't be description when linking, except if there are multiple motivations.
-                $data['o-module-annotate:body'] = [];
-                // TODO Manage multiple motivations when linking.
-                $data['oa:motivatedBy'] = [
-                    [
-                        'property_id' => $this->propertyId('oa:motivatedBy'),
-                        'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
-                        '@value' => 'linking',
-                    ],
+                // A link is motivated by linking. Remove the other motivation
+                // if there is no description.
+                if (!empty($data['oa:motivatedBy'][0]) && empty($data['o-module-annotate:body'][0]['rdf:value'])) {
+                    unset($data['oa:motivatedBy'][0]);
+                    unset($data['o-module-annotate:body'][0]['oa:hasPurpose']);
+                }
+
+                $data['oa:motivatedBy'][] = [
+                    'property_id' => $this->propertyId('oa:motivatedBy'),
+                    'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
+                    '@value' => 'linking',
                 ];
                 // Each link is a separate body. Deduplicate ids too.
                 $ids = [];
@@ -328,13 +314,12 @@ class CartographyController extends AbstractActionController
                 }
             }
 
+            $data['o-module-annotate:target'][0]['cartography:uncertainty'] = [];
             if (!empty($options['cartographyUncertainty'])) {
-                $data['o-module-annotate:target'][0]['cartography:uncertainty'] = [
-                    [
-                        'property_id' => $this->propertyId('cartography:uncertainty'),
-                        'type' => 'customvocab:' . $this->customVocabId('Cartography cartography:uncertainty'),
-                        '@value' => $options['cartographyUncertainty'],
-                    ],
+                $data['o-module-annotate:target'][0]['cartography:uncertainty'][] = [
+                    'property_id' => $this->propertyId('cartography:uncertainty'),
+                    'type' => 'customvocab:' . $this->customVocabId('Cartography cartography:uncertainty'),
+                    '@value' => $options['cartographyUncertainty'],
                 ];
             }
 
@@ -396,197 +381,170 @@ class CartographyController extends AbstractActionController
         // TODO One target is managed currently.
         $target = $annotation->primaryTarget();
 
-        // TODO Allow / fix update of an existing target (or always use api annotations?).
-//         if ($target) {
-//             $data = [
-//                 'rdf:value' => [
-//                     [
-//                         'property_id' => $this->propertyId('rdf:value'),
-//                         'type' => 'literal',
-//                         '@value' => $wkt,
-//                     ],
-//                 ],
-//             ];
-//             $response = $api->update('annotation_targets', $target->id(), $data, [], ['isPartial' => true]);
-//         } else {
+        $data = [];
+        $data['o-module-annotate:body'] = [];
+        $data['o-module-annotate:target'] = [];
 
-            $data = [];
-            $data['o-module-annotate:body'] = [];
-            $data['o-module-annotate:target'] = [];
-
-            // TODO The media id is not updatable, but is needed for partial update.
-            $hasMediaId = !empty($options['mediaId']);
-            if ($hasMediaId) {
-                $data['o-module-annotate:target'][0]['rdf:value'][] = [
-                    'property_id' => $this->propertyId('rdf:value'),
-                    'type' => 'resource',
-                    'value_resource_id' => $options['mediaId'],
-                ];
-                unset($options['mediaId']);
-            }
-
+        // TODO The media id is not updatable, but is needed for partial update.
+        $hasMediaId = !empty($options['mediaId']);
+        if ($hasMediaId) {
             $data['o-module-annotate:target'][0]['rdf:value'][] = [
                 'property_id' => $this->propertyId('rdf:value'),
-                'type' => 'literal',
-                '@value' => $geometry,
+                'type' => 'resource',
+                'value_resource_id' => $options['mediaId'],
             ];
+            unset($options['mediaId']);
+        }
 
-            // TODO Remove a popup content.
+        // The selector type and format are kept from the target, but the
+        // geometry can be updated.
 
-            if ($options) {
-                if (!empty($options['oaMotivatedBy'])) {
-                    $data['oa:motivatedBy'] = [
-                        [
-                            'property_id' => $this->propertyId('oa:motivatedBy'),
-                            'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
-                            '@value' => $options['oaMotivatedBy'],
-                        ],
+        $data['o-module-annotate:target'][0]['rdf:value'][] = [
+            'property_id' => $this->propertyId('rdf:value'),
+            'type' => 'literal',
+            '@value' => $geometry,
+        ];
+
+        // With leafllet, there are always options.
+        if ($options) {
+            if (!empty($options['oaMotivatedBy'])) {
+                $data['oa:motivatedBy'][] = [
+                    'property_id' => $this->propertyId('oa:motivatedBy'),
+                    'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
+                    '@value' => $options['oaMotivatedBy'],
+                ];
+            }
+
+            if (isset($options['popupContent']) && strlen(trim($options['popupContent']))) {
+                $data['o-module-annotate:body'][0]['o-module-annotate:annotation']['o:id'] = $annotation->id();
+                $data['o-module-annotate:body'][0]['rdf:value'][] = [
+                    'property_id' => $this->propertyId('rdf:value'),
+                    'type' => 'literal',
+                    '@value' => $options['popupContent'],
+                ];
+
+                $data['o-module-annotate:body'][0]['oa:hasPurpose'] = [];
+                if (!empty($options['oaHasPurpose'])) {
+                    $data['o-module-annotate:body'][0]['oa:hasPurpose'][] = [
+                        'property_id' => $this->propertyId('oa:hasPurpose'),
+                        'type' => 'customvocab:' . $this->customVocabId('Annotation Body oa:hasPurpose'),
+                        '@value' => $options['oaHasPurpose'],
                     ];
                 }
+            }
 
-                if (isset($options['popupContent']) && strlen(trim($options['popupContent']))) {
-                    $data['o-module-annotate:body'][0]['o-module-annotate:annotation']['o:id'] = $annotation->id();
-                    $data['o-module-annotate:body'][0]['rdf:value'][] = [
+            if (!empty($options['oaLinking'])) {
+                // A link is motivated by linking. Remove the other motivation
+                // if there is no description.
+                if (!empty($data['oa:motivatedBy'][0]) && empty($data['o-module-annotate:body'][0]['rdf:value'])) {
+                    unset($data['oa:motivatedBy'][0]);
+                    unset($data['o-module-annotate:body'][0]['oa:hasPurpose']);
+                }
+                $data['oa:motivatedBy'][] = [
+                    'property_id' => $this->propertyId('oa:motivatedBy'),
+                    'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
+                    '@value' => 'linking',
+                ];
+                // Each link is a separate body. Deduplicate ids too.
+                $ids = [];
+                foreach ($options['oaLinking'] as $valueResource) {
+                    $id = $valueResource['value_resource_id'];
+                    if (in_array($id, $ids)) {
+                        continue;
+                    }
+                    $ids[] = $id;
+                    $oaLinkingValues = [];
+                    $oaLinkingValues['o-module-annotate:annotation']['o:id'] = $annotation->id();
+                    $oaLinkingValues['rdf:value'][] = [
                         'property_id' => $this->propertyId('rdf:value'),
-                        'type' => 'literal',
-                        '@value' => $options['popupContent'],
+                        'type' => 'resource',
+                        'value_resource_id' => $id,
                     ];
-
-                    $data['o-module-annotate:body'][0]['oa:hasPurpose'] = [];
-                    if (!empty($options['oaHasPurpose'])) {
-                        $data['o-module-annotate:body'][0]['oa:hasPurpose'][] = [
-                            'property_id' => $this->propertyId('oa:hasPurpose'),
-                            'type' => 'customvocab:' . $this->customVocabId('Annotation Body oa:hasPurpose'),
-                            '@value' => $options['oaHasPurpose'],
-                        ];
-                    }
-                }
-
-                if (!empty($options['oaLinking'])) {
-                    // A link is motivated by linking.
-                    // TODO There can't be description when linking, except if there are multiple motivations.
-                    $data['o-module-annotate:body'] = [];
-                    // TODO Manage multiple motivations when linking.
-                    $data['oa:motivatedBy'] = [
-                        [
-                            'property_id' => $this->propertyId('oa:motivatedBy'),
-                            'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
-                            '@value' => 'linking',
-                        ],
-                    ];
-                    // Each link is a separate body. Deduplicate ids too.
-                    $ids = [];
-                    foreach ($options['oaLinking'] as $valueResource) {
-                        $id = $valueResource['value_resource_id'];
-                        if (in_array($id, $ids)) {
-                            continue;
-                        }
-                        $ids[] = $id;
-                        $oaLinkingValues = [];
-                        $oaLinkingValues['o-module-annotate:annotation']['o:id'] = $annotation->id();
-                        $oaLinkingValues['rdf:value'][] = [
-                            'property_id' => $this->propertyId('rdf:value'),
-                            'type' => 'resource',
-                            'value_resource_id' => $id,
-                        ];
-                        $data['o-module-annotate:body'][] = $oaLinkingValues;
-                    }
-                }
-
-                if (empty($options['cartographyUncertainty'])) {
-                    $data['o-module-annotate:target'][0]['cartography:uncertainty'] = [];
-                } else {
-                    $data['o-module-annotate:target'][0]['cartography:uncertainty'] = [
-                        [
-                            'property_id' => $this->propertyId('cartography:uncertainty'),
-                            'type' => 'customvocab:' . $this->customVocabId('Cartography cartography:uncertainty'),
-                            '@value' => $options['cartographyUncertainty'],
-                        ],
-                    ];
-                }
-
-                // TODO Check if original and editing are the same to avoid update or to create a useless style.
-                unset($options['original']);
-                unset($options['editing']);
-                unset($options['annotationIdentifier']);
-                unset($options['oaMotivatedBy']);
-                unset($options['popupContent']);
-                unset($options['oaHasPurpose']);
-                unset($options['oaLinking']);
-                unset($options['cartographyUncertainty']);
-
-                // TODO Don't update style if it is not updated (so it can be kept empty). And reset it eventually.
-                if (!empty($options)) {
-                    $data['oa:styledBy'][] = [
-                        'property_id' => $this->propertyId('oa:styledBy'),
-                        'type' => 'literal',
-                        '@value' => json_encode(['leaflet-interactive' => $options], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-                    ];
-                    $data['o-module-annotate:target'][0]['oa:styleClass'][] = [
-                        'property_id' => $this->propertyId('oa:styleClass'),
-                        'type' => 'literal',
-                        '@value' => 'leaflet-interactive',
-                    ];
+                    $data['o-module-annotate:body'][] = $oaLinkingValues;
                 }
             }
 
-            // Partial update is complex, so reload the full annotation.
-
-            // $response = $api->update('annotations', $annotation->id(), $data, [], ['isPartial' => true]);
-
-            // // Only one target is managed.
-            // $response = $api->update('annotation_targets', $target->id(), [
-            //     'rdf:value' => $data['o-module-annotate:target'][0]['rdf:value'],
-            // ], [], ['isPartial' => true]);
-            // if ($options) {
-            //     $response = $api->update('annotation_targets', $target->id(), [
-            //         'oa:styleClass' => $data['o-module-annotate:target'][0]['oa:styleClass'],
-            //     ], [], ['isPartial' => true]);
-            //     $response = $api->update('annotations', $annotation->id(), [
-            //         'oa:styledBy' => $data['oa:styledBy'],
-            //     ], [], ['isPartial' => true]);
-            // }
-
-            // Update main annotation first.
-            if ($options) {
-                $values = $this->arrayValues($annotation);
-                if ($data['oa:styledBy']) {
-                    $values['oa:styledBy'] = $data['oa:styledBy'];
-                }
-                if (!empty($data['oa:motivatedBy'])) {
-                    $values['oa:motivatedBy'] = $data['oa:motivatedBy'];
-                }
-                $response = $api->update('annotations', $annotation->id(), $values, [], ['isPartial' => true]);
+            $data['o-module-annotate:target'][0]['cartography:uncertainty'] = [];
+            if (!empty($options['cartographyUncertainty'])) {
+                $data['o-module-annotate:target'][0]['cartography:uncertainty'][] = [
+                    'property_id' => $this->propertyId('cartography:uncertainty'),
+                    'type' => 'customvocab:' . $this->customVocabId('Cartography cartography:uncertainty'),
+                    '@value' => $options['cartographyUncertainty'],
+                ];
             }
 
-            // Save the bodies separately, if any.
-            // This is possible because the annotation was updated partially.
-            // Because deduplication between existing and new values is complex,
-            // simply delete existing bodies and create new ones.
-            foreach ($bodies as &$body) {
-                $body = $body->id();
-            }
-            unset($body);
-            $response = $api->batchDelete('annotation_bodies', $bodies);
-            $response = $api->batchCreate('annotation_bodies', $data['o-module-annotate:body']);
+            // TODO Check if original and editing are the same to avoid update or to create a useless style.
+            unset($options['original']);
+            unset($options['editing']);
+            unset($options['annotationIdentifier']);
+            unset($options['oaMotivatedBy']);
+            unset($options['popupContent']);
+            unset($options['oaHasPurpose']);
+            unset($options['oaLinking']);
+            unset($options['cartographyUncertainty']);
 
-            // There is always one target at least, and only one is managed.
-            $values = $this->arrayValues($target);
-            $values['rdf:value'] = $data['o-module-annotate:target'][0]['rdf:value'];
-            if ($options) {
-                $values['oa:styleClass'] = $data['o-module-annotate:target'][0]['oa:styleClass'];
-                $values['cartography:uncertainty'] = $data['o-module-annotate:target'][0]['cartography:uncertainty'];
+            // TODO Don't update style if it is not updated (so it can be kept empty). And reset it eventually. And use class style.
+            if (!empty($options)) {
+                $data['oa:styledBy'][] = [
+                    'property_id' => $this->propertyId('oa:styledBy'),
+                    'type' => 'literal',
+                    '@value' => json_encode(['leaflet-interactive' => $options], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                ];
+                $data['o-module-annotate:target'][0]['oa:styleClass'][] = [
+                    'property_id' => $this->propertyId('oa:styleClass'),
+                    'type' => 'literal',
+                    '@value' => 'leaflet-interactive',
+                ];
             }
-            $response = $api->update('annotation_targets', $target->id(), $values, [], ['isPartial' => true]);
+        }
 
-//         }
+        // Partial update is complex, so reload the full annotation.
+        // $response = $api->update('annotations', $annotation->id(), $data, [], ['isPartial' => true]);
+
+        // Update main annotation first.
+        if ($options) {
+            $values = $this->arrayValues($annotation);
+            if (!empty($data['oa:styledBy'])) {
+                $values['oa:styledBy'] = $data['oa:styledBy'];
+            }
+            if (!empty($data['oa:motivatedBy'])) {
+                $values['oa:motivatedBy'] = $data['oa:motivatedBy'];
+            }
+            $response = $api->update('annotations', $annotation->id(), $values, [], ['isPartial' => true]);
+        }
+
+        // Save the bodies separately, if any.
+        // This is possible because the annotation was updated partially.
+        // Because deduplication between existing and new values is complex,
+        // simply delete existing bodies and create new ones.
+        foreach ($bodies as &$body) {
+            $body = $body->id();
+        }
+        unset($body);
+        $response = $api->batchDelete('annotation_bodies', $bodies);
+        $response = $api->batchCreate('annotation_bodies', $data['o-module-annotate:body']);
+
+        // There is always one target at least, and only one is managed.
+        $values = $this->arrayValues($target);
+        $values['rdf:value'] = $data['o-module-annotate:target'][0]['rdf:value'];
+        if ($options) {
+            $values['oa:styleClass'] = $data['o-module-annotate:target'][0]['oa:styleClass'];
+            $values['cartography:uncertainty'] = $data['o-module-annotate:target'][0]['cartography:uncertainty'];
+        }
+        $response = $api->update('annotation_targets', $target->id(), $values, [], ['isPartial' => true]);
+
         if (!$response) {
             return $this->jsonError('An internal error occurred.', Response::STATUS_CODE_500); // @translate
         }
 
         return new JsonModel([
             'status' => 'success',
-            'result' => true,
+            'result' => [
+                'id' => $annotation->id(),
+                'moderation' => !$this->userIsAllowed(Annotation::class, 'update'),
+                // 'resourceId' => $resource->id(),
+                'annotation' => $annotation->getJsonLd(),
+            ],
         ]);
     }
 
@@ -676,8 +634,17 @@ class CartographyController extends AbstractActionController
                 }
             }
 
-            $value = $annotation->value('oa:motivatedBy');
-            $geometry['options']['oaMotivatedBy'] = $value ? $value->value() : '';
+            // Only two motivations are managed together currently: a default
+            // one and "linking". Because linking is automatically set, only the
+            // other motivation is needed.
+            $geometry['options']['oaMotivatedBy'] = '';
+            $values = $annotation->value('oa:motivatedBy', ['all' => true, 'default' => []]);
+            foreach ($values as $value) {
+                $geometry['options']['oaMotivatedBy'] = $value->value();
+                if ($geometry['options']['oaMotivatedBy'] !== 'linking') {
+                    break;
+                }
+            }
 
             // Default values.
             $geometry['options']['popupContent'] = '';

@@ -20,3 +20,29 @@
 .leaflet-styleeditor-interior  textarea.leaflet-styleeditor-input {
     max-height: unset;
 }
+.leaflet-popup-content .body-rdf-value,
+.leaflet-popup-content .body-oa-linking {
+    margin-bottom: 18px;
+}
+.leaflet-popup-content .body-oa-linking .value {
+    display: flex;
+}
+.leaflet-popup-content .body-oa-linking .value .resource-oa-linking {
+    margin: 0;
+    position: relative;
+}
+.leaflet-popup-content .body-oa-linking .value .resource-oa-linking img {
+    height: 24px;
+    margin-right: 6px;
+}
+.leaflet-popup-content .annotation-caption {
+    /* TODO Fix this min width when the popup is small. */
+    min-width: 60px;
+}
+.leaflet-popup-content .annotation-caption .actions {
+    /* TODO Fix this margin. */
+    margin-top: -4px;
+}
+.leaflet-popup-content .actions {
+    float: right;
+}

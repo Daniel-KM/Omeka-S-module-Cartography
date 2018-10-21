@@ -46,7 +46,8 @@ var displayGeometries = function(geometries) {
         // Prepare to set the content of the popup.
         if (options.popupContent) {
             options.onEachFeature = function(feature, layer) {
-                layer.bindPopup(options.popupContent);
+                var popupContent = popupAnnotation(options);
+                layer.bindPopup(popupContent);
 
                 // To reserve the options from geoJson.
                 layer.options = layer.options || {};
@@ -62,7 +63,8 @@ var displayGeometries = function(geometries) {
 
             // Set the content of the popup.
             if (layer && options.popupContent) {
-                layer.bindPopup(options.popupContent);
+                var popupContent = popupAnnotation(options);
+                layer.bindPopup(popupContent);
             }
         } else {
             layer = L.geoJson(geojson, options);
@@ -236,6 +238,56 @@ var deleteGeometry = function(layer) {
                 : Omeka.jsTranslate('Unable to delete the geometry.');
             alert(message);
         });
+}
+
+/**
+ * Create the popup content from the options of the geometry.
+ *
+ * @param options
+ */
+var popupAnnotation = function(options) {
+    var html = '';
+
+    var content = options.popupContent || '';
+    var oaLinking = options.oaLinking || [];
+    var annotationIdentifier = options.annotationIdentifier || null;
+    var url = '';
+
+    if (content.length) {
+        html += '<div class="body-rdf-value">' + content + '</div>';
+    }
+    if (oaLinking.length) {
+        html += '<div class="body-oa-linking" >';
+        html += '<label>' + (oaLinking.length === 1 ? Omeka.jsTranslate('Related item') : Omeka.jsTranslate('Related items')) + '</label>';
+        $.each(oaLinking, function(index, valueObj) {
+            html += '<div class="value">'
+                + '<p class="resource-oa-linking">'
+                // TODO Add ellipsis to display the title and to display the resource icon.
+                // + '<span class="o-title ' + valueObj['value_resource_name'] + '">';
+                + '<span class="o-title ' + valueObj['value_resource_name'] + '-no">'
+                + (typeof valueObj['thumbnail_url'] !== 'undefined' ? '<img src="' + valueObj['thumbnail_url'] + '">' : '')
+                + '<a href="' + valueObj['url'] + '">'
+                + (typeof valueObj['display_title'] === 'undefined' ? Omeka.jsTranslate('[Untitled]') : valueObj['display_title'])
+                + '</a>'
+                + '</span>'
+                + '</p>'
+                + '</div>';
+        });
+        html += '</div>';
+    }
+    if (annotationIdentifier) {
+        url = basePath + '/admin/annotation/' + annotationIdentifier;
+        html += '<div class="annotation-caption">'
+            + '<a class="resource-link" href="' + url + '">'
+            + '<span class="resource-name">[#' + annotationIdentifier + ']</span>'
+            + '</a>'
+            + '<ul class="actions"><li><span>'
+            + '<a class="o-icon-external" href="' + url + '" target="_blank" title="' + Omeka.jsTranslate('Show annotation') + '" aria-label="' + Omeka.jsTranslate('Show annotation') + '"></a>'
+            + '</span></li></ul>'
+            + '</div>';
+    }
+
+    return html;
 }
 
 /**

@@ -13,7 +13,7 @@ $(document).ready( function() {
  *
  * @return array
  */
-var fetchGeometries = function(identifier) {
+var fetchGeometries = function(identifier, partIdentifier) {
     var url = window.location.origin + basePath + '/admin/cartography/' + identifier + '/geometries'
         + '?mediaId=0';
 
@@ -79,7 +79,7 @@ var addGeometry = function(layer, identifier) {
         // Identifier is always empty.
         id : identifier,
         resourceId: resourceId,
-        mediaId: null,
+        mediaId: currentMediaId(),
         wkt: wkt,
         // Options are saved only when updated: some people don't need styles
         // so it will be lighter in that case.
@@ -129,8 +129,8 @@ var editGeometry = function(layer) {
     var url = basePath + '/admin/cartography/annotate';
     var data = {
         id: identifier,
+        mediaId: currentMediaId(),
         wkt: wkt,
-        mediaId: null,
         options: layer.options
     };
 
@@ -199,6 +199,7 @@ var addNonGroupLayers = function(sourceLayer, targetGroup) {
  *
  * @todo Fix this process, too hacky: the identifier should be simple to save and find.
  * @param layer
+ * @return int
  */
 var getMarkerIdentifier = function(layer) {
     var identifier = layer.options.annotationIdentifier;
@@ -207,6 +208,19 @@ var getMarkerIdentifier = function(layer) {
     }
     var parents = Object.values(layer._eventParents);
     return parents[parents.length - 1].annotationIdentifier;
+}
+
+/**
+ * Get the media id of the current image overlay.
+ *
+ * There is no media id in Locate, since anything is georeferenced, and related
+ * to the item.
+ *
+ * @todo Get id of the current ImageOverlay via Leaflet methods, not jQuery.
+ * @return null
+ */
+var currentMediaId = function() {
+    return null;
 }
 
 /**
@@ -229,11 +243,17 @@ var setView = function() {
 
 /* Initialization */
 
+var section = 'locate';
+
+//TODO Find the way to get the current annotation after the resource selection.
+var currentAnnotation;
+
 // Initialize the map and set default view.
 var map = L.map('cartography-map', {
     pasteControl: true,
 });
 map.setView([20, 0], 2);
+
 var mapMoved = false;
 
 // TODO Create automatically the bounds from geometries.
@@ -320,14 +340,12 @@ if (!wmsLayers.length) {
         exclusiveGroups: ['Overlays']
     }).addTo(map);
 }
+map.addLayer(baseMaps['Satellite']);
+//TODO Fix and add the fit bound control with geometries, not markers.
+fetchGeometries(resourceId);
 
 // Geometries are displayed and edited on the drawnItems layer.
 var drawnItems = new L.FeatureGroup();
-var geoSearchControl = new window.GeoSearch.GeoSearchControl({
-    provider: new window.GeoSearch.OpenStreetMapProvider,
-    showMarker: false,
-    retainZoomLevel: true,
-});
 var drawControl = new L.Control.Draw({
     draw: {
         polyline: true,
@@ -342,13 +360,15 @@ var drawControl = new L.Control.Draw({
         remove: true
     }
 });
+var geoSearchControl = new window.GeoSearch.GeoSearchControl({
+    provider: new window.GeoSearch.OpenStreetMapProvider,
+    showMarker: false,
+    retainZoomLevel: true,
+});
 map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
 map.addControl(drawControl);
 map.addControl(geoSearchControl);
 map.addControl(new L.control.scale({'position':'bottomleft','metric':true,'imperial':false}));
-// TODO Fix and add the fit bound control with geometries, not markers.
-
-map.addLayer(baseMaps['Satellite']);
 map.addLayer(drawnItems);
 
 /* Style Editor (https://github.com/dwilhelm89/Leaflet.StyleEditor) */
@@ -383,9 +403,6 @@ if (typeof openWmsLayer !== 'undefined' && openWmsLayer) {
 setView();
 
 /* Manage geometries. */
-
-// Handle existing geometries.
-fetchGeometries(resourceId);
 
 // Handle adding new geometries.
 map.on(L.Draw.Event.CREATED, function (element) {
@@ -425,10 +442,156 @@ map.on('paste:layer-created', function(element) {
 
 /* Various methods. */
 
+// Manage the relations side bar.
+// TODO Move specific code from StyleEditor here and use events.
+
+// Store the current annotation identifier for easier processing after resource selection.
+map.on('styleeditor:editing', function(element){
+    // The annotation identifier is enough, but currently, the full layer/marker/geometry is saved.
+    currentAnnotation = element;
+});
+map.on('styleeditor:hidden', function(element){
+    currentAnnotation = null;
+});
+
+// Disable the core resource-form.js bind for the sidebar selector.
+// TODO Factorize to avoid this check.
+if (typeof mainImages === 'undefined' || mainImages.length === 0) {
+    $(document).off('o:prepare-value');
+}
+
+/**
+ * Add a new linked resource from the sidebar for the style editor.
+ *
+ * @see application/asset/js/resource-form.js
+ * type: "resource"; value: empty; valueObj: data of one selected item; nameprefix: empty.
+ */
+$(document).on('o:prepare-value', function(e, type, value, valueObj, namePrefix) {
+    if (!valueObj || typeof valueObj['value_resource_id'] === 'undefined') {
+        return;
+    }
+    // Check if the current section is open.
+    if ($('.section.active').prop('id') !== section || $('#' + section + ' .leaflet-styleeditor.editor-enabled').length !== 1) {
+        return;
+    }
+    var identifier = currentAnnotation.annotationIdentifier
+        ? currentAnnotation.annotationIdentifier
+        : currentAnnotation.options.annotationIdentifier
+        ? currentAnnotation.options.annotationIdentifier
+        : null;
+    if (!identifier) {
+        alert('Unable to find the geometry.');
+        return;
+    }
+
+    // Check if the selected resource is already linked.
+    var partIdentifier = currentMediaId();
+    var url = window.location.origin + basePath + '/admin/cartography/' + resourceId + '/geometries'
+        + '?mediaId=' + '0' + '&annotationId=' + identifier;
+    $.get(url, null,
+        function(data, textStatus, jqxhr) {
+            if (data.status === 'error') {
+                alert(data.message);
+                return;
+            }
+
+            if (typeof data.geometries[identifier] !== 'undefined') {
+                var oaLinking = data.geometries[identifier].options.oaLinking || [];
+                var arrayLength = oaLinking.length;
+                for (var i = 0; i < arrayLength; i++) {
+                    if (oaLinking[i]['value_resource_id'] === valueObj['value_resource_id']) {
+                        alert('The resource is already linked to the current annotation.');
+                        return;
+                    }
+                }
+            }
+
+            var resourceDataTypes = [
+                'resource',
+                'resource:item',
+                'resource:itemset',
+                'resource:media',
+            ];
+            if (!valueObj || resourceDataTypes.indexOf(type) === -1) {
+                return;
+            }
+
+            addLinkedResource(identifier, valueObj);
+            appendLinkedResource(valueObj);
+        })
+        .fail(function(jqxhr) {
+            var message = JSON.parse(jqxhr.responseText).message || 'Unable to fetch the geometries.';
+            alert(message);
+        });
+});
+var addLinkedResource = function(identifier, valueObj) {
+    if (typeof currentAnnotation.options.oaLinking === 'undefined') {
+        currentAnnotation.options.oaLinking = [];
+    }
+    currentAnnotation.options.oaLinking.push(valueObj);
+    editGeometry(currentAnnotation);
+};
+var appendLinkedResource = function(valueObj) {
+    // Prepare the markup for the resource data types.
+    var html = '<div class="value selecting-resource">'
+        + '<p class="selected-resource">'
+        // TODO Add ellipsis to display the title and to display the resource icon.
+        // + '<span class="o-title ' + valueObj['value_resource_name'] + '">';
+        + '<span class="o-title ' + valueObj['value_resource_name'] + '-no">'
+        + (typeof valueObj['thumbnail_url'] !== 'undefined' ? '<img src="' + valueObj['thumbnail_url'] + '">' : '')
+        + '<a href="' + valueObj['url'] + '">'
+        + (typeof valueObj['display_title'] === 'undefined' ? Omeka.jsTranslate('[Untitled]') : valueObj['display_title'])
+        + '</a>'
+        + '</span>'
+        + '</p>'
+        + '<ul class="actions">'
+        + '<li><a class="o-icon-delete remove-value" title="Remove value" href="#" aria-label="Remove value" data-value-resource-id="' + valueObj['value_resource_id'] + '"></a></li>'
+        + '</ul>'
+        + '</div>';
+    var oaLinkingDiv = $('.leaflet-styleeditor-oalinking.value.selecting-resource:visible');
+    oaLinkingDiv.append(html);
+};
+
+/**
+ * Remove a linked resource (directly via jQuery).
+ */
+$('#' + section).on('click', '.leaflet-styleeditor-interior .actions .remove-value', function (element) {
+    if (!currentAnnotation || !currentAnnotation.options.oaLinking || currentAnnotation.options.oaLinking.length === 0) {
+        return;
+    }
+
+    // Remove the linked resource from the list of linked resources.
+    var oaLinking = currentAnnotation.options.oaLinking || [];
+    var valueResourceId = $(this).data('value-resource-id');
+    var exists = false;
+    for (var i = 0; i < oaLinking.length; i++) {
+        if (oaLinking[i]['value_resource_id'] == valueResourceId) {
+            oaLinking.splice(i, 1);
+            exists = true;
+            break;
+        }
+    }
+    if (!exists) {
+        return;
+    }
+
+    currentAnnotation.options.oaLinking = oaLinking;
+    editGeometry(currentAnnotation);
+
+    // Remove the element from the style editor.
+    $(this).closest('.value.selecting-resource').remove();
+});
+
 // Switching sections changes map dimensions, so make the necessary adjustments.
-$('#locate').one('o:section-opened', function(e) {
+$('#' + section).one('o:section-opened', function(e) {
     map.invalidateSize();
     setView();
+});
+
+//Close the sidebar when switching sections to avoid possible issues between describe/locate.
+$('#' + section).on('o:section-closed', function(e) {
+    var sidebar = $('#select-resource');
+    Omeka.closeSidebar(sidebar);
 });
 
 });

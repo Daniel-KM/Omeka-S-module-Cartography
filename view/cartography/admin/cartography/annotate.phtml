@@ -37,10 +37,16 @@ $this->headScript()->appendFile($this->assetUrl('vendor/leaflet-fullscreen/Leafl
 
 // Integration in Omeka S.
 $this->headLink()->appendStylesheet($this->assetUrl('css/cartography-admin.css', 'Cartography'));
+// TODO Load only the item selector part of the resource-form.js.
+$this->headScript()->appendFile($this->assetUrl('js/resource-form.js', 'Omeka'));
 
 $script = 'var basePath = ' . json_encode($this->basePath(), 320) . ';
 var resourceId = ' . $resource->id() . ';
+var valuesJson =  ' . json_encode($resource->values(), 320). ';
 var oaMotivatedBySelect = ' . json_encode($oaMotivatedBySelect, 320) . ';
 var oaHasPurposeSelect = ' . json_encode($oaHasPurposeSelect, 320) . ';
 var cartographyUncertaintySelect = ' . json_encode($cartographyUncertaintySelect, 320) . ';';
 $this->headScript()->appendScript($script);
+
+?>
+<?php echo $this->partial('common/resource-select-sidebar'); ?>

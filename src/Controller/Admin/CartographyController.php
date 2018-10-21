@@ -96,6 +96,10 @@ class CartographyController extends AbstractActionController
         if (empty($data['options']['oaMotivatedBy'])) {
             $options['oaMotivatedBy'] = 'highlighting';
         }
+        // Clean the motivation when it is linking without link.
+        elseif ($data['options']['oaMotivatedBy'] === 'linking' && empty($data['options']['oaLinking'])) {
+            $options['oaMotivatedBy'] = 'highlighting';
+        }
 
         if (empty($data['id'])) {
             if (empty($data['resourceId'])) {

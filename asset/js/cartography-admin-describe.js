@@ -347,6 +347,7 @@ fetchGeometries(resourceId, mainImages[0].id);
 
 // Geometries are displayed and edited on the drawnItems layer.
 var drawnItems = new L.FeatureGroup();
+
 var drawControl = new L.Control.Draw({
     draw: {
         polyline: true,
@@ -358,8 +359,12 @@ var drawControl = new L.Control.Draw({
     },
     edit: {
         featureGroup: drawnItems,
-        remove: true
+        remove: true,
     }
+});
+// Don't display the button "clear all".
+L.EditToolbar.Delete.include({
+    removeAllLayers: false,
 });
 map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
 map.addControl(drawControl);

@@ -1,14 +1,14 @@
-# Translation for the Cartography module for Omeka S.
-# Copyright (C) 2011 Roy Rosenzweig Center for History and New Media
-# This file is distributed under the same license as the Omeka package.
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Cartography\n"
-"Report-Msgid-Bugs-To: http://github.com/Daniel-KM/Omeka-S-module-Cartography/issues\n"
-"POT-Creation-Date: 2017-09-25 00:00-0000\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2018-10-22 00:00+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,3 +16,259 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: Module.php:47
+#, php-format
+msgid ""
+"The module \"%s\" was automatically deactivated because the dependencies are "
+"unavailable."
+msgstr ""
+
+#: Module.php:61
+#, php-format
+msgid "This module requires the module \"%s\"."
+msgstr ""
+
+#: view/cartography/admin/cartography/annotate-describe.phtml:19
+msgid "Annotate an image"
+msgstr ""
+
+#: view/cartography/admin/cartography/annotate-describe.phtml:21
+msgid "There is no image attached to this resource."
+msgstr ""
+
+#: view/cartography/admin/cartography/annotate-locate.phtml:39
+msgid "Geolocate item"
+msgstr ""
+
+#: view/common/site/cartography.phtml:43
+msgid "Cartography"
+msgstr ""
+
+#: data/scripts/upgrade.php:39 data/scripts/upgrade.php:138
+#: data/scripts/upgrade.php:223 Module.php:94
+#, php-format
+msgid "The custom vocab named \"%s\" is not available."
+msgstr ""
+
+#: data/scripts/upgrade.php:109
+#, php-format
+msgid "The module \"%s\" must be upgraded to version %s first."
+msgstr ""
+
+#: Module.php:72
+msgid "Specific metadata for cartography (to be removed)."
+msgstr ""
+
+#: Module.php:357
+msgid "Append cartography automatically to item page"
+msgstr ""
+
+#: Module.php:358
+msgid ""
+"If unchecked, the cartography can be added via the helper in the theme or "
+"the block in any page."
+msgstr ""
+
+#: Module.php:363
+msgid "cartography_append_item_show"
+msgstr ""
+
+#: Module.php:409
+msgid "Describe"
+msgstr ""
+
+#: Module.php:412
+msgid "Locate"
+msgstr ""
+
+#: Module.php:592
+#, php-format
+msgid "The vocabulary \"%s\" was already installed and was kept."
+msgstr ""
+
+#: Module.php:602
+#, php-format
+msgid ""
+"An error occured when adding the prefix \"%s\": another vocabulary exists. "
+"Resolve the conflict before installing this module."
+msgstr ""
+
+#: Module.php:622
+#, php-format
+msgid ""
+"An error occured when adding the prefix \"%s\" and the associated "
+"properties: %s"
+msgstr ""
+
+#: src/Form/ConfigForm.php:16
+msgid "User guide"
+msgstr ""
+
+#: src/Form/ConfigForm.php:17
+msgid "This text will be shown below the cartography."
+msgstr ""
+
+#: src/Form/ConfigForm.php:21
+msgid "Feel free to use cartography!"
+msgstr ""
+
+#: src/Form/ConfigForm.php:29
+msgid "Tabs to display"
+msgstr ""
+
+#: src/Form/ConfigForm.php:31
+msgid "Describe: annotate images of the item"
+msgstr ""
+
+#: src/Form/ConfigForm.php:32
+msgid "Locate: annotate georeferenced wms (dcterms:spatial) of the item"
+msgstr ""
+
+#: src/Form/ConfigForm.php:44
+msgid "Specific parameters for Describe (js)"
+msgstr ""
+
+#: src/Form/ConfigForm.php:45
+msgid "See readme."
+msgstr ""
+
+#: src/Form/ConfigForm.php:56
+msgid "Specific parameters for Locate (js)"
+msgstr ""
+
+#: src/Form/ConfigForm.php:57
+msgid "This js code allows to replace the default maps. See readme."
+msgstr ""
+
+#: src/Form/ConfigForm.php:68
+msgid "Add wms for all maps"
+msgstr ""
+
+#: src/Form/ConfigForm.php:69
+msgid ""
+"Add wms urls, one by line, with a optional label separated by a space. See "
+"readme."
+msgstr ""
+
+#: src/Controller/Admin/CartographyController.php:24
+#: src/Controller/Admin/CartographyController.php:33
+msgid "Not found."
+msgstr ""
+
+#: src/Controller/Admin/CartographyController.php:69
+#: src/Controller/Admin/CartographyController.php:152
+msgid "This url is not available."
+msgstr ""
+
+#: src/Controller/Admin/CartographyController.php:76
+#: src/Controller/Admin/CartographyController.php:160
+#: src/Controller/Admin/CartographyController.php:179
+msgid "Unauthorized access."
+msgstr ""
+
+#: src/Controller/Admin/CartographyController.php:82
+msgid "An internal error occurred from the client: no wkt."
+msgstr ""
+
+#: src/Controller/Admin/CartographyController.php:86
+msgid "An internal error occurred from the client: unmanaged wkt ."
+msgstr ""
+
+#: src/Controller/Admin/CartographyController.php:106
+msgid "An internal error occurred from the client: no resource."
+msgstr ""
+
+#: src/Controller/Admin/CartographyController.php:113
+#: src/Controller/Admin/CartographyController.php:175
+msgid "Resource not found."
+msgstr ""
+
+#: src/Controller/Admin/CartographyController.php:123
+msgid "Media not found."
+msgstr ""
+
+#: src/Controller/Admin/CartographyController.php:134
+msgid "Annotation not found."
+msgstr ""
+
+#: src/Controller/Admin/CartographyController.php:165
+msgid "An internal error occurred from the client: resource id not set."
+msgstr ""
+
+#: src/Controller/Admin/CartographyController.php:364
+#: src/Controller/Admin/CartographyController.php:584
+msgid "An internal error occurred."
+msgstr ""
+
+#: config/module.config.php:87
+msgid "Cancel Styling"
+msgstr ""
+
+#: config/module.config.php:88
+msgid "Choose another element you want to style"
+msgstr ""
+
+#: config/module.config.php:89
+msgid "Click on the element you want to style"
+msgstr ""
+
+#: config/module.config.php:90
+msgid "Finish"
+msgstr ""
+
+#: config/module.config.php:91
+msgid "Image #"
+msgstr ""
+
+#: config/module.config.php:92
+msgid "Layer"
+msgstr ""
+
+#: config/module.config.php:93
+msgid "Log in to delete the geometry."
+msgstr ""
+
+#: config/module.config.php:94
+msgid "Log in to edit the geometry."
+msgstr ""
+
+#: config/module.config.php:95
+msgid "Log in to save the geometry."
+msgstr ""
+
+#: config/module.config.php:96
+msgid "No overlay"
+msgstr ""
+
+#: config/module.config.php:98
+msgid "The resource is already linked to the current annotation."
+msgstr ""
+
+#: config/module.config.php:99
+msgid "Unable to delete the geometry."
+msgstr ""
+
+#: config/module.config.php:100
+msgid "Unable to fetch the geometries."
+msgstr ""
+
+#: config/module.config.php:101
+msgid "Unable to find the geometry."
+msgstr ""
+
+#: config/module.config.php:102
+msgid "Unable to save the geometry."
+msgstr ""
+
+#: config/module.config.php:103
+msgid "Unable to save the edited geometry."
+msgstr ""
+
+#: config/module.config.php:104
+msgid "Unable to update the geometry."
+msgstr ""
+
+#: config/module.config.php:108
+msgid "Feel free to use <strong>Cartography</strong>!"
+msgstr ""

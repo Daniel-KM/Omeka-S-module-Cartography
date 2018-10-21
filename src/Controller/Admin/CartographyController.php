@@ -21,14 +21,15 @@ class CartographyController extends AbstractActionController
         if (!$id) {
             return new JsonModel([
                 'status' => 'error',
-                'message' => 'Not found.',
+                'message' => 'Not found.', // @translate
             ]);
         }
-        $resource = $this->api()->read('resources', $id)->getContent();
-        if (!$resource) {
+        try {
+            $resource = $this->api()->read('resources', $id)->getContent();
+        } catch (\Omeka\Api\Exception\NotFoundException $e) {
             return new JsonModel([
                 'status' => 'error',
-                'message' => 'Not found.',
+                'message' => 'Not found.', // @translate
             ]);
         }
 
@@ -75,47 +76,61 @@ class CartographyController extends AbstractActionController
         }
 
         $data = $this->params()->fromPost();
+
         if (empty($data['wkt'])) {
-            return $this->jsonError('An internal error occurred from the client.', Response::STATUS_CODE_400); // @translate
+            return $this->jsonError('An internal error occurred from the client: no wkt.', Response::STATUS_CODE_400); // @translate
         }
         $geometry = $this->checkAndCleanWkt($data['wkt']);
         if (strlen($geometry) == 0) {
-            return $this->jsonError('An internal error occurred from the client.', Response::STATUS_CODE_400); // @translate
+            return $this->jsonError('An internal error occurred from the client: unmanaged wkt .', Response::STATUS_CODE_400); // @translate
         }
+
+        $api = $this->viewHelpers()->get('api');
 
         // Options contains styles and description.
         $options = isset($data['options']) ? $data['options'] : [];
 
-        // Check if it is an update.
-        if (!empty($data['id'])) {
-            $id = $data['id'];
-            $api = $this->viewHelpers()->get('api');
-            $resource = $api
-                ->searchOne('annotations', ['id' => $id])
-                ->getContent();
-            if (!$resource) {
+        // Default motivation for the module Cartography is "highlighting" and a
+        // motivation is required.
+        if (empty($data['options']['oaMotivatedBy'])) {
+            $data['options']['oaMotivatedBy'] = 'highlighting';
+        }
+
+        if (empty($data['id'])) {
+            if (empty($data['resourceId'])) {
+                return $this->jsonError('An internal error occurred from the client: no resource.', Response::STATUS_CODE_400); // @translate
+            }
+
+            $resourceId = $data['resourceId'];
+            try {
+                $resource = $api->read('resources', ['id' => $resourceId])->getContent();
+            } catch (\Omeka\Api\Exception\NotFoundException $e) {
                 return $this->jsonError('Resource not found.', Response::STATUS_CODE_404); // @translate
             }
 
-            // TODO Remove this value, since it cannot change.
+            // Save media id too to manage multiple media by image, else wms.
             $options['mediaId'] = empty($data['mediaId']) ? null : $data['mediaId'];
+            if ($options['mediaId']) {
+                $media = $api
+                    ->searchOne('media', ['id' => $options['mediaId']])
+                    ->getContent();
+                if (!$media) {
+                    return $this->jsonError('Media not found.', Response::STATUS_CODE_404); // @translate
+                }
+            }
 
-            return $this->updateAnnotation($resource, $geometry, $options);
+            return $this->createAnnotation($resource, $geometry, $options);
         }
 
-        if (empty($data['resourceId'])) {
-            return $this->jsonError('An internal error occurred from the client.', Response::STATUS_CODE_400); // @translate
+        $id = $data['id'];
+        $annotation = $api
+            ->searchOne('annotations', ['id' => $id])
+            ->getContent();
+        if (!$annotation) {
+            return $this->jsonError('Annotation not found.', Response::STATUS_CODE_404); // @translate
         }
 
-        // Default motivation for the module Cartography is "highlighting".
-        // Note: it can be bypassed by data options.
-        $oaMotivatedBy = empty($data['oaMotivatedBy']) ? 'highlighting' : $data['oaMotivatedBy'];
-
-        // Save the media id too to manage multiple media by image.
-        $options['mediaId'] = empty($data['mediaId']) ? null : $data['mediaId'];
-
-        $resourceId = $data['resourceId'];
-        return $this->createAnnotation($resourceId, $geometry, $options, $oaMotivatedBy);
+        return $this->updateAnnotation($annotation, $geometry, $options);
     }
 
     /**
@@ -140,7 +155,7 @@ class CartographyController extends AbstractActionController
 
         $data = $this->params()->fromPost();
         if (empty($data['id'])) {
-            return $this->jsonError('An internal error occurred from the client.', Response::STATUS_CODE_400); // @translate
+            return $this->jsonError('An internal error occurred from the client: resource id not set.', Response::STATUS_CODE_400); // @translate
         }
 
         $id = $data['id'];
@@ -170,34 +185,26 @@ class CartographyController extends AbstractActionController
      *
      * @todo Geojson is used for display, so create a table for wkt for quick access.
      *
-     * @param int $resourceId
+     * @param AbstractResourceEntityRepresentation $resource
      * @param string $geometry
      * @param array $options
-     * @param string $oaMotivatedBy
      * @return \Zend\View\Model\JsonModel
      */
-    protected function createAnnotation($resourceId, $geometry, array $options, $oaMotivatedBy)
+    protected function createAnnotation(AbstractResourceEntityRepresentation $resource, $geometry, array $options)
     {
         $api = $this->api();
-
         $data = [
             'o:is_public' => 1,
             'o:resource_template' => ['o:id' => $api->searchOne('resource_templates', ['label' => 'Annotation'])->getContent()->id()],
             'o:resource_class' => ['o:id' => $api->searchOne('resource_classes', ['term' => 'oa:Annotation'])->getContent()->id()],
-            'oa:motivatedBy' => [
-                [
-                    'property_id' => $this->propertyId('oa:motivatedBy'),
-                    'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
-                    '@value' => $oaMotivatedBy,
-                ],
-            ],
+            'o-module-annotate:body' => [],
             'o-module-annotate:target' => [
                 [
                     'oa:hasSource' => [
                         [
                             'property_id' => $this->propertyId('oa:hasSource'),
                             'type' => 'resource',
-                            'value_resource_id' => $resourceId,
+                            'value_resource_id' => $resource->id(),
                         ],
                     ],
                 ],
@@ -303,16 +310,18 @@ class CartographyController extends AbstractActionController
             unset($options['oaHasPurpose']);
             unset($options['cartographyUncertainty']);
 
-            $data['oa:styledBy'][] = [
-                'property_id' => $this->propertyId('oa:styledBy'),
-                'type' => 'literal',
-                '@value' => json_encode(['leaflet-interactive' => $options], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-            ];
-            $data['o-module-annotate:target'][0]['oa:styleClass'][] = [
-                'property_id' => $this->propertyId('oa:styleClass'),
-                'type' => 'literal',
-                '@value' => 'leaflet-interactive',
-            ];
+            if (!empty($options)) {
+                $data['oa:styledBy'][] = [
+                    'property_id' => $this->propertyId('oa:styledBy'),
+                    'type' => 'literal',
+                    '@value' => json_encode(['leaflet-interactive' => $options], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                ];
+                $data['o-module-annotate:target'][0]['oa:styleClass'][] = [
+                    'property_id' => $this->propertyId('oa:styleClass'),
+                    'type' => 'literal',
+                    '@value' => 'leaflet-interactive',
+                ];
+            }
         }
 
         $response = $api->create('annotations', $data);
@@ -327,7 +336,7 @@ class CartographyController extends AbstractActionController
             'result' => [
                 'id' => $annotation->id(),
                 'moderation' => !$this->userIsAllowed(Annotation::class, 'update'),
-                'resourceId' => $resourceId,
+                'resourceId' => $resource->id(),
                 'annotation' => $annotation->getJsonLd(),
             ],
         ]);
@@ -336,7 +345,9 @@ class CartographyController extends AbstractActionController
     /**
      * Update a cartographic annotation with geometry.
      *
-     * @param int $resourceId
+     * @todo Factorize createAnnotation() and updateAnnotation().
+     *
+     * @param AnnotationRepresentation $annotation
      * @param string $geometry
      * @param array $options
      * @return \Zend\View\Model\JsonModel
@@ -348,8 +359,9 @@ class CartographyController extends AbstractActionController
         // TODO Only one body, if any, and one target is managed currently.
         $body = $annotation->primaryBody();
         $target = $annotation->primaryTarget();
+
+        // TODO Allow / fix update of an existing target (or always use api annotations?).
 //         if ($target) {
-//             // TODO Fix update of an existing target (or always use api annotations?).
 //             $data = [
 //                 'rdf:value' => [
 //                     [
@@ -444,16 +456,19 @@ class CartographyController extends AbstractActionController
                 unset($options['oaHasPurpose']);
                 unset($options['cartographyUncertainty']);
 
-                $data['oa:styledBy'][] = [
-                    'property_id' => $this->propertyId('oa:styledBy'),
-                    'type' => 'literal',
-                    '@value' => json_encode(['leaflet-interactive' => $options], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-                ];
-                $data['o-module-annotate:target'][0]['oa:styleClass'][] = [
-                    'property_id' => $this->propertyId('oa:styleClass'),
-                    'type' => 'literal',
-                    '@value' => 'leaflet-interactive',
-                ];
+                // TODO Don't update style if it is not updated (so it can be kept empty). And reset it eventually.
+                if (!empty($options)) {
+                    $data['oa:styledBy'][] = [
+                        'property_id' => $this->propertyId('oa:styledBy'),
+                        'type' => 'literal',
+                        '@value' => json_encode(['leaflet-interactive' => $options], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                    ];
+                    $data['o-module-annotate:target'][0]['oa:styleClass'][] = [
+                        'property_id' => $this->propertyId('oa:styleClass'),
+                        'type' => 'literal',
+                        '@value' => 'leaflet-interactive',
+                    ];
+                }
             }
 
             // Partial update is complex, so reload the full annotation.
@@ -670,14 +685,14 @@ class CartographyController extends AbstractActionController
                 switch ($value->type()) {
                     case 'uri':
                         $arrayValue['@id'] = $value->uri();
-                        $arrayValue['o:label'] = $value->value();
+                        $arrayValue['o:label'] = $value->value() ?: null;
                         break;
                     case 'resource':
                         $arrayValue['value_resource_id'] = $value->valueResource()->id();
                         break;
                     case 'literal':
                     default:
-                        $arrayValue['language'] = $value->lang();
+                        $arrayValue['language'] = $value->lang() ?: null;
                         $arrayValue['@value'] = $value->value();
                         break;
                 }

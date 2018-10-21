@@ -24,22 +24,27 @@ var fetchGeometries = function(identifier) {
                 return;
             }
 
-            // Display geometries.
-            $.each(data.geometries, function(index, data) {
-                 var geojson = Terraformer.WKT.parse(data['wkt']);
-                 var options = data['options'] ? data['options'] : {};
-                 options.annotationIdentifier = data['id'];
-                 var layer = L.geoJson(geojson, options);
-                 addGeometry(layer, data['id']);
-                 layer.annotationIdentifier = data['id'];
-                 layer.options.annotationIdentifier = data['id'];
-            });
-
+            displayGeometries(data.geometries);
         })
         .fail(function(jqxhr) {
             var message = JSON.parse(jqxhr.responseText).message || 'Unable to fetch the geometries.';
             alert(message);
         });
+}
+
+/**
+ * Display geometries.
+ */
+var displayGeometries = function(geometries) {
+    $.each(geometries, function(index, data) {
+         var geojson = Terraformer.WKT.parse(data['wkt']);
+         var options = data['options'] ? data['options'] : {};
+         options.annotationIdentifier = data['id'];
+         var layer = L.geoJson(geojson, options);
+         addGeometry(layer, data['id']);
+         layer.annotationIdentifier = data['id'];
+         layer.options.annotationIdentifier = data['id'];
+    });
 }
 
 /**
@@ -75,7 +80,6 @@ var addGeometry = function(layer, identifier) {
         id : identifier,
         resourceId: resourceId,
         mediaId: null,
-        oaMotivatedBy: 'highlighting',
         wkt: wkt,
         // Options are saved only when updated: some people don't need styles
         // so it will be lighter in that case.
@@ -127,7 +131,6 @@ var editGeometry = function(layer) {
         id: identifier,
         wkt: wkt,
         mediaId: null,
-        oaMotivatedBy: 'highlighting',
         options: layer.options
     };
 
@@ -392,6 +395,7 @@ map.on(L.Draw.Event.CREATED, function (element) {
 // Handle editing geometries (when the edit button "save" is clicked).
 map.on(L.Draw.Event.EDITED, function(element) {
     // TODO Check if options changed to avoid to save default ones.
+    // FIXME It doesn't work when a marker is moved or style edited.
     element.layers.eachLayer(function(layer) {
         editGeometry(layer);
     });

@@ -246,6 +246,8 @@ var deleteGeometry = function(layer) {
 /**
  * Create the popup content from the options of the geometry.
  *
+ * @todo Use a template file to display the popup.
+ *
  * @param options
  */
 var popupAnnotation = function(options) {
@@ -257,11 +259,11 @@ var popupAnnotation = function(options) {
     var url = '';
 
     if (content.length) {
-        html += '<div class="body-rdf-value">' + content + '</div>';
+        html += '<div class="annotation-body-rdf-value">' + content + '</div>';
     }
     if (oaLinking.length) {
-        html += '<div class="body-oa-linking" >';
-        html += '<label>' + (oaLinking.length === 1 ? Omeka.jsTranslate('Related item') : Omeka.jsTranslate('Related items')) + '</label>';
+        html += '<div class="annotation-body-oa-linking" >';
+        // html += '<label>' + (oaLinking.length === 1 ? Omeka.jsTranslate('Related item') : Omeka.jsTranslate('Related items')) + '</label>';
         $.each(oaLinking, function(index, valueObj) {
             html += '<div class="value">'
                 + '<p class="resource-oa-linking">'
@@ -278,6 +280,9 @@ var popupAnnotation = function(options) {
         });
         html += '</div>';
     }
+    html += '<div class="annotation-target-cartography-uncertainty"><i>Uncertainty:</i> ' + options['cartographyUncertainty'] + '</div>';
+
+    html += '<div class="annotation-metadata">';
     if (annotationIdentifier) {
         url = basePath + '/admin/annotation/' + annotationIdentifier;
         html += '<div class="annotation-caption">'
@@ -289,6 +294,9 @@ var popupAnnotation = function(options) {
             + '</span></li></ul>'
             + '</div>';
     }
+    html += '<div class="annotation-owner">' + options['owner']['name'] + '</div>';
+    html += '<div class="annotation-created">' + options['date'] + '</div>';
+    html += '</div>';
 
     return html;
 }

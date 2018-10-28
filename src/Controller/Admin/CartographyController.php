@@ -329,6 +329,8 @@ class CartographyController extends AbstractActionController
             unset($options['oaHasPurpose']);
             unset($options['oaLinking']);
             unset($options['cartographyUncertainty']);
+            unset($options['owner']);
+            unset($options['date']);
 
             if (!empty($options)) {
                 $data['oa:styledBy'][] = [
@@ -482,6 +484,8 @@ class CartographyController extends AbstractActionController
             unset($options['oaHasPurpose']);
             unset($options['oaLinking']);
             unset($options['cartographyUncertainty']);
+            unset($options['owner']);
+            unset($options['date']);
 
             // TODO Don't update style if it is not updated (so it can be kept empty). And reset it eventually. And use class style.
             if (!empty($options)) {
@@ -583,7 +587,6 @@ class CartographyController extends AbstractActionController
             }
 
             // Currently, only one target by annotation.
-            // Most of the properties of the annotation are on the target.
             $target = $annotation->primaryTarget();
             if (!$target) {
                 continue;
@@ -677,6 +680,14 @@ class CartographyController extends AbstractActionController
 
             $value = $target->value('cartography:uncertainty');
             $geometry['options']['cartographyUncertainty'] = $value ? $value->value() : '';
+
+            // Get the author and the date to fill the popup.
+            $owner = $annotation->owner();
+            $geometry['options']['owner'] = [
+                'id' => $owner->id(),
+                'name' => $owner->name(),
+            ];
+            $geometry['options']['date'] = $annotation->created()->format('Y-m-d H:i:s');
 
             $geometries[$annotation->id()] = $geometry;
         }

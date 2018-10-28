@@ -106,6 +106,7 @@ return [
         'Unable to save the geometry.', // @translate
         'Unable to save the edited geometry.', // @translate
         'Unable to update the geometry.', // @translate
+        'Uncertainty:', // @translate
     ],
     'cartography' => [
         'config' => [

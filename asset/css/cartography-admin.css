@@ -20,18 +20,18 @@
 .leaflet-styleeditor-interior  textarea.leaflet-styleeditor-input {
     max-height: unset;
 }
-.leaflet-popup-content .body-rdf-value,
-.leaflet-popup-content .body-oa-linking {
+.leaflet-popup-content .annotation-body-rdf-value,
+.leaflet-popup-content .annotation-body-oa-linking {
     margin-bottom: 18px;
 }
-.leaflet-popup-content .body-oa-linking .value {
+.leaflet-popup-content .annotation-body-oa-linking .value {
     display: flex;
 }
-.leaflet-popup-content .body-oa-linking .value .resource-oa-linking {
+.leaflet-popup-content .annotation-body-oa-linking .value .resource-oa-linking {
     margin: 0;
     position: relative;
 }
-.leaflet-popup-content .body-oa-linking .value .resource-oa-linking img {
+.leaflet-popup-content .annotation-body-oa-linking .value .resource-oa-linking img {
     height: 24px;
     margin-right: 6px;
 }
@@ -42,6 +42,12 @@
 .leaflet-popup-content .annotation-caption .actions {
     /* TODO Fix this margin. */
     margin-top: -4px;
+}
+.leaflet-popup-content .annotation-metadata {
+    color: #444444;
+    border-top: #888888 1px solid;
+    margin-top: 6px;
+    padding-top: 6px;
 }
 .leaflet-popup-content .actions {
     float: right;

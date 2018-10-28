@@ -390,13 +390,11 @@ if (!wmsLayers.length) {
     var layerControl = L.control.layers(baseMaps);
     map.addControl(new L.Control.Layers(baseMaps));
 } else {
-    //Adapted from mapping-block.js (module Mapping).
-    // TODO Remove the "no overlay" when there is no overlay.
-    // TODO Use multi-checkboxes, not radios.
+    // Adapted from mapping-block.js (module Mapping).
     var noOverlayLayer = new L.GridLayer();
     var groupedOverlays = {
         'Overlays': {
-            'No overlay': noOverlayLayer,
+            // 'No overlay': noOverlayLayer,
         },
     };
 
@@ -450,7 +448,7 @@ if (!wmsLayers.length) {
         groupedOverlays['Overlays'][wmsLabel] = wmsLayer;
     });
     L.control.groupedLayers(baseMaps, groupedOverlays, {
-        exclusiveGroups: ['Overlays']
+        // exclusiveGroups: ['Overlays'],
     }).addTo(map);
 }
 map.addLayer(baseMaps['Satellite']);

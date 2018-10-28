@@ -1,5 +1,7 @@
 <?php
-/** @var \Zend\View\Renderer\PhpRenderer $this */
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ */
 $translate = $this->plugin('translate');
 
 // Geosearch.
@@ -23,10 +25,10 @@ if ($js = $this->setting('cartography_js_locate')) {
     // Add wmts layers if needed.
     // $this->headScript()->appendFile($this->assetUrl('vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts.js', 'Cartography'));
     $this->headScript()->appendFile($this->assetUrl('vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts-src.js', 'Cartography'));
-    $this->headScript()->appendScript('$(document).ready( function() { ' . $js . ' });');
+    $js = '$(document).ready( function() { ' . $js . ' });';
 }
-
-$this->headScript()->appendFile($this->assetUrl('js/cartography-admin-locate.js', 'Cartography'));
+$js .= "cartographySections.push('locate');";
+$this->headScript()->appendScript($js);
 
 ?>
 <fieldset id="locate" class="section">

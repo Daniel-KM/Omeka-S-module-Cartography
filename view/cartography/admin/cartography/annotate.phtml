@@ -1,5 +1,11 @@
 <?php
-/** @var \Zend\View\Renderer\PhpRenderer $this */
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource
+ * @var array $oaMotivatedBySelect
+ * @var array $oaHasPurposeSelect
+ * @var array $cartographyUncertaintySelect
+ */
 
 // The module is independant from the module Mapping, but some js are the same,
 // so it is recommenced to choose one module or the other to avoid js conflicts.
@@ -37,11 +43,13 @@ $this->headScript()->appendFile($this->assetUrl('vendor/leaflet-fullscreen/Leafl
 
 // Integration in Omeka S.
 $this->headLink()->appendStylesheet($this->assetUrl('css/cartography-admin.css', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('js/cartography-admin.js', 'Cartography'));
 // TODO Load only the item selector part of the resource-form.js.
 $this->headScript()->appendFile($this->assetUrl('js/resource-form.js', 'Omeka'));
 
 $script = 'var basePath = ' . json_encode($this->basePath(), 320) . ';
 var resourceId = ' . $resource->id() . ';
+var cartographySections = [];
 var valuesJson =  ' . json_encode($resource->values(), 320). ';
 var oaMotivatedBySelect = ' . json_encode($oaMotivatedBySelect, 320) . ';
 var oaHasPurposeSelect = ' . json_encode($oaHasPurposeSelect, 320) . ';

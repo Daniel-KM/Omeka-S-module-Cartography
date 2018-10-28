@@ -1,13 +1,15 @@
 <?php
-/** @var \Zend\View\Renderer\PhpRenderer $this */
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ */
 $translate = $this->plugin('translate');
 
 // Integration in Omeka S.
 if ($js = $this->setting('cartography_js_describe')) {
-    $this->headScript()->appendScript('$(document).ready( function() { ' . $js . ' });');
+    $js = '$(document).ready( function() { ' . $js . ' });';
 }
-
-$this->headScript()->appendFile($this->assetUrl('js/cartography-admin-describe.js', 'Cartography'));
+$js .= "cartographySections.push('describe');";
+$this->headScript()->appendScript($js);
 
 ?>
 <fieldset id="describe" class="section">

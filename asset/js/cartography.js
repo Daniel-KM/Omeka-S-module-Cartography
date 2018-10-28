@@ -723,6 +723,8 @@ var initLocate = function() {
     // TODO Fix and add the fit bound control with geometries, not markers.
     fetchGeometries(resourceId, {mediaId: 0}, drawnItems);
 
+    map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
+
     var geoSearchControl = new window.GeoSearch.GeoSearchControl({
         provider: new window.GeoSearch.OpenStreetMapProvider,
         showMarker: false,

@@ -479,33 +479,7 @@ class Module extends AbstractModule
         $displayTab = $settings->get('cartography_display_tab', []);
 
         if (in_array('describe', $displayTab)) {
-            $imageSizePlugin = $services->get('ControllerPluginManager')->get('imageSize');
-
-            $images = [];
-            foreach ($resource->media() as $media) {
-                // Add the url and the size of the file.
-                if (!$media->hasOriginal()) {
-                    continue;
-                }
-                // TODO Manage tiles, iiif, etc.
-                if (strtok($media->mediaType(), '/') !== 'image') {
-                    continue;
-                }
-                $size = $imageSizePlugin($media, 'original');
-                if (!$size) {
-                    continue;
-                }
-                $image = [];
-                $image['id'] = $media->id();
-                $image['url'] = $media->originalUrl();
-                $image['size'] = array_values($size);
-                $images[] = $image;
-            }
-
-            echo $view->partial('cartography/admin/cartography/annotate-describe', [
-                'images' => $images,
-                'jsDescribe' => $settings->get('cartography_js_describe', ''),
-            ]);
+            echo $view->partial('cartography/admin/cartography/annotate-describe');
         }
 
         if (in_array('locate', $displayTab)) {

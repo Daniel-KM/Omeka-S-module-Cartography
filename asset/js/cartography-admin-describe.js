@@ -11,6 +11,34 @@
 $(document).ready( function() {
 
 /**
+ * Fetch images metadata of a resource.
+ *
+ * @todo Remove the sync request and use a callback.
+ *
+ * @param int resourceId
+ * @param object data May contaiin the image type (type: "original"…).
+ * @return array
+ */
+var fetchImages = function(resourceId, data) {
+    var url = basePath + '/admin/cartography/' + resourceId + '/images';
+
+    $.ajax({url: url, data: data, async: false})
+        .done(function(data) {
+            if (data.status === 'error') {
+                alert(data.message);
+                return;
+            }
+            mainImages = data.images;
+        })
+        .fail(function(jqxhr) {
+            var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
+                ? JSON.parse(jqxhr.responseText).message
+                : Omeka.jsTranslate('Unable to fetch the images.');
+            alert(message);
+        });
+}
+
+/**
  * Fetch geometries for a resource.
  *
  * @return array
@@ -357,9 +385,22 @@ var setView = function() {
     // Fit bounds from the current image layer.
 };
 
-/* Initialization */
+/*
+ * Initialization
+ *
+ * Note: there may be no image, since the resource are loaded dynamically.
+ */
 
+// TODO Remove global/closure variables.
 var section = 'describe';
+var mainImages = [];
+
+// TODO Convert the fetch of images into a callback.
+fetchImages(resourceId, {type: 'original'});
+if (!mainImages.length) {
+    $('#cartography-media').html(Omeka.jsTranslate('There is no image attached to this resource.'));
+    return;
+}
 
 // TODO Find the way to get the current annotation after the resource selection.
 var currentAnnotation;
@@ -381,7 +422,7 @@ var mapMoved = false;
 
 //Add layers and controls to the map.
 var baseMaps = {};
-var firstMap;
+var bounds;
 $.each(mainImages, function(index, mainImage) {
     // Compute image edges as positive coordinates.
     // TODO Choose top left as 0.0 for still images?
@@ -389,8 +430,13 @@ $.each(mainImages, function(index, mainImage) {
     var northEast = L.latLng(mainImage.size[1], mainImage.size[0]);
     var bounds = L.latLngBounds(southWest, northEast);
     var image = L.imageOverlay(mainImage.url, bounds);
-    if (!firstMap) {
-        firstMap = image;
+    if (index === 0) {
+        bounds = image.getBounds();
+        image.addTo(map);
+        map.panTo([bounds.getNorthEast().lat / 2, bounds.getNorthEast().lng / 2]);
+        // FIXME Fit bounds first image overlay.
+        // map.fitBounds(bounds);
+        fetchGeometries(resourceId, mainImage.id);
     }
     baseMaps[Omeka.jsTranslate('Image #') + (index + 1)] = image;
 });
@@ -398,12 +444,6 @@ if (Object.keys(baseMaps).length > 1) {
     var layerControl = L.control.layers(baseMaps);
     map.addControl(new L.Control.Layers(baseMaps));
 }
-var bounds = firstMap.getBounds();
-firstMap.addTo(map);
-map.panTo([bounds.getNorthEast().lat / 2, bounds.getNorthEast().lng / 2]);
-// FIXME Fit bounds first image overlay.
-//map.fitBounds(bounds);
-fetchGeometries(resourceId, mainImages[0].id);
 
 // Geometries are displayed and edited on the drawnItems layer.
 var drawnItems = new L.FeatureGroup();
@@ -533,9 +573,6 @@ map.on('styleeditor:editing', function(element){
 map.on('styleeditor:hidden', function(element){
     currentAnnotation = null;
 });
-
-// Disable the core resource-form.js bind for the sidebar selector.
-$(document).off('o:prepare-value');
 
 /**
  * Add a new linked resource from the sidebar for the style editor.
@@ -698,3 +735,6 @@ function buildParams(obj, key) {
 }
 
 });
+
+// Disable the core resource-form.js bind for the sidebar selector.
+$(document).off('o:prepare-value');

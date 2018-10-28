@@ -605,12 +605,6 @@ map.on('styleeditor:hidden', function(element){
     currentAnnotation = null;
 });
 
-// Disable the core resource-form.js bind for the sidebar selector.
-// TODO Factorize to avoid this check.
-if (typeof mainImages === 'undefined' || mainImages.length === 0) {
-    $(document).off('o:prepare-value');
-}
-
 /**
  * Add a new linked resource from the sidebar for the style editor.
  *
@@ -772,3 +766,6 @@ function buildParams(obj, key) {
 }
 
 });
+
+// Disable the core resource-form.js bind for the sidebar selector.
+$(document).off('o:prepare-value');

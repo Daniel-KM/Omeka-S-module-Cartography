@@ -105,6 +105,7 @@ return [
         'Related items:', // @translate
         'Remove value', // @translate
         'The resource is already linked to the current annotation.', // @translate
+        'There is no image attached to this resource.', // @translate
         'Unable to delete the geometry.', // @translate
         'Unable to fetch the geometries.', // @translate
         'Unable to find the geometry.', // @translate

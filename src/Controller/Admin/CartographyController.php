@@ -45,6 +45,40 @@ class CartographyController extends AbstractActionController
     }
 
     /**
+     * Get the images for a resource.
+     *
+     * @return JsonModel
+     */
+    public function imagesAction()
+    {
+        $id = $this->params('id');
+        if (!$id) {
+            return new JsonModel([
+                'status' => 'error',
+                'message' => 'Not found.', // @translate
+            ]);
+        }
+
+        try {
+            $resource = $this->api()->read('resources', $id)->getContent();
+        } catch (\Omeka\Api\Exception\NotFoundException $e) {
+            return new JsonModel([
+                'status' => 'error',
+                'message' => 'Not found.', // @translate
+            ]);
+        }
+
+        $query = $this->params()->fromQuery();
+        $images = $this->fetchImages($resource, $query);
+
+        return new JsonModel([
+            'status' => 'success',
+            'resourceId' => $id,
+            'images' => $images,
+        ]);
+    }
+
+    /**
      * Annotate a resource via ajax.
      *
      * @todo How to manage options? Some are related to target (quality of the
@@ -693,6 +727,50 @@ class CartographyController extends AbstractActionController
         }
 
         return $geometries;
+    }
+
+    /**
+     * Prepare all images (url and size) for a resource.
+     *
+     * @todo Manage tiles, iiif, etc.
+     *
+     * @param AbstractResourceEntityRepresentation $resource
+     * @param array $params Params to specify the images:
+     * - type (string): type of the image (default: "original").
+     * @return array Array of images data.
+     */
+    protected function fetchImages(AbstractResourceEntityRepresentation $resource, array $params = [])
+    {
+        $images = [];
+        $resourceName = $resource->resourceName();
+        switch ($resourceName) {
+            case 'items':
+                $medias = $resource->media();
+                break;
+            case 'media':
+                $medias = [$resource];
+                break;
+            default:
+                return $images;
+        }
+
+        $imageType = isset($params['type']) ? $params['type'] : null;
+        foreach ($medias as $media) {
+            if (!$media->hasOriginal()) {
+                continue;
+            }
+            $size = $this->imageSize($media, $imageType);
+            if (!$size) {
+                continue;
+            }
+            $image = [];
+            $image['id'] = $media->id();
+            $image['url'] = $media->originalUrl();
+            $image['size'] = array_values($size);
+            $images[] = $image;
+        }
+
+        return $images;
     }
 
     protected function propertyId($term)

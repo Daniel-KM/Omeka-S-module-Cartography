@@ -2,25 +2,16 @@
 /** @var \Zend\View\Renderer\PhpRenderer $this */
 $translate = $this->plugin('translate');
 
-if (count($images)):
-
 // Integration in Omeka S.
-$jsDescribe = empty($jsDescribe) ? '' : '
-$(document).ready( function() {
-    ' . $jsDescribe . '
-});';
-$script = 'var mainImages = ' . json_encode($images, 320) . ';' . $jsDescribe;
-$this->headScript()->appendScript($script);
+if ($js = $this->setting('cartography_js_describe')) {
+    $this->headScript()->appendScript('$(document).ready( function() { ' . $js . ' });');
+}
+
 $this->headScript()->appendFile($this->assetUrl('js/cartography-admin-describe.js', 'Cartography'));
 
-endif;
 ?>
 <fieldset id="describe" class="section">
     <legend id="cartography-legend"><?php echo $translate('Annotate an image'); ?></legend>
-<?php if (empty($images)): ?>
-    <p><?php echo $translate('There is no image attached to this resource.'); ?></p>
-<?php else: ?>
     <div id="cartography-media" style="height:800px;"></div>
     <div class="description"><?php echo $this->setting('cartography_user_guide'); ?></div>
-<?php endif; ?>
 </fieldset>

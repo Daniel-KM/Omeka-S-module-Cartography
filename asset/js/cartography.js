@@ -115,6 +115,16 @@ var displayGeometries = function(geometries, drawnItems) {
 
         } else {
             layer = L.geoJson(geojson, options);
+
+            // Use rectangle if possible, not Polygon.
+            // Keep the moving handle when editing with leaflet.draw.
+            if (options._isRectangle === '1') {
+                layer = L.rectangle(layer.getBounds());
+                // Reserve the id of rectangle.
+                if (options.annotationIdentifier) {
+                    rectangleIds[options.annotationIdentifier] = true;
+                }
+            }
         }
 
         // Set the content of the popup in all cases, not only description.
@@ -159,6 +169,10 @@ var addGeometry = function(layer, identifier, drawnItems) {
     // option radius.
     var options = typeof layer.getRadius === 'function' ? {'radius': layer.getRadius()} : {};
 
+    // Check if it is rectangle/square and keep the moving handle when editing
+    // with leaflet.draw.
+    prepareSaveOptions(layer, options);
+
     var url = basePath + baseUrl + '/cartography/annotate';
     var data = {
         // Identifier is always empty when an annotation is created.
@@ -183,6 +197,10 @@ var addGeometry = function(layer, identifier, drawnItems) {
             }
             identifier = data.result.id;
             layer.options.annotationIdentifier = identifier;
+            // Reserve the rectangle layer id.
+            if (identifier && layer instanceof L.Rectangle) {
+                rectangleIds[identifier] = true;
+            }
             drawnItems.addLayer(layer);
             console.log('Geometry added.');
         })
@@ -217,9 +235,13 @@ var editGeometry = function(layer) {
     }
 
     // Options radius should be set here, because it is updated automatically.
+    // TODO Move all checks specific to circle with other checks (rectangle).
     if (typeof layer.getRadius === 'function') {
         layer.options.radius = layer.getRadius();
     }
+
+    // Check if it is rectangle/square.
+    prepareSaveOptions(layer, layer.options);
 
     var url = basePath + baseUrl + '/cartography/annotate';
     var data = {
@@ -345,6 +367,25 @@ var popupAnnotation = function(options) {
     html += '</div>';
 
     return html;
+}
+
+/**
+ * Adjust the saving options data before sending to server keep the rectangle
+ * information of the Polygon, so to have a moving center point when edit with
+ * leaflet.draw.
+ */
+var prepareSaveOptions = function(layer, options) {
+    layer.options = layer.options || {};
+    var id =  layer.options.annotationIdentifier || 'not_existed';
+    // Check if it is rectangle/square or a polygon.
+    if (layer instanceof L.Rectangle
+        || layer.options._isRectangle === '1'
+        || rectangleIds[id] === true
+    ) {
+        options._isRectangle = '1';
+    } else {
+        options._isRectangle = '0';
+    }
 }
 
 /**
@@ -1079,6 +1120,8 @@ function annotateGeometries(map, section, drawnItems) {
 // var rightAnnotate;
 var images = [];
 var wmsLayers = [];
+// Manage the distinction between the rectangles/squares and the polygons.
+var rectangleIds = {};
 
 // TODO Find the way to get the current annotation after the resource selection.
 var currentAnnotation;

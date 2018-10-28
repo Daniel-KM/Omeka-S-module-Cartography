@@ -97,17 +97,15 @@ var displayGeometries = function(geometries, drawnItems) {
         var options = data['options'] || {};
         options.annotationIdentifier = data['id'];
 
-        // Prepare to set the content of the popup.
-        if (layer && options.popupContent) {
-            options.onEachFeature = function(feature, layer) {
-                var popupContent = popupAnnotation(options);
-                layer.bindPopup(popupContent);
+        // Prepare to set the content of the popup in all cases, not only description.
+        options.onEachFeature = function(feature, layer) {
+            var popupContent = popupAnnotation(options);
+            layer.bindPopup(popupContent);
 
-                // To reserve the options from geoJson.
-                layer.options = layer.options || {};
-                // To prepare for style editor form-element initial value.
-                layer.options = $.extend(options, layer.options);
-            }
+            // To reserve the options from geoJson.
+            layer.options = layer.options || {};
+            // To prepare for style editor form-element initial value.
+            layer.options = $.extend(options, layer.options);
         }
 
         // Prepare the layer.
@@ -115,14 +113,13 @@ var displayGeometries = function(geometries, drawnItems) {
             // Warning: the coordinates are inversed on an image.
             layer = L.circle([geojson.coordinates[1], geojson.coordinates[0]], options);
 
-            // Set the content of the popup.
-            if (layer && options.popupContent) {
-                var popupContent = popupAnnotation(options);
-                layer.bindPopup(popupContent);
-            }
         } else {
             layer = L.geoJson(geojson, options);
         }
+
+        // Set the content of the popup in all cases, not only description.
+        var popupContent = popupAnnotation(options);
+        layer.bindPopup(popupContent);
 
         // Append the geometry to the map.
         addGeometry(layer, data['id'], drawnItems);

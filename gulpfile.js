@@ -4,10 +4,9 @@ const del = require('del');
 const gulp = require('gulp');
 const gulpif = require('gulp-if');
 const uglify = require('gulp-uglify');
-const pump = require('pump');
 const rename = require('gulp-rename');
 
-const bundles = [
+const bundle = [
     {
         'source': 'node_modules/leaflet/dist/**',
         'dest': 'asset/vendor/leaflet',
@@ -80,20 +79,18 @@ const bundles = [
 ];
 
 gulp.task('clean', function(done) {
-    bundles.map(function (bundle) {
-        return del(bundle.dest);
+    bundle.forEach(function (module) {
+        return del.sync(module.dest);
     });
     done();
 });
 
 gulp.task('sync', function (done) {
-    bundles.map(function (bundle) {
-        pump([
-            gulp.src(bundle.source),
-            gulpif(bundle.rename, rename({suffix:'.min'})),
-            gulpif(bundle.uglify, uglify()),
-            gulp.dest(bundle.dest),
-        ]);
+    bundle.forEach(function (module) {
+        gulp.src(module.source)
+            .pipe(gulpif(module.rename, rename({suffix:'.min'})))
+            .pipe(gulpif(module.uglify, uglify()))
+            .pipe(gulp.dest(module.dest));
     });
     done();
 });

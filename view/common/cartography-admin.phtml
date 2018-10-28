@@ -1,0 +1,40 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource
+ * @var array $options
+ */
+
+$translate = $this->plugin('translate');
+?>
+<?php if ($options['annotate']): ?>
+
+<?php if ($options['type'] === 'describe'): ?>
+<fieldset id="describe" class="section">
+    <legend><?php echo $translate('Annotate an image'); ?></legend>
+    <div id="annotate-describe" style="height:600px;"></div>
+    <div class="description"><?php echo $this->setting('cartography_user_guide'); ?></div>
+</fieldset>
+<?php elseif ($options['type'] === 'locate'): ?>
+<fieldset id="locate" class="section">
+    <legend><?php echo $translate('Geolocate resource'); ?></legend>
+    <div id="annotate-locate" style="height:600px;"></div>
+    <div class="description"><?php echo $this->setting('cartography_user_guide'); ?></div>
+</fieldset>
+<?php endif; ?>
+
+<?php else: ?>
+
+<?php if ($options['type'] === 'describe'): ?>
+<fieldset id="describe" class="section">
+    <legend><?php echo $translate('Image annotations'); ?></legend>
+    <div id="annotate-describe" style="height:600px;"></div>
+</fieldset>
+<?php elseif ($options['type'] === 'locate'): ?>
+<fieldset id="locate" class="section">
+    <legend><?php echo $translate('Georeferenced annotations'); ?></legend>
+    <div id="annotate-locate" style="height:600px;"></div>
+</fieldset>
+<?php endif; ?>
+
+<?php endif; ?>

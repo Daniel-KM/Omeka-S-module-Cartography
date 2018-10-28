@@ -1,5 +1,5 @@
 <?php
-namespace Cartography\Controller\Admin;
+namespace Cartography\Controller\Site;
 
 use Cartography\Controller\AbstractCartographyController;
 
@@ -7,7 +7,6 @@ class CartographyController extends AbstractCartographyController
 {
     protected function notAjax()
     {
-        $this->messenger()->addError('This url is not available.'); // @translate
-        return $this->redirect()->toRoute('admin');
+        return $this->redirect()->toRoute('site');
     }
 }

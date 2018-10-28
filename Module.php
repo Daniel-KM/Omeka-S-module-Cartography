@@ -190,7 +190,6 @@ class Module extends AbstractModule
         $moduleManager->deactivate($module);
     }
 
-
     /**
      * Add ACL rules for this module.
      */
@@ -201,6 +200,11 @@ class Module extends AbstractModule
         $acl = $services->get('Omeka\Acl');
 
         $roles = $acl->getRoles();
+        // TODO Limit rights to access annotate actions too (annotations are already managed).
+        $acl->allow(
+            null,
+            Controller\Site\CartographyController::class
+        );
         $acl->allow(
             $roles,
             Controller\Admin\CartographyController::class
@@ -244,6 +248,11 @@ class Module extends AbstractModule
             \Omeka\Form\SiteSettingsForm::class,
             'form.add_elements',
             [$this, 'addFormElementsSiteSettings']
+        );
+        $sharedEventManager->attach(
+            \Omeka\Form\SiteSettingsForm::class,
+            'form.add_input_filters',
+            [$this, 'addSiteSettingsFilters']
         );
     }
 
@@ -302,58 +311,42 @@ class Module extends AbstractModule
         $defaultSiteSettings = $config[strtolower(__NAMESPACE__)]['site_settings'];
 
         $fieldset = new Fieldset('cartography');
-        $fieldset->setLabel('Cartography'); // @translate
+        $fieldset->setLabel('Annotate images and maps (cartography)'); // @translate
 
-        /*
         $fieldset->add([
-            'name' => 'cartography_append_item_set_show',
-            'type' => Element\Checkbox::class,
+            'name' => 'cartography_append_public',
+            'type' => Element\MultiCheckbox::class,
             'options' => [
-                'label' => 'Append cartography automatically to item set page', // @translate
-                'info' => 'If unchecked, the cartography can be added via the helper in the theme or the block in any page.', // @translate
+                'label' => 'Append to pages', // @translate
+                'info' => 'If unchecked, the viewer can be added via the helper in the theme or the block in any page.', // @translate
+                'value_options' => [
+                    // 'describe_item_sets_show' => 'Describe item set', // @translate
+                    'describe_items_show' => 'Describe item', // @translate
+                    // 'describe_media_show' => 'Describe media', // @translate
+                    // 'locate_item_sets_show' => 'Locate item set', // @translate
+                    'locate_items_show' => 'Locate item', // @translate
+                    // 'locate_media_show' => 'Locate media', // @translate
+                ],
             ],
             'attributes' => [
+                'id' => 'cartography_append_public',
                 'value' => $siteSettings->get(
-                    'cartography_append_item_set_show',
-                    $defaultSiteSettings['cartography_append_item_set_show']
+                    'cartography_append_public',
+                    $defaultSiteSettings['cartography_append_public']
                 ),
             ],
         ]);
-        */
-
-        $fieldset->add([
-            'name' => 'cartography_append_item_show',
-            'type' => Element\Checkbox::class,
-            'options' => [
-                'label' => 'Append cartography automatically to item page', // @translate
-                'info' => 'If unchecked, the cartography can be added via the helper in the theme or the block in any page.', // @translate
-            ],
-            'attributes' => [
-                'value' => $siteSettings->get(
-                    'cartography_append_item_show',
-                    $defaultSiteSettings['cartography_append_item_show']
-                ),
-            ],
-        ]);
-
-        /*
-        $fieldset->add([
-            'name' => 'cartography_append_media_show',
-            'type' => Element\Checkbox::class,
-            'options' => [
-                'label' => 'Append cartography automatically to media page', // @translate
-                'info' => 'If unchecked, the cartography can be added via the helper in the theme or the block in any page.', // @translate
-            ],
-            'attributes' => [
-                'value' => $siteSettings->get(
-                    'cartography_append_media_show',
-                    $defaultSiteSettings['cartography_append_media_show']
-                ),
-            ],
-        ]);
-        */
 
         $form->add($fieldset);
+    }
+
+    public function addSiteSettingsFilters(Event $event)
+    {
+        $inputFilter = $event->getParam('inputFilter');
+        $inputFilter->get('cartography')->add([
+            'name' => 'cartography_append_public',
+            'required' => false,
+        ]);
     }
 
     /**
@@ -393,11 +386,6 @@ class Module extends AbstractModule
     public function displayTabSection(Event $event)
     {
         $services = $this->getServiceLocator();
-        $acl = $services->get('Omeka\Acl');
-        $allowed = $acl->userIsAllowed(\Annotate\Entity\Annotation::class, 'read');
-        if (!$allowed) {
-            return;
-        }
 
         $settings = $services->get('Omeka\Settings');
         $displayTab = $settings->get('cartography_display_tab', []);
@@ -405,56 +393,39 @@ class Module extends AbstractModule
             return;
         }
 
-        $api = $services->get('Omeka\ApiManager');
+        $acl = $services->get('Omeka\Acl');
+
+        $rightRead = $acl->userIsAllowed(\Annotate\Entity\Annotation::class, 'read');
+        if (!$rightRead) {
+            return;
+        }
+
+        $rightAnnotate = $acl->userIsAllowed(\Annotate\Entity\Annotation::class, 'create');
 
         /** @var \Zend\View\Renderer\PhpRenderer $view */
         $view = $event->getTarget();
-
-        /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource */
         $resource = $view->resource;
+        $displayDescribe = in_array('describe', $displayTab);
+        $displayLocate = in_array('locate', $displayTab);
 
-        try {
-            $customVocab = $api->read('custom_vocabs', [
-                'label' => 'Annotation oa:motivatedBy',
-            ])->getContent();
-            $oaMotivatedBy = explode(PHP_EOL, $customVocab->terms());
-        } catch (NotFoundException $e) {
-            $oaMotivatedBy = [];
+        // This check avoids to load the css and js two times.
+        $displayAll = $displayDescribe && $displayLocate;
+
+        if ($displayDescribe) {
+            echo $view->cartography($resource, [
+                'type' => 'describe',
+                'annotate' => $rightAnnotate,
+                'headers' => true,
+                'sections' => $displayAll ? ['describe', 'locate'] : ['describe'],
+            ]);
         }
-
-        try {
-            $customVocab = $api->read('custom_vocabs', [
-                'label' => 'Annotation Body oa:hasPurpose',
-            ])->getContent();
-            $oaHasPurpose = explode(PHP_EOL, $customVocab->terms());
-        } catch (NotFoundException $e) {
-            $oaHasPurpose = [];
-        }
-
-        try {
-            $customVocab = $api->read('custom_vocabs', [
-                'label' => 'Cartography cartography:uncertainty',
-            ])->getContent();
-            $cartographyUncertainty = explode(PHP_EOL, $customVocab->terms());
-        } catch (NotFoundException $e) {
-            $cartographyUncertainty = [];
-        }
-
-        echo $view->partial('cartography/admin/cartography/annotate', [
-            'resource' => $resource,
-            'oaMotivatedBySelect' => $oaMotivatedBy,
-            'oaHasPurposeSelect' => $oaHasPurpose,
-            'cartographyUncertaintySelect' => $cartographyUncertainty,
-        ]);
-
-        $displayTab = $settings->get('cartography_display_tab', []);
-
-        if (in_array('describe', $displayTab)) {
-            echo $view->partial('cartography/admin/cartography/annotate-describe');
-        }
-
-        if (in_array('locate', $displayTab)) {
-            echo $view->partial('cartography/admin/cartography/annotate-locate');
+        if ($displayLocate) {
+            echo $view->cartography($resource, [
+                'type' => 'locate',
+                'annotate' => $rightAnnotate,
+                'headers' => !$displayAll,
+                'sections' => $displayAll ? ['describe', 'locate'] : ['locate'],
+            ]);
         }
     }
 
@@ -465,21 +436,40 @@ class Module extends AbstractModule
      */
     public function displayPublic(Event $event)
     {
-        $serviceLocator = $this->getServiceLocator();
-        $siteSettings = $serviceLocator->get('Omeka\Settings\Site');
-        $view = $event->getTarget();
-        $resource = $view->resource;
-        $resourceName = $resource->resourceName();
-        $appendMap = [
-            'item_sets' => 'cartography_append_item_set_show',
-            'items' => 'cartography_append_item_show',
-            'media' => 'cartography_append_media_show',
-        ];
-        if (!$siteSettings->get($appendMap[$resourceName])) {
+        $displayTab = $this->getServiceLocator()->get('Omeka\Settings\Site')
+            ->get('cartography_append_public');
+        if (empty($displayTab)) {
             return;
         }
 
-        echo $view->cartography($resource);
+        // TODO Allow public to annotate.
+        $rightAnnotate = false;
+
+        $view = $event->getTarget();
+        $resource = $view->resource;
+        $resourceName = $resource->resourceName();
+        $displayDescribe = in_array('describe_' . $resourceName . '_show', $displayTab);
+        $displayLocate = in_array('locate_' . $resourceName . '_show', $displayTab);
+
+        // This check avoids to load the css and js two times.
+        $displayAll = $displayDescribe && $displayLocate;
+
+        if ($displayDescribe) {
+            echo $view->cartography($resource, [
+                'type' => 'describe',
+                'annotate' => $rightAnnotate,
+                'headers' => true,
+                'sections' => $displayAll ? ['describe', 'locate'] : ['describe'],
+            ]);
+        }
+        if ($displayLocate) {
+            echo $view->cartography($resource, [
+                'type' => 'locate',
+                'annotate' => $rightAnnotate,
+                'headers' => !$displayAll,
+                'sections' => $displayAll ? ['describe', 'locate'] : ['locate'],
+            ]);
+        }
     }
 
     /**

@@ -1,5 +1,5 @@
-Cartography annotate (module for Omeka S)
-=========================================
+Annotate images and maps (module for Omeka S)
+=============================================
 
 [Cartography] is a module for [Omeka S] that allows to annotate (to draw points,
 lines, polylines, polygons, etc.) an image or a map with the [web annotation vocabulary]
@@ -44,7 +44,7 @@ Quick start
 The module allows to annotate standard images and georeferenced maps.
 - To annotate a still image, simply upload it as media.
 - To annotate a georeferenced image, the [wms] url should be set as URI in
-  `dcterms:spatial`, for example: `https://mapwarper.net/maps/wms/14068?` with
+  `dcterms:spatial`, for example: `https://mapwarper.net/maps/wms/14068` with
   label `Us and territories`. There can be multiple [wms] layers, for example
   you can add the `Roads to Santiago de Compostela in Spain` too with the url
   `https://www.ign.es/wms-inspire/camino-santiago?layers=PS.ProtectedSite`.
@@ -197,13 +197,18 @@ Contact
 
 Current maintainers:
 
-* Daniel Berthereau (see [Daniel-KM] on GitHub) for EHESS.
+* Daniel Berthereau (see [Daniel-KM] on GitHub)
+
+This module was built first for the French École des hautes études en sciences
+sociales [EHESS].
 
 
 Copyright
 ---------
 
 * Copyright Daniel Berthereau, 2018
+
+* See [asset/vendor] for the copyright of the libraries.
 
 
 [Cartography]: https://github.com/Daniel-KM/Omeka-S-module-Cartography
@@ -224,4 +229,5 @@ Copyright
 [FSF]: https://www.fsf.org
 [OSI]: http://opensource.org
 [asset/vendor]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/tree/master/asset/vendor
+[EHESS]: https://www.ehess.fr
 [Daniel-KM]: https://github.com/Daniel-KM "Daniel Berthereau"

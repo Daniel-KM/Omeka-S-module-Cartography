@@ -1,74 +1,73 @@
 <?php
 namespace Cartography\View\Helper;
 
-use Annotate\Mvc\Controller\Plugin\ResourceAnnotations;
+use Omeka\Api\Exception\NotFoundException;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Zend\View\Helper\AbstractHelper;
 
 class Cartography extends AbstractHelper
 {
     /**
-     * @var ResourceAnnotations
-     */
-    protected $resourceAnnotationsPlugin;
-
-    public function __construct(ResourceAnnotations $resourceAnnotationsPlugin)
-    {
-        $this->resourceAnnotationsPlugin = $resourceAnnotationsPlugin;
-    }
-
-    /**
-     * Return the partial to display cartography.
+     * Return the partial to display the cartography of a resource.
      *
-     * @return string
+     * @param AbstractResourceEntityRepresentation $resource
+     * @param array $options Associative array of params:
+     * - type (string): string, "locate" (default) or "describe"
+     * - annotate (bool): allow user or visitor to annotate (default: false)
+     * - headers (bool): prepend headers or not (default: true), that is useful
+     * when there are multiple blocks).
+     * - sections (array): list of sections to display (used only to manage
+     * headers). Automatically set to the type if not set. Used internally.
+     * @todo Simplify the load of headers and sections.
+     * @return string The html string.
      */
-    public function __invoke(AbstractResourceEntityRepresentation $resource)
+    public function __invoke(AbstractResourceEntityRepresentation $resource, array $options = [])
     {
-        $resourceAnnotationsPlugin = $this->resourceAnnotationsPlugin;
-        // TODO ResourceAnnotations doesn't know to search properties on targets and bodies.
-        $annotations = $resourceAnnotationsPlugin($resource);
-        $geometries = [];
+        $view = $this->getView();
 
-        // TODO Use the rdf format of annotation to find geometry quickly?
-        foreach ($annotations as $annotation) {
-            // TODO There is only one target by annotation currently.
-            $target = $annotation->primaryTarget();
-            if (!$target) {
-                continue;
-            }
-
-            $format = $target->value('dcterms:format');
-            if (empty($format)) {
-                continue;
-            }
-
-            $geometry = [];
-            $format = $format->value();
-            if ($format === 'application/wkt') {
-                $value = $target->value('rdf:value');
-                $geometry['id'] = $annotation->id();
-                $geometry['wkt'] = $value ? $value->value() : null;
-            }
-
-            $styleClass = $target->value('oa:styleClass');
-            if ($styleClass && $styleClass->value() === 'leaflet-interactive') {
-                $options = $annotation->value('oa:styledBy');
-                if ($options) {
-                    $options = json_decode($options->value(), true);
-                    if (!empty($options['leaflet-interactive'])) {
-                        $geometry['options'] = $options['leaflet-interactive'];
-                    }
-                }
-            }
-
-            $geometries[$annotation->id()] = $geometry;
+        $default = [
+            'type' => 'locate',
+            'annotate' => false,
+            'headers' => true,
+            'sections' => ['describe', 'locate'],
+        ];
+        $issetSections = isset($options['sections']);
+        $options = array_merge($default, $options);
+        if (!$issetSections) {
+            $options['sections'] = [$options['type']];
         }
 
-        echo $this->getView()->partial(
-            'common/site/cartography',
+        $isPublic = (bool) $view->params()->fromRoute('__SITE__');
+        $options['is_public'] = $isPublic;
+
+        if ($options['annotate']) {
+            $customVocabs = [
+                'oaMotivatedBySelect' => 'Annotation oa:motivatedBy',
+                'oaHasPurposeSelect' => 'Annotation Body oa:hasPurpose',
+                'cartographyUncertaintySelect' => 'Cartography cartography:uncertainty',
+            ];
+            $api = $view->api();
+            foreach ($customVocabs as $key => $label) {
+                try {
+                    $customVocab = $api->read('custom_vocabs', [
+                        'label' => $label,
+                    ])->getContent();
+                    $options[$key] = explode(PHP_EOL, $customVocab->terms());
+                } catch (NotFoundException $e) {
+                    $options[$key] = [];
+                }
+            }
+        }
+
+        $options['baseUrl'] = $options['is_public']
+            ? '/s/' . $view->params()->fromRoute('site-slug')
+            : '/admin';
+
+        echo $view->partial(
+            'common/cartography',
             [
                 'resource' => $resource,
-                'geometries' => $geometries,
+                'options' => $options,
             ]
         );
     }

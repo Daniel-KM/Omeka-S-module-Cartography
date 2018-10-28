@@ -11,8 +11,8 @@ return [
         ],
     ],
     'view_helpers' => [
-        'factories' => [
-            'cartography' => Service\ViewHelper\CartographyFactory::class,
+        'invokables' => [
+            'cartography' => View\Helper\Cartography::class,
         ],
     ],
     'form_elements' => [
@@ -23,6 +23,7 @@ return [
     'controllers' => [
         'invokables' => [
             Controller\Admin\CartographyController::class => Controller\Admin\CartographyController::class,
+            Controller\Site\CartographyController::class => Controller\Site\CartographyController::class,
         ],
     ],
     'controller_plugins' => [
@@ -32,6 +33,49 @@ return [
     ],
     'router' => [
         'routes' => [
+            'site' => [
+                'child_routes' => [
+                    'cartography' => [
+                        'type' => \Zend\Router\Http\Literal::class,
+                        'options' => [
+                            'route' => '/cartography',
+                            'defaults' => [
+                                '__NAMESPACE__' => 'Cartography\Controller\Site',
+                                'controller' => Controller\Site\CartographyController::class,
+                                'action' => 'browse',
+                            ],
+                        ],
+                        'may_terminate' => true,
+                        'child_routes' => [
+                            'default' => [
+                                'type' => \Zend\Router\Http\Segment::class,
+                                'options' => [
+                                    'route' => '/:action',
+                                    'constraints' => [
+                                        'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                                    ],
+                                    'defaults' => [
+                                        'action' => 'browse',
+                                    ],
+                                ],
+                            ],
+                            'id' => [
+                                'type' => \Zend\Router\Http\Segment::class,
+                                'options' => [
+                                    'route' => '/:id[/:action]',
+                                    'constraints' => [
+                                        'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                                        'id' => '\d+',
+                                    ],
+                                    'defaults' => [
+                                        'action' => 'show',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
             'admin' => [
                 'child_routes' => [
                     'cartography' => [
@@ -40,7 +84,7 @@ return [
                             'route' => '/cartography',
                             'defaults' => [
                                 '__NAMESPACE__' => 'Cartography\Controller\Admin',
-                                'controller' => 'CartographyController',
+                                'controller' => Controller\Admin\CartographyController::class,
                                 'action' => 'browse',
                             ],
                         ],
@@ -129,9 +173,14 @@ return [
             'cartography_js_locate' => '',
         ],
         'site_settings' => [
-            'cartography_append_item_set_show' => true,
-            'cartography_append_item_show' => true,
-            'cartography_append_media_show' => true,
+            'cartography_append_public' => [
+                'describe_item_sets_show',
+                'describe_items_show',
+                'describe_media_show',
+                'locate_item_sets_show',
+                'locate_items_show',
+                'locate_media_show',
+            ],
         ],
         'dependencies' => [
             'Annotate',

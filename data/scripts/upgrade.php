@@ -251,4 +251,23 @@ SQL;
 if (version_compare($oldVersion, '3.0.5-beta2', '<')) {
     // Remove general wms (replaced by upper/lower resource wms).
     $settings->delete('cartography_locate_wms');
+
+    // Add options for describe and locate at site level.
+    $siteSettings = $services->get('Omeka\Settings\Site');
+    /** @var \Omeka\Api\Representation\SiteRepresentation[] $sites */
+    $sites = $api->search('sites')->getContent();
+    foreach ($sites as $site) {
+        $siteSettings->setTargetId($site->id());
+        if ($siteSettings->get('cartography_append_item_show', true)) {
+            $siteSettings->set('cartography_append_public', ['describe_items_show', 'locate_items_show']);
+        } else {
+            $siteSettings->set('cartography_append_public', []);
+        }
+        $siteSettings->delete('cartography_append_item_set_show');
+        $siteSettings->delete('cartography_append_item_show');
+        $siteSettings->delete('cartography_append_media_show');
+    }
+    $settings->delete('cartography_append_item_set_show');
+    $settings->delete('cartography_append_item_show');
+    $settings->delete('cartography_append_media_show');
 }

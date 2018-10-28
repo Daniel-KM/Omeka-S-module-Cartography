@@ -17,17 +17,8 @@ class CartographyController extends AbstractActionController
      */
     public function geometriesAction()
     {
-        $id = $this->params('id');
-        if (!$id) {
-            return new JsonModel([
-                'status' => 'error',
-                'message' => 'Not found.', // @translate
-            ]);
-        }
-
-        try {
-            $resource = $this->api()->read('resources', $id)->getContent();
-        } catch (\Omeka\Api\Exception\NotFoundException $e) {
+        $resource = $this->resourceFromParams();
+        if (!$resource) {
             return new JsonModel([
                 'status' => 'error',
                 'message' => 'Not found.', // @translate
@@ -39,7 +30,7 @@ class CartographyController extends AbstractActionController
 
         return new JsonModel([
             'status' => 'success',
-            'resourceId' => $id,
+            'resourceId' => $resource->id(),
             'geometries' => $geometries,
         ]);
     }
@@ -51,17 +42,8 @@ class CartographyController extends AbstractActionController
      */
     public function imagesAction()
     {
-        $id = $this->params('id');
-        if (!$id) {
-            return new JsonModel([
-                'status' => 'error',
-                'message' => 'Not found.', // @translate
-            ]);
-        }
-
-        try {
-            $resource = $this->api()->read('resources', $id)->getContent();
-        } catch (\Omeka\Api\Exception\NotFoundException $e) {
+        $resource = $this->resourceFromParams();
+        if (!$resource) {
             return new JsonModel([
                 'status' => 'error',
                 'message' => 'Not found.', // @translate
@@ -73,7 +55,7 @@ class CartographyController extends AbstractActionController
 
         return new JsonModel([
             'status' => 'success',
-            'resourceId' => $id,
+            'resourceId' => $resource->id(),
             'images' => $images,
         ]);
     }
@@ -85,17 +67,8 @@ class CartographyController extends AbstractActionController
      */
     public function wmsLayersAction()
     {
-        $id = $this->params('id');
-        if (!$id) {
-            return new JsonModel([
-                'status' => 'error',
-                'message' => 'Not found.', // @translate
-            ]);
-        }
-
-        try {
-            $resource = $this->api()->read('resources', $id)->getContent();
-        } catch (\Omeka\Api\Exception\NotFoundException $e) {
+        $resource = $this->resourceFromParams();
+        if (!$resource) {
             return new JsonModel([
                 'status' => 'error',
                 'message' => 'Not found.', // @translate
@@ -107,9 +80,30 @@ class CartographyController extends AbstractActionController
 
         return new JsonModel([
             'status' => 'success',
-            'resourceId' => $id,
+            'resourceId' => $resource->id(),
             'wmsLayers' => $wmsLayers,
         ]);
+    }
+
+    /**
+     * Get the resource from the params of the request.
+     *
+     * @return \Omeka\Api\Representation\AbstractResourceEntityRepresentation|null
+     */
+    protected function resourceFromParams()
+    {
+        $id = $this->params('id');
+        if (!$id) {
+            return;
+        }
+
+        try {
+            $resource = $this->api()->read('resources', $id)->getContent();
+        } catch (\Omeka\Api\Exception\NotFoundException $e) {
+            return;
+        }
+
+        return $resource;
     }
 
     /**

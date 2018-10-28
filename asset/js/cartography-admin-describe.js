@@ -1,4 +1,4 @@
-/* Cartography */
+/* Annotate cartography */
 
 // TODO Merge this file with cartography-admin (currently only some variables are different).
 
@@ -41,13 +41,16 @@ var fetchImages = function(resourceId, data) {
 /**
  * Fetch geometries for a resource.
  *
+ * @todo Separate the fetch and the display.
+ *
+ * @param int resourceId
+ * @param object data May contaiin the media id.
  * @return array
  */
-var fetchGeometries = function(identifier, partIdentifier) {
-    var url = basePath + '/admin/cartography/' + identifier + '/geometries'
-        + '?mediaId=' + (partIdentifier ? partIdentifier : '-1');
+var fetchGeometries = function(resourceId, data) {
+    var url = basePath + '/admin/cartography/' + resourceId + '/geometries';
 
-    $.get(url)
+    $.get(url, data)
         .done(function(data) {
             if (data.status === 'error') {
                 alert(data.message);
@@ -436,7 +439,7 @@ $.each(mainImages, function(index, mainImage) {
         map.panTo([bounds.getNorthEast().lat / 2, bounds.getNorthEast().lng / 2]);
         // FIXME Fit bounds first image overlay.
         // map.fitBounds(bounds);
-        fetchGeometries(resourceId, mainImage.id);
+        fetchGeometries(resourceId, {mediaId: mainImage.id});
     }
     baseMaps[Omeka.jsTranslate('Image #') + (index + 1)] = image;
 });
@@ -557,7 +560,7 @@ map.on('paste:layer-created', function(element) {
 map.on('baselayerchange', function(element){
     // TODO Keep the layers in a invisible feature group layer by image? Check memory size.
     drawnItems.clearLayers();
-    fetchGeometries(resourceId, currentMediaId());
+    fetchGeometries(resourceId, {mediaId: currentMediaId()});
 });
 
 /* Various methods. */
@@ -597,11 +600,14 @@ $(document).on('o:prepare-value', function(e, type, value, valueObj, namePrefix)
     }
 
     // Check if the selected resource is already linked.
+    var url = basePath + '/admin/cartography/' + resourceId + '/geometries';
     var partIdentifier = currentMediaId();
-    var url = basePath + '/admin/cartography/' + resourceId + '/geometries'
-        + '?mediaId=' + (partIdentifier ? partIdentifier : '-1') + '&annotationId=' + identifier;
+    var data = {
+        mediaId: partIdentifier ? partIdentifier : '-1',
+        annotationId: identifier,
+    }
 
-    $.get(url)
+    $.get(url, data)
         .done(function(data) {
             if (data.status === 'error') {
                 alert(data.message);

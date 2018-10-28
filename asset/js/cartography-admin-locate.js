@@ -1,4 +1,4 @@
-/* Cartography */
+/* Annotate cartography */
 
 // The base code comes initially from Mapping/asset/js/mapping-show.js in order
 // to keep standard markers., but now the dependency has been removed.
@@ -39,13 +39,16 @@ var fetchWmsLayers = function(resourceId, data) {
 /**
  * Fetch geometries for a resource.
  *
+ * @todo Separate the fetch and the display.
+ *
+ * @param int resourceId
+ * @param object data May contaiin the media id.
  * @return array
  */
-var fetchGeometries = function(identifier, partIdentifier) {
-    var url = basePath + '/admin/cartography/' + identifier + '/geometries'
-        + '?mediaId=0';
+var fetchGeometries = function(resourceId, data) {
+    var url = basePath + '/admin/cartography/' + resourceId + '/geometries';
 
-    $.get(url)
+    $.get(url, data)
         .done(function(data) {
             if (data.status === 'error') {
                 alert(data.message);
@@ -499,7 +502,7 @@ if (!wmsLayers.length) {
 }
 map.addLayer(baseMaps['Satellite']);
 //TODO Fix and add the fit bound control with geometries, not markers.
-fetchGeometries(resourceId);
+fetchGeometries(resourceId, {mediaId: 0});
 
 // Geometries are displayed and edited on the drawnItems layer.
 var drawnItems = new L.FeatureGroup();
@@ -665,11 +668,14 @@ $(document).on('o:prepare-value', function(e, type, value, valueObj, namePrefix)
     }
 
     // Check if the selected resource is already linked.
-    var partIdentifier = currentMediaId();
-    var url = basePath + '/admin/cartography/' + resourceId + '/geometries'
-        + '?mediaId=' + '0' + '&annotationId=' + identifier;
+    var url = basePath + '/admin/cartography/' + resourceId + '/geometries';
+    var data = {
+        // There is no part identifier or current media id.
+        mediaId: 0,
+        annotationId: identifier,
+    }
 
-    $.get(url)
+    $.get(url, data)
         .done(function(data) {
             if (data.status === 'error') {
                 alert(data.message);

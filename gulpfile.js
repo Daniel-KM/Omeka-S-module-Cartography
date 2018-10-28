@@ -27,10 +27,11 @@ const bundle = [
         'source': 'node_modules/leaflet-geosearch/assets/css/**',
         'dest': 'asset/vendor/leaflet-geosearch',
     },
-    {
-        'source': 'node_modules/leaflet-groupedlayercontrol/dist/**',
-        'dest': 'asset/vendor/leaflet-groupedlayercontrol',
-    },
+    // TODO The original has a bug not yet fixed.
+    // {
+    //     'source': 'node_modules/leaflet-groupedlayercontrol/dist/**',
+    //     'dest': 'asset/vendor/leaflet-groupedlayercontrol',
+    // },
     {
         'source': 'node_modules/leaflet.markercluster/dist/**',
         'dest': 'asset/vendor/leaflet-markercluster',

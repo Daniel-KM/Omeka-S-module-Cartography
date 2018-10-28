@@ -108,18 +108,24 @@ var displayGeometries = function(geometries, drawnItems) {
             layer.options = $.extend(options, layer.options);
         }
 
+        // Keep the styling.
+        options.style = function (feature) {
+            return options;
+        }
+
         // Prepare the layer.
         if (geojson.type === 'Point' && typeof options.radius !== 'undefined') {
             // Warning: the coordinates are inversed on an image.
             layer = L.circle([geojson.coordinates[1], geojson.coordinates[0]], options);
 
+            layer.setStyle(options);
         } else {
             layer = L.geoJson(geojson, options);
 
             // Use rectangle if possible, not Polygon.
             // Keep the moving handle when editing with leaflet.draw.
             if (options._isRectangle === '1') {
-                layer = L.rectangle(layer.getBounds());
+                layer = L.rectangle(layer.getBounds(), options);
                 // Reserve the id of rectangle.
                 if (options.annotationIdentifier) {
                     rectangleIds[options.annotationIdentifier] = true;

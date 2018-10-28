@@ -25,6 +25,11 @@ return [
             Controller\Admin\CartographyController::class => Controller\Admin\CartographyController::class,
         ],
     ],
+    'controller_plugins' => [
+        'factories' => [
+            'imageSize' => Service\ControllerPlugin\ImageSizeFactory::class,
+        ],
+    ],
     'router' => [
         'routes' => [
             'admin' => [

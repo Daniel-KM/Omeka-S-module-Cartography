@@ -812,9 +812,13 @@ function annotateGeometries(map, section, drawnItems) {
     //     editGeometry(element);
     // });
     // Use a final save button instead of saving in real time.
-    handleStyleEditSave();
-    function handleStyleEditSave() {
+    handleStyleEditSave({
+        popupAnnotation: popupAnnotation
+    });
+    function handleStyleEditSave(context) {
         var styleIsChanged = false;
+        // The layer options data.
+        var dataBeforeEditor = {};
         catchEditEvents();
 
         // Catch the events.
@@ -828,6 +832,30 @@ function annotateGeometries(map, section, drawnItems) {
             map.on('styleeditor:editSave', function(element) {
                 doSave(element);
             });
+
+            // Align the popup content with the style editor.
+            map.on('styleeditor:beforePopupContentChanging', function(data) {
+                var element = data.currentElement || null;
+                data.referenceData = data.referenceData || {};
+                if (element && element.options && data.referenceData.inputText) {
+                    element.options.popupContent = data.referenceData.inputText;
+                    data.referenceData.inputText = context.popupAnnotation(element.options);
+                }
+            });
+
+            // Before edit, keep the data for reset.
+            map.on('styleeditor:visible', function() {
+                var layers = map._layers || {};
+                $.each(layers, function(id, layer) {
+                    var options = layer.options || {};
+                    dataBeforeEditor[id] = $.extend({}, options); // clone
+                });
+                // console.log(dataBeforeEditor);
+            });
+
+            map.on('styleeditor:editCancel', function(element) {
+                doCancel(element);
+            });
         }
 
         // Process the save.
@@ -835,6 +863,37 @@ function annotateGeometries(map, section, drawnItems) {
             if (styleIsChanged === true && element ) {
                 editGeometry(element);
                 styleIsChanged = false;
+            }
+        }
+
+        // Reserve the data for reset.
+        function doCancel(element) {
+            if (styleIsChanged === true && element ) {
+                styleIsChanged = false;
+
+                var layers = map._layers || {};
+
+                // Do the reset
+                $.each(layers, function(id, layer) {
+                    layer.options = $.extend(layer.options, dataBeforeEditor[id] || {});
+
+                    if (layer.options.popupContent) {
+                        // Set popup.
+                        if (layer.bindPopup) {
+                            // layer.bindPopup(layer.options.popupContent);
+                            layer.bindPopup(context.popupAnnotation(layer.options));
+                        }
+                    } else {
+                        // Remove popup.
+                        if (layer.unbindPopup) {
+                            layer.unbindPopup();
+                        }
+                    }
+
+                    if (layer.setStyle) {
+                        layer.setStyle(layer.options);
+                    }
+                });
             }
         }
     }

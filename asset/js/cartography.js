@@ -314,6 +314,12 @@ var deleteGeometry = function(layer) {
 var popupAnnotation = function(options) {
     var html = '';
 
+    // Set default values if missing in original data.
+    options['date'] = options['date'] || '';
+    options['owner'] = options['owner'] || {};
+    options['owner']['id'] = options['owner']['id'] || '';
+    options['owner']['name'] = options['owner']['name'] || '';
+
     var content = options.popupContent || '';
     var oaLinking = options.oaLinking || [];
     var annotationIdentifier = options.annotationIdentifier || null;
@@ -903,30 +909,35 @@ function annotateGeometries(map, section, drawnItems) {
 
         // Reserve the data for reset.
         function doCancel(element) {
-            if (styleIsChanged === true && element ) {
+            if (styleIsChanged === true && element) {
                 styleIsChanged = false;
+
+                var currentElementId = element.options.annotationIdentifier;
 
                 var layers = map._layers || {};
 
-                // Do the reset
+                // Do the reset.
                 $.each(layers, function(id, layer) {
-                    layer.options = $.extend(layer.options, dataBeforeEditor[id] || {});
+                    if (layer.options.annotationIdentifier === currentElementId) {
+                        layer.options = $.extend(layer.options, dataBeforeEditor[id] || {});
 
-                    if (layer.options.popupContent) {
-                        // Set popup.
-                        if (layer.bindPopup) {
-                            // layer.bindPopup(layer.options.popupContent);
-                            layer.bindPopup(context.popupAnnotation(layer.options));
+                        var popContent = context.popupAnnotation(layer.options);
+                        if (popContent) {
+                            // Set popup.
+                            if (layer.bindPopup) {
+                                // layer.bindPopup(layer.options.popupContent);
+                                layer.bindPopup(popContent);
+                            }
+                        } else {
+                            // Remove popup.
+                            if (layer.unbindPopup) {
+                                layer.unbindPopup();
+                            }
                         }
-                    } else {
-                        // Remove popup.
-                        if (layer.unbindPopup) {
-                            layer.unbindPopup();
-                        }
-                    }
 
-                    if (layer.setStyle) {
-                        layer.setStyle(layer.options);
+                        if (layer.setStyle) {
+                            layer.setStyle(layer.options);
+                        }
                     }
                 });
             }

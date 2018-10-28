@@ -479,8 +479,7 @@ class Module extends AbstractModule
         $displayTab = $settings->get('cartography_display_tab', []);
 
         if (in_array('describe', $displayTab)) {
-            $config = $services->get('Config');
-            $this->basePath = $config['file_store']['local']['base_path'] ?: (OMEKA_PATH . '/files');
+            $imageSizePlugin = $services->get('ControllerPluginManager')->get('imageSize');
 
             $images = [];
             foreach ($resource->media() as $media) {
@@ -492,7 +491,7 @@ class Module extends AbstractModule
                 if (strtok($media->mediaType(), '/') !== 'image') {
                     continue;
                 }
-                $size = $this->_getImageSize($media, 'original');
+                $size = $imageSizePlugin($media, 'original');
                 if (!$size) {
                     continue;
                 }
@@ -625,103 +624,5 @@ class Module extends AbstractModule
         }
 
         return true;
-    }
-
-    /**
-     * Get a storage path.
-     *
-     * @param string $prefix The storage prefix
-     * @param string $name The file name, or basename if extension is passed
-     * @param null|string $extension The file extension
-     * @return string
-     * @todo Refactorize.
-     */
-    protected function getStoragePath($prefix, $name, $extension = null)
-    {
-        return sprintf('%s/%s%s', $prefix, $name, $extension ? ".$extension" : null);
-    }
-
-    /**
-     * Get an array of the width and height of the image file.
-     *
-     * @param MediaRepresentation $media
-     * @param string $imageType
-     * @return array Associative array of width and height of the image file.
-     * If the file is not an image, the width and the height will be null.
-     *
-     * @see \IiifServer\View\Helper\IiifManifest::_getImageSize()
-     * @see \IiifServer\View\Helper\IiifInfo::_getImageSize()
-     * @see \IiifServer\Controller\ImageController::_getImageSize()
-     * @todo Refactorize.
-     */
-    protected function _getImageSize(MediaRepresentation $media, $imageType = 'original')
-    {
-        // Check if this is an image.
-        if (empty($media) || strpos($media->mediaType(), 'image/') !== 0) {
-            return [
-                'width' => null,
-                'height' => null,
-            ];
-        }
-
-        // The storage adapter should be checked for external storage.
-        if ($imageType == 'original') {
-            $storagePath = $this->getStoragePath($imageType, $media->filename());
-        } else {
-            $storagePath = $this->getStoragePath($imageType, $media->storageId(), 'jpg');
-        }
-        $filepath = $this->basePath
-            . DIRECTORY_SEPARATOR . $storagePath;
-        $result = $this->_getWidthAndHeight($filepath);
-
-        if (empty($result['width']) || empty($result['height'])) {
-            throw new \Exception("Failed to get image resolution: $filepath");
-        }
-
-        return $result;
-    }
-
-    /**
-     * Helper to get width and height of an image.
-     *
-     * @param string $filepath This should be an image (no check here).
-     * @return array Associative array of width and height of the image file.
-     * If the file is not an image, the width and the height will be null.
-     * @see \IiifServer\Controller\ImageController::_getWidthAndHeight()
-     * @todo Refactorize.
-     */
-    protected function _getWidthAndHeight($filepath)
-    {
-        // TODO Manage tempFileFactory.
-
-        // An internet path.
-        if (strpos($filepath, 'https://') === 0 || strpos($filepath, 'http://') === 0) {
-            $tempFile = $this->tempFileFactory->build();
-            $tempPath = $tempFile->getTempPath();
-            $tempFile->delete();
-            $result = file_put_contents($tempPath, $filepath);
-            if ($result !== false) {
-                list($width, $height) = getimagesize($tempPath);
-                unlink($tempPath);
-                return [
-                    'width' => $width,
-                    'height' => $height,
-                ];
-            }
-            unlink($tempPath);
-        }
-        // A normal path.
-        elseif (file_exists($filepath)) {
-            list($width, $height) = getimagesize($filepath);
-            return [
-                'width' => $width,
-                'height' => $height,
-            ];
-        }
-
-        return [
-            'width' => null,
-            'height' => null,
-        ];
     }
 }

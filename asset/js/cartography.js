@@ -164,13 +164,7 @@ var addGeometry = function(layer, identifier, drawnItems) {
         wkt = Terraformer.WKT.convert(geojson.geometry);
     }
 
-    // Options are saved only when updated: some people don't need styles so it
-    // will be lighter in that case. Except for circle, that has the required
-    // option radius.
-    var options = typeof layer.getRadius === 'function' ? {'radius': layer.getRadius()} : {};
-
-    // Check if it is rectangle/square and keep the moving handle when editing
-    // with leaflet.draw.
+    var options = {};
     prepareSaveOptions(layer, options);
 
     var url = basePath + baseUrl + '/cartography/annotate';
@@ -234,13 +228,6 @@ var editGeometry = function(layer) {
         wkt = Terraformer.WKT.convert(geojson.geometry);
     }
 
-    // Options radius should be set here, because it is updated automatically.
-    // TODO Move all checks specific to circle with other checks (rectangle).
-    if (typeof layer.getRadius === 'function') {
-        layer.options.radius = layer.getRadius();
-    }
-
-    // Check if it is rectangle/square.
     prepareSaveOptions(layer, layer.options);
 
     var url = basePath + baseUrl + '/cartography/annotate';
@@ -370,21 +357,25 @@ var popupAnnotation = function(options) {
 }
 
 /**
- * Adjust the saving options data before sending to server keep the rectangle
- * information of the Polygon, so to have a moving center point when edit with
- * leaflet.draw.
+ * Adjust the saving options data before sending to server (circle, rectangle).
+ *
  */
 var prepareSaveOptions = function(layer, options) {
     layer.options = layer.options || {};
-    var id =  layer.options.annotationIdentifier || 'not_existed';
+
+    if (typeof layer.getRadius === 'function') {
+        layer.options.radius = options.radius = layer.getRadius();
+    }
+
+    // Keep the rectangle information of the Polygon, so to have a moving center
+    // point when edit with leaflet.draw.
+    var id = layer.options.annotationIdentifier || 'not_existed';
     // Check if it is rectangle/square or a polygon.
     if (layer instanceof L.Rectangle
         || layer.options._isRectangle === '1'
         || rectangleIds[id] === true
     ) {
         options._isRectangle = '1';
-    } else {
-        options._isRectangle = '0';
     }
 }
 

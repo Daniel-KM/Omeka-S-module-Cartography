@@ -11,7 +11,7 @@ $this->headScript()->appendFile($this->assetUrl('js/cartography-admin-describe.j
 
 ?>
 <fieldset id="describe" class="section">
-    <legend id="cartography-legend"><?php echo $translate('Annotate an image'); ?></legend>
-    <div id="cartography-media" style="height:800px;"></div>
+    <legend><?php echo $translate('Annotate an image'); ?></legend>
+    <div id="annotate-describe" style="height:600px;"></div>
     <div class="description"><?php echo $this->setting('cartography_user_guide'); ?></div>
 </fieldset>

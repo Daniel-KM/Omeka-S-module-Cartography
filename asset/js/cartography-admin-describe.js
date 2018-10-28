@@ -372,7 +372,7 @@ var getMarkerIdentifier = function(layer) {
  * @return int
  */
 var currentMediaId = function() {
-    var mediaId = $('#cartography-media').find('.leaflet-control-layers input[name="leaflet-base-layers"]:checked').next('span').text();
+    var mediaId = $('#' + mapElement).find('.leaflet-control-layers input[name="leaflet-base-layers"]:checked').next('span').text();
     mediaId = mediaId.length < 1 ? 1 : mediaId.substring(mediaId.lastIndexOf('#') + 1).trim();
     mediaId = mainImages[mediaId - 1].id;
     return mediaId;
@@ -396,12 +396,13 @@ var setView = function() {
 
 // TODO Remove global/closure variables.
 var section = 'describe';
+var mapElement = 'annotate-describe';
 var mainImages = [];
 
 // TODO Convert the fetch of images into a callback.
 fetchImages(resourceId, {type: 'original'});
 if (!mainImages.length) {
-    $('#cartography-media').html(Omeka.jsTranslate('There is no image attached to this resource.'));
+    $('#' + mapElement).html(Omeka.jsTranslate('There is no image attached to this resource.'));
     return;
 }
 
@@ -409,7 +410,7 @@ if (!mainImages.length) {
 var currentAnnotation;
 
 // Initialize the map and set default view.
-var map = L.map('cartography-media', {
+var map = L.map(mapElement, {
     // TODO Compute the min/max zoom according to images?
     minZoom: -4,
     maxZoom: 8,

@@ -402,6 +402,7 @@ var setView = function() {
 
 //TODO Remove global/closure variables.
 var section = 'locate';
+var mapElement = 'annotate-locate';
 var wmsLayers = [];
 
 //TODO Convert the fetch of wms layers into a callback.
@@ -411,7 +412,7 @@ fetchWmsLayers(resourceId, {upper: 1, lower: 1});
 var currentAnnotation;
 
 // Initialize the map and set default view.
-var map = L.map('cartography-map', {
+var map = L.map(mapElement, {
     pasteControl: true,
 });
 map.setView([20, 0], 2);

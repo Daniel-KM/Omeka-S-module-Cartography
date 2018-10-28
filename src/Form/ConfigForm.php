@@ -61,19 +61,6 @@ class ConfigForm extends Form
             ],
         ]);
 
-        $this->add([
-            'name' => 'cartography_locate_wms',
-            'type' => Element\Textarea::class,
-            'options' => [
-                'label' => 'Add wms for all maps', // @translate
-                'info' => 'Add wms urls, one by line, with a optional label separated by a space. See readme.', // @translate
-            ],
-            'attributes' => [
-                'id' => 'cartography_locate_wms',
-                'placeholder' => 'https://mapwarper.net/maps/wms/14068? Us and territories',
-            ],
-        ]);
-
         $inputFilter = $this->getInputFilter();
         $inputFilter->add([
             'name' => 'cartography_display_tab',

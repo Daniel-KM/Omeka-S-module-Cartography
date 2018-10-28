@@ -117,10 +117,12 @@ return [
     'cartography' => [
         'config' => [
             'cartography_user_guide' => 'Feel free to use <strong>Cartography</strong>!', // @translate
-            'cartography_display_tab' => ['describe', 'locate'],
+            'cartography_display_tab' => [
+                'describe',
+                'locate',
+            ],
             'cartography_js_describe' => '',
             'cartography_js_locate' => '',
-            'cartography_locate_wms' => [],
         ],
         'site_settings' => [
             'cartography_append_item_set_show' => true,

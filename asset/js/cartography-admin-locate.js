@@ -9,6 +9,34 @@
 $(document).ready( function() {
 
 /**
+ * Fetch default wms layers of a site.
+ *
+ * @todo Remove the sync request and use a callback.
+ *
+ * @param int resourceId
+ * @param object data May contain the level of wms layers to fetch (upper or lower)
+ * @return array
+ */
+var fetchWmsLayers = function(resourceId, data) {
+    var url = basePath + '/admin/cartography/' + resourceId + '/wmsLayers';
+
+    $.ajax({url: url, data: data, async: false})
+        .done(function(data) {
+            if (data.status === 'error') {
+                alert(data.message);
+                return;
+            }
+            wmsLayers = data.wmsLayers;
+        })
+        .fail(function(jqxhr) {
+            var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
+                ? JSON.parse(jqxhr.responseText).message
+                : Omeka.jsTranslate('Unable to fetch the wms layers.');
+            alert(message);
+        });
+}
+
+/**
  * Fetch geometries for a resource.
  *
  * @return array
@@ -363,9 +391,18 @@ var setView = function() {
     }
 };
 
-/* Initialization */
+/*
+ * Initialization
+ *
+ * Note: there may be no specific wms layer, since the resource are loaded dynamically.
+ */
 
+//TODO Remove global/closure variables.
 var section = 'locate';
+var wmsLayers = [];
+
+//TODO Convert the fetch of wms layers into a callback.
+fetchWmsLayers(resourceId, {upper: 1, lower: 1});
 
 // TODO Find the way to get the current annotation after the resource selection.
 var currentAnnotation;

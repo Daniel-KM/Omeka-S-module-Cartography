@@ -53,7 +53,9 @@ Then, simply open the item (the display view, not the edition view, because the
 annotations are saved outside of the resource metadata), go to the tabs
 `Describe` or `Locate`, then annotate.
 
-There may be multiple images and georeferenced maps.
+There may be multiple images and georeferenced maps. Furthermore, the upper maps
+are displayed too: the item sets wms layers are displayed with the item one, and
+the item ones with the media one.
 
 Notes
 - A geometry can have only one description, because there is only one popup. So
@@ -62,6 +64,9 @@ Notes
   resource, the motivation is forced to "linking". Furthermore, the annotation
   body is the related resource and the target is the geometry, like all other
   motivations.
+  Nevertheless, a description can be appended too, with a second motivation. In
+  that case, the description describes the target, like always, so it is not a
+  description of the links.
 
 
 Configuration
@@ -125,7 +130,7 @@ purpose only. In production, you must register to get a [free ign key].
 #### Describe still images
 
 A similar js can be added for images to describe, but is not managed directly by
-the module.
+the module currently.
 
 
 TODO
@@ -134,6 +139,7 @@ TODO
 - Make the list of the fields of the style editor configurable.
 - Add a configurable list of styles in the style editor (or replace the fields
   used to edit styles).
+- Add the specific config of the wmts at the site level.
 
 
 Warning

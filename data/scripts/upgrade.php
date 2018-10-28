@@ -247,3 +247,8 @@ WHERE value = 'locating' AND property_id = $propertyId;
 SQL;
     $connection->exec($sql);
 }
+
+if (version_compare($oldVersion, '3.0.5-beta2', '<')) {
+    // Remove general wms (replaced by upper/lower resource wms).
+    $settings->delete('cartography_locate_wms');
+}

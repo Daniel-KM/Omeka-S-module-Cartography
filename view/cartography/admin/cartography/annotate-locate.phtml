@@ -8,30 +8,24 @@ $this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet-geosearch/st
 $this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet-geosearch/leaflet.css', 'Cartography'));
 $this->headScript()->appendFile($this->assetUrl('vendor/leaflet-geosearch/bundle.min.js', 'Cartography'));
 
-// Add wms layers if any.
-if ($wmsLayers) {
-    $this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet-markercluster/MarkerCluster.css', 'Cartography'));
-    $this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet-markercluster/MarkerCluster.Default.css', 'Cartography'));
-    $this->headScript()->appendFile($this->assetUrl('vendor/leaflet-markercluster/leaflet.markercluster.js', 'Cartography'));
-    $this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.min.css', 'Cartography'));
-    $this->headScript()->appendFile($this->assetUrl('vendor/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.min.js', 'Cartography'));
-    // From module Mapping.
-    $this->headScript()->appendFile($this->assetUrl('js/control.opacity.js', 'Cartography'));
-}
-
-// Add wmts layers if needed.
-if (!empty($jsLocate)) {
-    // $this->headScript()->appendFile($this->assetUrl('vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts.js', 'Cartography'));
-    $this->headScript()->appendFile($this->assetUrl('vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts-src.js', 'Cartography'));
-}
+// Add wms layers if any (may be added in the config or in the resource).
+// TODO Load wms js only if there are wms layers (the list is loaded dynamically).
+$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet-markercluster/MarkerCluster.css', 'Cartography'));
+$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet-markercluster/MarkerCluster.Default.css', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet-markercluster/leaflet.markercluster.js', 'Cartography'));
+$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.min.css', 'Cartography'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.min.js', 'Cartography'));
+// From module Mapping.
+$this->headScript()->appendFile($this->assetUrl('js/control.opacity.js', 'Cartography'));
 
 // Integration in Omeka S.
-$jsLocate = empty($jsLocate) ? '' : '
-$(document).ready( function() {
-' . $jsLocate . '
-});';
-$script = 'var wmsLayers = ' . json_encode($wmsLayers, 320) . ';' . $jsLocate;
-$this->headScript()->appendScript($script);
+if ($js = $this->setting('cartography_js_locate')) {
+    // Add wmts layers if needed.
+    // $this->headScript()->appendFile($this->assetUrl('vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts.js', 'Cartography'));
+    $this->headScript()->appendFile($this->assetUrl('vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts-src.js', 'Cartography'));
+    $this->headScript()->appendScript('$(document).ready( function() { ' . $js . ' });');
+}
+
 $this->headScript()->appendFile($this->assetUrl('js/cartography-admin-locate.js', 'Cartography'));
 
 ?>

@@ -424,7 +424,7 @@ map.setView([0, 0], 0);
 
 var mapMoved = false;
 
-//Add layers and controls to the map.
+// Add layers and controls to the map.
 var baseMaps = {};
 var bounds;
 $.each(mainImages, function(index, mainImage) {
@@ -481,8 +481,9 @@ var styleEditor = L.control.styleEditor({
     // colorRamp: ['#1abc9c', '#2ecc71', '#3498db'],
     // markers: ['circle-stroked', 'circle', 'square-stroked', 'square'],
     strings: {
-        // TODO Only cancel is updated.
-        cancel: Omeka.jsTranslate('Finish'),
+        save: Omeka.jsTranslate('Save'),
+        saveTitle: Omeka.jsTranslate('Save Styling'),
+        cancel: Omeka.jsTranslate('Cancel'),
         cancelTitle: Omeka.jsTranslate('Cancel Styling'),
         tooltip: Omeka.jsTranslate('Click on the element you want to style'),
         tooltipNext: Omeka.jsTranslate('Choose another element you want to style'),
@@ -544,9 +545,37 @@ map.on(L.Draw.Event.DELETED, function(element) {
 });
 
 // Handle styling of a geometry.
-map.on('styleeditor:changed', function(element){
-    editGeometry(element);
-});
+// Handle styling of a geometry in real time.
+// map.on('styleeditor:changed', function(element){
+//     editGeometry(element);
+// });
+// Use a final save button instead of saving in real time.
+handleStyleEditSave();
+function handleStyleEditSave() {
+    var styleIsChanged = false;
+    catchEditEvents();
+
+    // Catch the events.
+    function catchEditEvents() {
+        map.on('styleeditor:changed', function(element) {
+            if (element) {
+                styleIsChanged = true;
+            }
+        });
+
+        map.on('styleeditor:editSave', function(element) {
+            doSave(element);
+        });
+    }
+
+    // Process the save.
+    function doSave(element) {
+        if (styleIsChanged === true && element ) {
+            editGeometry(element);
+            styleIsChanged = false;
+        }
+    }
+}
 
 // Handle paste wkt/geojson.
 map.on('paste:layer-created', function(element){
@@ -575,6 +604,7 @@ map.on('styleeditor:editing', function(element){
     currentAnnotation = element;
 });
 map.on('styleeditor:hidden', function(element){
+    // TODO Revert change too when it is not in real time.
     currentAnnotation = null;
 });
 
@@ -651,7 +681,8 @@ var addLinkedResource = function(identifier, valueObj) {
         currentAnnotation.options.oaLinking = [];
     }
     currentAnnotation.options.oaLinking.push(valueObj);
-    editGeometry(currentAnnotation);
+    // Real time saving deferred.
+    // editGeometry(currentAnnotation);
 };
 var appendLinkedResource = function(valueObj) {
     // Prepare the markup for the resource data types.
@@ -698,6 +729,8 @@ $('#' + section).on('click', '.leaflet-styleeditor-interior .actions .remove-val
     }
 
     currentAnnotation.options.oaLinking = oaLinking;
+    // Real time deletion deferred.
+    // FIXME Real time delteion should be deferred (add event inside StyleEditor).
     editGeometry(currentAnnotation);
 
     // Remove the element from the style editor.
@@ -710,7 +743,7 @@ $('#' + section).one('o:section-opened', function(e) {
     setView();
 });
 
-//Close the sidebar when switching sections to avoid possible issues between describe/locate.
+// Close the sidebar when switching sections to avoid possible issues between describe/locate.
 $('#' + section).on('o:section-closed', function(e) {
     var sidebar = $('#select-resource');
     Omeka.closeSidebar(sidebar);
@@ -720,6 +753,7 @@ $('#' + section).on('o:section-closed', function(e) {
  * Recursively remove the fonctions of an object.
  *
  * This is a hack to fix the edition of markers via leaflet.draw.
+ *
  * @todo Remove this hack used to allow markers to be edited.
  */
 function buildParams(obj, key) {

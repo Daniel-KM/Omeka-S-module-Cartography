@@ -90,6 +90,7 @@ return [
     'js_translate_strings' => [
         '[Untitled]', // @translate
         'Annotation #', // @translate
+        'Cancel', // @translate
         'Cancel Styling', // @translate
         'Choose another element you want to style', // @translate
         'Click on the element you want to style', // @translate
@@ -104,6 +105,8 @@ return [
         'Related items', // @translate
         'Related items:', // @translate
         'Remove value', // @translate
+        'Save', // @translate
+        'Save Styling', // @translate
         'The resource is already linked to the current annotation.', // @translate
         'There is no image attached to this resource.', // @translate
         'Unable to delete the geometry.', // @translate

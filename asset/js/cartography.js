@@ -66,7 +66,8 @@ var fetchWmsLayers = function(resourceId, data) {
  * @todo Separate the fetch and the display.
  *
  * @param int resourceId
- * @param object data May contaiin the media id.
+ * @param array data May contaiin the media id.
+ * @param Leaflet.FeatureGroup drawnItems
  */
 var fetchGeometries = function(resourceId, data, drawnItems) {
     var url = basePath + baseUrl + '/cartography/' + resourceId + '/geometries';
@@ -77,7 +78,9 @@ var fetchGeometries = function(resourceId, data, drawnItems) {
                 alert(data.message);
                 return;
             }
-            displayGeometries(data.geometries, drawnItems);
+            if (data.geometries.length) {
+                displayGeometries(data.geometries, drawnItems);
+            }
         })
         .fail(function(jqxhr) {
             var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
@@ -89,59 +92,70 @@ var fetchGeometries = function(resourceId, data, drawnItems) {
 
 /**
  * Display geometries.
+ *
+ * @param array geometries
+ * @param Leaflet.FeatureGroup drawnItems
  */
 var displayGeometries = function(geometries, drawnItems) {
-    $.each(geometries, function(index, data) {
-        var layer;
-        var geojson = Terraformer.WKT.parse(data['wkt']);
-        var options = data['options'] || {};
-        options.annotationIdentifier = data['id'];
+    geometries.forEach(displayGeometry, {drawnItems: drawnItems});
+}
 
-        // Prepare to set the content of the popup in all cases, not only description.
-        options.onEachFeature = function(feature, layer) {
-            var popupContent = popupAnnotation(options);
-            layer.bindPopup(popupContent);
+/**
+ * Display one geometry on a feature group.
+ *
+ * @param array geometries
+ * @param Leaflet.FeatureGroup drawnItems (value inside callback reference)
+ */
+var displayGeometry = function(data) {
+    var layer;
+    var geojson = Terraformer.WKT.parse(data['wkt']);
+    var options = data['options'] || {};
+    options.annotationIdentifier = data['id'];
 
-            // To reserve the options from geoJson.
-            layer.options = layer.options || {};
-            // To prepare for style editor form-element initial value.
-            layer.options = $.extend(options, layer.options);
-        }
-
-        // Keep the styling.
-        options.style = function (feature) {
-            return options;
-        }
-
-        // Prepare the layer.
-        if (geojson.type === 'Point' && typeof options.radius !== 'undefined') {
-            // Warning: the coordinates are inversed on an image.
-            layer = L.circle([geojson.coordinates[1], geojson.coordinates[0]], options);
-
-            layer.setStyle(options);
-        } else {
-            layer = L.geoJson(geojson, options);
-
-            // Use rectangle if possible, not Polygon.
-            // Keep the moving handle when editing with leaflet.draw.
-            if (options._isRectangle === '1') {
-                layer = L.rectangle(layer.getBounds(), options);
-                // Reserve the id of rectangle.
-                if (options.annotationIdentifier) {
-                    rectangleIds[options.annotationIdentifier] = true;
-                }
-            }
-        }
-
-        // Set the content of the popup in all cases, not only description.
+    // Prepare to set the content of the popup in all cases, not only description.
+    options.onEachFeature = function(feature, layer) {
         var popupContent = popupAnnotation(options);
         layer.bindPopup(popupContent);
 
-        // Append the geometry to the map.
-        addGeometry(layer, data['id'], drawnItems);
+        // To reserve the options from geoJson.
+        layer.options = layer.options || {};
+        // To prepare for style editor form-element initial value.
+        layer.options = $.extend(options, layer.options);
+    }
 
-        layer.options.annotationIdentifier = data['id'];
-    });
+    // Keep the styling.
+    options.style = function (feature) {
+        return options;
+    }
+
+    // Prepare the layer.
+    if (geojson.type === 'Point' && typeof options.radius !== 'undefined') {
+        // Warning: the coordinates are inversed on an image.
+        layer = L.circle([geojson.coordinates[1], geojson.coordinates[0]], options);
+
+        layer.setStyle(options);
+    } else {
+        layer = L.geoJson(geojson, options);
+
+        // Use rectangle if possible, not Polygon.
+        // Keep the moving handle when editing with leaflet.draw.
+        if (options._isRectangle === '1') {
+            layer = L.rectangle(layer.getBounds(), options);
+            // Reserve the id of rectangle.
+            if (options.annotationIdentifier) {
+                rectangleIds[options.annotationIdentifier] = true;
+            }
+        }
+    }
+
+    // Set the content of the popup in all cases, not only description.
+    var popupContent = popupAnnotation(options);
+    layer.bindPopup(popupContent);
+
+    // Append the geometry to the map.
+    addGeometry(layer, data['id'], this.drawnItems);
+
+    layer.options.annotationIdentifier = data['id'];
 }
 
 /**
@@ -331,7 +345,7 @@ var popupAnnotation = function(options) {
     if (oaLinking.length) {
         html += '<div class="annotation-body-oa-linking" >';
         // html += '<label>' + (oaLinking.length === 1 ? Omeka.jsTranslate('Related item') : Omeka.jsTranslate('Related items')) + '</label>';
-        $.each(oaLinking, function(index, valueObj) {
+        oaLinking.forEach(function(valueObj, index) {
             html += '<div class="value">'
                 + '<p class="resource-oa-linking">'
                 // TODO Add ellipsis to display the title and to display the resource icon.
@@ -536,22 +550,22 @@ var initDescribe = function() {
     // Add controls to the map.
     var baseMaps = {};
     var bounds;
-    $.each(images, function(index, mainImage) {
+    images.forEach(function(image, index) {
         // Compute image edges as positive coordinates.
         // TODO Choose top left as 0.0 for still images?
         var southWest = L.latLng(0, 0);
-        var northEast = L.latLng(mainImage.size[1], mainImage.size[0]);
+        var northEast = L.latLng(image.size[1], image.size[0]);
         var bounds = L.latLngBounds(southWest, northEast);
-        var image = L.imageOverlay(mainImage.url, bounds);
+        var imageOverlay = L.imageOverlay(image.url, bounds);
         if (index === 0) {
-            bounds = image.getBounds();
-            image.addTo(map);
+            bounds = imageOverlay.getBounds();
+            imageOverlay.addTo(map);
             map.panTo([bounds.getNorthEast().lat / 2, bounds.getNorthEast().lng / 2]);
             // FIXME Fit bounds first image overlay.
             // map.fitBounds(bounds);
-            fetchGeometries(resourceId, {mediaId: mainImage.id}, drawnItems);
+            fetchGeometries(resourceId, {mediaId: image.id}, drawnItems);
         }
-        baseMaps[Omeka.jsTranslate('Image #') + (index + 1)] = image;
+        baseMaps[Omeka.jsTranslate('Image #') + (index + 1)] = imageOverlay;
     });
     if (Object.keys(baseMaps).length > 1) {
         var layerControl = L.control.layers(baseMaps);
@@ -679,7 +693,7 @@ var initLocate = function() {
 
         // Add grouped WMS overlay layers.
         map.addLayer(noOverlayLayer);
-        $.each(wmsLayers, function(index, data) {
+        wmsLayers.forEach(function(data, index) {
             var wmsLabel = data.label.length ? data.label : (Omeka.jsTranslate('Layer') + ' ' + (index + 1));
             // Leaflet requires the layers and the styles separated.
             // Require a recent browser (@url https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams#Browser_compatibility#Browser_compatibility).

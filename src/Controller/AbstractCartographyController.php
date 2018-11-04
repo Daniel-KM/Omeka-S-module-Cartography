@@ -622,7 +622,7 @@ abstract class AbstractCartographyController extends AbstractActionController
      * geometries, whatever they have a media id or not.
      * - annotationId" to specify an annotation, else all annotations are
      * returned.
-     * @return array Associative array of linked resources by annotation id.
+     * @return array Array of geometries.
      */
     protected function fetchGeometries(AbstractResourceEntityRepresentation $resource, array $query = [])
     {
@@ -747,7 +747,7 @@ abstract class AbstractCartographyController extends AbstractActionController
             ];
             $geometry['options']['date'] = $annotation->created()->format('Y-m-d H:i:s');
 
-            $geometries[$annotation->id()] = $geometry;
+            $geometries[] = $geometry;
         }
 
         return $geometries;

@@ -389,6 +389,7 @@ abstract class AbstractCartographyController extends AbstractActionController
             unset($options['cartographyUncertainty']);
             unset($options['owner']);
             unset($options['date']);
+            unset($options['right']);
 
             if (!empty($options)) {
                 $data['oa:styledBy'][] = [
@@ -544,6 +545,7 @@ abstract class AbstractCartographyController extends AbstractActionController
             unset($options['cartographyUncertainty']);
             unset($options['owner']);
             unset($options['date']);
+            unset($options['right']);
 
             // TODO Don't update style if it is not updated (so it can be kept empty). And reset it eventually. And use class style.
             if (!empty($options)) {
@@ -885,6 +887,11 @@ abstract class AbstractCartographyController extends AbstractActionController
                 'name' => $owner->name(),
             ];
             $geometry['options']['date'] = $annotation->created()->format('Y-m-d H:i:s');
+
+            $geometry['options']['right'] = [
+                'update' => $annotation->userIsAllowed('update'),
+                'delete' => $annotation->userIsAllowed('delete'),
+            ];
 
             $geometries[] = $geometry;
         }

@@ -1126,7 +1126,7 @@ var annotateGeometries = function(map, section, drawnItems) {
 // var resourceId;
 // var cartographySections;
 // TODO Check the right to annotate dynamically.
-// var rightAnnotate;
+var rightAnnotate = typeof userRights === 'undefined' ? null : userRights;
 var images = [];
 var wmsLayers = [];
 // Manage the distinction between the rectangles/squares and the polygons.

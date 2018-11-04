@@ -181,6 +181,7 @@ return [
                 'locate_items_show',
                 'locate_media_show',
             ],
+            'cartography_annotate' => false,
         ],
         'dependencies' => [
             'Annotate',

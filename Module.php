@@ -337,6 +337,23 @@ class Module extends AbstractModule
             ],
         ]);
 
+        $fieldset->add([
+            'name' => 'cartography_annotate',
+            'type' => Element\Checkbox::class,
+            'options' => [
+                'label' => 'Enable annotation', // @translate
+                'info' => 'Allows to enable/disable the image/map annotation on this specific site', // @translate
+            ],
+            'attributes' => [
+                'id' => 'cartography_annotate',
+                'disabled' => 'disabled',
+                'value' => $siteSettings->get(
+                    'cartography_annotate',
+                    $defaultSiteSettings['cartography_annotate']
+                ),
+            ],
+        ]);
+
         $form->add($fieldset);
     }
 
@@ -400,8 +417,6 @@ class Module extends AbstractModule
             return;
         }
 
-        $rightAnnotate = $acl->userIsAllowed(\Annotate\Entity\Annotation::class, 'create');
-
         /** @var \Zend\View\Renderer\PhpRenderer $view */
         $view = $event->getTarget();
         $resource = $view->resource;
@@ -414,7 +429,7 @@ class Module extends AbstractModule
         if ($displayDescribe) {
             echo $view->cartography($resource, [
                 'type' => 'describe',
-                'annotate' => $rightAnnotate,
+                'annotate' => true,
                 'headers' => true,
                 'sections' => $displayAll ? ['describe', 'locate'] : ['describe'],
             ]);
@@ -422,7 +437,7 @@ class Module extends AbstractModule
         if ($displayLocate) {
             echo $view->cartography($resource, [
                 'type' => 'locate',
-                'annotate' => $rightAnnotate,
+                'annotate' => true,
                 'headers' => !$displayAll,
                 'sections' => $displayAll ? ['describe', 'locate'] : ['locate'],
             ]);
@@ -436,14 +451,13 @@ class Module extends AbstractModule
      */
     public function displayPublic(Event $event)
     {
-        $displayTab = $this->getServiceLocator()->get('Omeka\Settings\Site')
-            ->get('cartography_append_public');
+        $siteSettings = $this->getServiceLocator()->get('Omeka\Settings\Site');
+        $displayTab = $siteSettings->get('cartography_append_public');
         if (empty($displayTab)) {
             return;
         }
 
-        // TODO Allow public to annotate.
-        $rightAnnotate = false;
+        $annotate = (bool) $siteSettings->get('cartography_annotate');
 
         $view = $event->getTarget();
         $resource = $view->resource;
@@ -457,7 +471,7 @@ class Module extends AbstractModule
         if ($displayDescribe) {
             echo $view->cartography($resource, [
                 'type' => 'describe',
-                'annotate' => $rightAnnotate,
+                'annotate' => $annotate,
                 'headers' => true,
                 'sections' => $displayAll ? ['describe', 'locate'] : ['describe'],
             ]);
@@ -465,7 +479,7 @@ class Module extends AbstractModule
         if ($displayLocate) {
             echo $view->cartography($resource, [
                 'type' => 'locate',
-                'annotate' => $rightAnnotate,
+                'annotate' => $annotate,
                 'headers' => !$displayAll,
                 'sections' => $displayAll ? ['describe', 'locate'] : ['locate'],
             ]);

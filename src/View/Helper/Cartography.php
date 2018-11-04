@@ -17,7 +17,8 @@ class Cartography extends AbstractHelper
      * @param AbstractResourceEntityRepresentation $resource
      * @param array $options Associative array of params:
      * - type (string): string, "locate" (default) or "describe"
-     * - annotate (bool): allow user or visitor to annotate (default: false)
+     * - annotate (bool): display the toolbar to create/update/delete, if the
+     * user has the rights (default: false).
      * Next params will be removed in a future release.
      * - headers (bool): prepend headers or not (default: true), that is useful
      * when there are multiple blocks).
@@ -68,7 +69,7 @@ class Cartography extends AbstractHelper
         $headLink = $view->headLink();
         $headScript = $view->headScript();
 
-        // TODO Public annotation is not available: should manage the resource selector sidebar and rights.
+        // TODO Public annotation is not yet available: should manage the resource selector sidebar and rights.
         $annotate = $options['annotate'];
         $isPublic = (bool) $view->params()->fromRoute('__SITE__');
         $options['baseUrl'] = $isPublic
@@ -82,26 +83,36 @@ class Cartography extends AbstractHelper
 
         // Add specific code for annotation.
         if ($annotate) {
-            // Edition via draw.
+            $rights = [
+                'create' => $view->userIsAllowed(\Annotate\Entity\Annotation::class, 'create'),
+                'update' => $view->userIsAllowed(\Annotate\Entity\Annotation::class, 'update'),
+                'delete' => $view->userIsAllowed(\Annotate\Entity\Annotation::class, 'delete'),
+            ];
+
+            // Edition via draw (used for creation, update or delete).
             $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-draw/leaflet.draw.css', 'Cartography'));
             $headScript->appendFile($view->assetUrl('vendor/leaflet-draw/leaflet.draw.js', 'Cartography'));
 
-            // Style editor.
-            $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-styleeditor/css/Leaflet.StyleEditor.min.css', 'Cartography'));
-            $headScript->appendFile($view->assetUrl('vendor/leaflet-styleeditor/javascript/Leaflet.StyleEditor.min.js', 'Cartography'));
+            if ($rights['create']) {
+                // Leaflet paste.
+                $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-paste/css/Leaflet.paste.css', 'Cartography'));
+                $headScript->appendFile($view->assetUrl('vendor/leaflet-paste/vendor/wicket.src.js', 'Cartography'));
+                $headScript->appendFile($view->assetUrl('vendor/leaflet-paste/vendor/wicket-leaflet.src.js', 'Cartography'));
+                $headScript->appendFile($view->assetUrl('vendor/leaflet-paste/js/Leaflet.Layer.WKT.js', 'Cartography'));
+                $headScript->appendFile($view->assetUrl('vendor/leaflet-paste/js/Leaflet.paste.js', 'Cartography'));
+            }
 
-            // Leaflet paste.
-            $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-paste/css/Leaflet.paste.css', 'Cartography'));
-            $headScript->appendFile($view->assetUrl('vendor/leaflet-paste/vendor/wicket.src.js', 'Cartography'));
-            $headScript->appendFile($view->assetUrl('vendor/leaflet-paste/vendor/wicket-leaflet.src.js', 'Cartography'));
-            $headScript->appendFile($view->assetUrl('vendor/leaflet-paste/js/Leaflet.Layer.WKT.js', 'Cartography'));
-            $headScript->appendFile($view->assetUrl('vendor/leaflet-paste/js/Leaflet.paste.js', 'Cartography'));
+            if ($rights['update']) {
+                // Style editor.
+                $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-styleeditor/css/Leaflet.StyleEditor.min.css', 'Cartography'));
+                $headScript->appendFile($view->assetUrl('vendor/leaflet-styleeditor/javascript/Leaflet.StyleEditor.min.js', 'Cartography'));
 
-            // TODO Load only the item selector part of the resource-form.js.
-            $headScript->appendFile($view->assetUrl('js/resource-form.js', 'Omeka'));
+                // TODO Load only the item selector part of the resource-form.js.
+                $headScript->appendFile($view->assetUrl('js/resource-form.js', 'Omeka'));
 
-            // TODO Integrate the resource selector sidebar in public view (or inside the style editor, that will allow full screen linking too).
-            $html .= $view->partial('common/resource-select-sidebar');
+                // TODO Integrate the resource selector sidebar in public view (or inside the style editor, that will allow full screen linking too).
+                $html .= $view->partial('common/resource-select-sidebar');
+            }
         }
 
         // Leaflet terraformer.
@@ -167,8 +178,7 @@ var Omeka = {};';
         $script .= 'var basePath = ' . json_encode($view->basePath(), 320) . ';
 var baseUrl = ' . json_encode($options['baseUrl'], 320) . ';
 var resourceId = ' . $resource->id() . ';
-var cartographySections = ' . json_encode($options['sections'], 320). ';
-var rightAnnotate = ' . ($annotate ? 'true' : 'false') . ';';
+var cartographySections = ' . json_encode($options['sections'], 320). ';';
 
         if ($annotate) {
             $customVocabs = [
@@ -188,7 +198,10 @@ var rightAnnotate = ' . ($annotate ? 'true' : 'false') . ';';
                 }
             }
 
+            $user = $view->identity();
             $script .= '
+var userId = ' . ($user ? $user->getId() : 0) . ';
+var userRights = ' . json_encode($rights, 320) . ';
 var valuesJson =  ' . json_encode($resource->values(), 320). ';
 var oaMotivatedBySelect = ' . json_encode($options['oaMotivatedBySelect'], 320) . ';
 var oaHasPurposeSelect = ' . json_encode($options['oaHasPurposeSelect'], 320) . ';

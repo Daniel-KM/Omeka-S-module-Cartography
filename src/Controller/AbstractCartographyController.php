@@ -11,31 +11,6 @@ use Zend\View\Model\JsonModel;
 abstract class AbstractCartographyController extends AbstractActionController
 {
     /**
-     * Get the geometries for a resource.
-     *
-     * @return JsonModel
-     */
-    public function geometriesAction()
-    {
-        $resource = $this->resourceFromParams();
-        if (!$resource) {
-            return new JsonModel([
-                'status' => 'error',
-                'message' => 'Not found.', // @translate
-            ]);
-        }
-
-        $query = $this->params()->fromQuery();
-        $geometries = $this->fetchGeometries($resource, $query);
-
-        return new JsonModel([
-            'status' => 'success',
-            'resourceId' => $resource->id(),
-            'geometries' => $geometries,
-        ]);
-    }
-
-    /**
      * Get the images for a resource.
      *
      * @return JsonModel
@@ -82,6 +57,31 @@ abstract class AbstractCartographyController extends AbstractActionController
             'status' => 'success',
             'resourceId' => $resource->id(),
             'wmsLayers' => $wmsLayers,
+        ]);
+    }
+
+    /**
+     * Get the geometries for a resource.
+     *
+     * @return JsonModel
+     */
+    public function geometriesAction()
+    {
+        $resource = $this->resourceFromParams();
+        if (!$resource) {
+            return new JsonModel([
+                'status' => 'error',
+                'message' => 'Not found.', // @translate
+            ]);
+        }
+
+        $query = $this->params()->fromQuery();
+        $geometries = $this->fetchGeometries($resource, $query);
+
+        return new JsonModel([
+            'status' => 'success',
+            'resourceId' => $resource->id(),
+            'geometries' => $geometries,
         ]);
     }
 
@@ -611,6 +611,145 @@ abstract class AbstractCartographyController extends AbstractActionController
     }
 
     /**
+     * Prepare all images (url and size) for a resource.
+     *
+     * @todo Manage tiles, iiif, etc.
+     *
+     * @param AbstractResourceEntityRepresentation $resource
+     * @param array $params Params to specify the images:
+     * - type (string): type of the image (default: "original").
+     * @return array Array of images data.
+     */
+    protected function fetchImages(AbstractResourceEntityRepresentation $resource, array $params = [])
+    {
+        $images = [];
+        $resourceName = $resource->resourceName();
+        switch ($resourceName) {
+            case 'items':
+                $medias = $resource->media();
+                break;
+            case 'media':
+                $medias = [$resource];
+                break;
+            default:
+                return $images;
+        }
+
+        $imageType = isset($params['type']) ? $params['type'] : null;
+        foreach ($medias as $media) {
+            if (!$media->hasOriginal()) {
+                continue;
+            }
+            $size = $this->imageSize($media, $imageType);
+            if (!$size) {
+                continue;
+            }
+            $image = [];
+            $image['id'] = $media->id();
+            $image['url'] = $media->originalUrl();
+            $image['size'] = array_values($size);
+            $images[] = $image;
+        }
+
+        return $images;
+    }
+
+    /**
+     * Prepare all wms layers for a resource (uri provided as dcterms:spatial).
+     *
+     * The list is deduplicated.
+     *
+     * @todo Use a unique doctrine query to get all the dctems:spatial uris values, with automatic deduplication.
+     * @todo Add an option to deduplicate or to identify the level.
+     * @todo Make this method a recursive method (not important currently).
+     *
+     * @param AbstractResourceEntityRepresentation $resource
+     * @param array $params Params to specify the wms layers:
+     * - upper (int): add wms layers of the upper level. 0 (default) means no,
+     * 1 means item for media, item set for item), 2 means first level and item
+     * set for media.
+     * - lower (int): add wms layers of the lower level. 0 (default) means no,
+     * 1 means media for item, item for item set), 2 means first level and media
+     * for item set.
+     * @return array Array of wms layers data.
+     */
+    protected function fetchWmsLayers(AbstractResourceEntityRepresentation $resource, array $params = [])
+    {
+        $wmsLayers = [];
+
+        // Add upper level first.
+        $resourceName = $resource->resourceName();
+        $upper = empty($params['upper']) ? 0 : $params['upper'];
+        $lower = empty($params['lower']) ? 0 : $params['lower'];
+
+        if ($upper) {
+            switch ($resourceName) {
+                case 'items':
+                    foreach ($resource->itemSets() as $itemSet) {
+                        $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($itemSet));
+                    }
+                    break;
+                case 'media':
+                    $item = $resource->item();
+                    if ($upper == 2) {
+                        foreach ($item->itemSets() as $itemSet) {
+                            $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($itemSet));
+                        }
+                    }
+                    $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($item));
+                    break;
+            }
+        }
+
+        $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($resource));
+
+        if ($lower) {
+            switch ($resourceName) {
+                case 'item_sets':
+                    foreach ($resource->items() as $item) {
+                        $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($item));
+                        if ($lower == 2) {
+                            foreach ($item->media() as $media) {
+                                $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($media));
+                            }
+                        }
+                    }
+                    break;
+                case 'items':
+                    foreach ($resource->media() as $media) {
+                        $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($media));
+                    }
+                    break;
+            }
+        }
+
+        return array_values($wmsLayers);
+    }
+
+    /**
+     * Get wms layers for a resource (uri provided as dcterms:spatial).
+     *
+     * @param AbstractResourceEntityRepresentation $resource
+     * @return array Array of wms layers data, mapped by url.
+     */
+    protected function extractWmsLayers(AbstractResourceEntityRepresentation $resource)
+    {
+        $wmsLayers = [];
+        $values = $resource->value('dcterms:spatial', ['type' => 'uri', 'all' => true, 'default' => []]);
+        foreach ($values as $value) {
+            $url = $value->uri();
+            if (parse_url($url)) {
+                $wmsLayer = [
+                    'url' => $url,
+                    'label' => $value->value(),
+                ];
+                $wmsLayers[$url] = $wmsLayer;
+            }
+        }
+        return $wmsLayers;
+    }
+
+    /**
      * Prepare all geometries for a resource.
      *
      * @param AbstractResourceEntityRepresentation $resource
@@ -751,145 +890,6 @@ abstract class AbstractCartographyController extends AbstractActionController
         }
 
         return $geometries;
-    }
-
-    /**
-     * Prepare all images (url and size) for a resource.
-     *
-     * @todo Manage tiles, iiif, etc.
-     *
-     * @param AbstractResourceEntityRepresentation $resource
-     * @param array $params Params to specify the images:
-     * - type (string): type of the image (default: "original").
-     * @return array Array of images data.
-     */
-    protected function fetchImages(AbstractResourceEntityRepresentation $resource, array $params = [])
-    {
-        $images = [];
-        $resourceName = $resource->resourceName();
-        switch ($resourceName) {
-            case 'items':
-                $medias = $resource->media();
-                break;
-            case 'media':
-                $medias = [$resource];
-                break;
-            default:
-                return $images;
-        }
-
-        $imageType = isset($params['type']) ? $params['type'] : null;
-        foreach ($medias as $media) {
-            if (!$media->hasOriginal()) {
-                continue;
-            }
-            $size = $this->imageSize($media, $imageType);
-            if (!$size) {
-                continue;
-            }
-            $image = [];
-            $image['id'] = $media->id();
-            $image['url'] = $media->originalUrl();
-            $image['size'] = array_values($size);
-            $images[] = $image;
-        }
-
-        return $images;
-    }
-
-    /**
-     * Prepare all wms layers for a resource (uri provided as dcterms:spatial).
-     *
-     * The list is deduplicated.
-     *
-     * @todo Use a unique doctrine query to get all the dctems:spatial uris values, with automatic deduplication.
-     * @todo Add an option to deduplicate or to identify the level.
-     * @todo Make this method a recursive method (not important currently).
-     *
-     * @param AbstractResourceEntityRepresentation $resource
-     * @param array $params Params to specify the wms layers:
-     * - upper (int): add wms layers of the upper level. 0 (default) means no,
-     * 1 means item for media, item set for item), 2 means first level and item
-     * set for media.
-     * - lower (int): add wms layers of the lower level. 0 (default) means no,
-     * 1 means media for item, item for item set), 2 means first level and media
-     * for item set.
-     * @return array Array of wms layers data.
-     */
-    protected function fetchWmsLayers(AbstractResourceEntityRepresentation $resource, array $params = [])
-    {
-        $wmsLayers = [];
-
-        // Add upper level first.
-        $resourceName = $resource->resourceName();
-        $upper = empty($params['upper']) ? 0 : $params['upper'];
-        $lower = empty($params['lower']) ? 0 : $params['lower'];
-
-        if ($upper) {
-            switch ($resourceName) {
-                case 'items':
-                    foreach ($resource->itemSets() as $itemSet) {
-                        $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($itemSet));
-                    }
-                    break;
-                case 'media':
-                    $item = $resource->item();
-                    if ($upper == 2) {
-                        foreach ($item->itemSets() as $itemSet) {
-                            $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($itemSet));
-                        }
-                    }
-                    $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($item));
-                    break;
-            }
-        }
-
-        $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($resource));
-
-        if ($lower) {
-            switch ($resourceName) {
-                case 'item_sets':
-                    foreach ($resource->items() as $item) {
-                        $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($item));
-                        if ($lower == 2) {
-                            foreach ($item->media() as $media) {
-                                $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($media));
-                            }
-                        }
-                    }
-                    break;
-                case 'items':
-                    foreach ($resource->media() as $media) {
-                        $wmsLayers = array_merge($wmsLayers, $this->extractWmsLayers($media));
-                    }
-                    break;
-            }
-        }
-
-        return array_values($wmsLayers);
-    }
-
-    /**
-     * Get wms layers for a resource (uri provided as dcterms:spatial).
-     *
-     * @param AbstractResourceEntityRepresentation $resource
-     * @return array Array of wms layers data, mapped by url.
-     */
-    protected function extractWmsLayers(AbstractResourceEntityRepresentation $resource)
-    {
-        $wmsLayers = [];
-        $values = $resource->value('dcterms:spatial', ['type' => 'uri', 'all' => true, 'default' => []]);
-        foreach ($values as $value) {
-            $url = $value->uri();
-            if (parse_url($url)) {
-                $wmsLayer = [
-                    'url' => $url,
-                    'label' => $value->value(),
-                ];
-                $wmsLayers[$url] = $wmsLayer;
-            }
-        }
-        return $wmsLayers;
     }
 
     protected function propertyId($term)

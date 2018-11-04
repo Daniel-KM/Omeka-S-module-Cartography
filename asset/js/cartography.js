@@ -517,6 +517,54 @@ var setView = function() {
 };
 
 /**
+ * Add specific controls to annotate.
+ *
+ * @todo Remove argument drawnItems
+ *
+ * @var Leaflet.Map map
+ * @var Leaflet.FeatureGroup drawnItems
+ */
+var annotateControl = function(map, drawnItems) {
+    var drawControl = new L.Control.Draw({
+        draw: {
+            polyline: true,
+            polygon: true,
+            rectangle: true,
+            circle: true,
+            marker: true,
+            circlemarker: false,
+        },
+        edit: {
+            featureGroup: drawnItems,
+            remove: true,
+        }
+    });
+    // Don't display the button "clear all".
+    L.EditToolbar.Delete.include({
+        removeAllLayers: false,
+    });
+    map.addControl(drawControl);
+
+    /* Style Editor (https://github.com/dwilhelm89/Leaflet.StyleEditor) */
+    // Initialize the StyleEditor
+    var styleEditor = L.control.styleEditor({
+        // position: 'topleft',
+        // colorRamp: ['#1abc9c', '#2ecc71', '#3498db'],
+        // markers: ['circle-stroked', 'circle', 'square-stroked', 'square'],
+        strings: {
+            save: Omeka.jsTranslate('Save'),
+            saveTitle: Omeka.jsTranslate('Save Styling'),
+            cancel: Omeka.jsTranslate('Cancel'),
+            cancelTitle: Omeka.jsTranslate('Cancel Styling'),
+            tooltip: Omeka.jsTranslate('Click on the element you want to style'),
+            tooltipNext: Omeka.jsTranslate('Choose another element you want to style'),
+        },
+        useGrouping: false,
+    });
+    map.addControl(styleEditor);
+}
+
+/**
  * Initialize the data for the describe section.
  */
 var initDescribe = function() {
@@ -575,43 +623,7 @@ var initDescribe = function() {
     map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
 
     if (rightAnnotate) {
-        var drawControl = new L.Control.Draw({
-            draw: {
-                polyline: true,
-                polygon: true,
-                rectangle: true,
-                circle: true,
-                marker: true,
-                circlemarker: false,
-            },
-            edit: {
-                featureGroup: drawnItems,
-                remove: true,
-            }
-        });
-        // Don't display the button "clear all".
-        L.EditToolbar.Delete.include({
-            removeAllLayers: false,
-        });
-        map.addControl(drawControl);
-
-        /* Style Editor (https://github.com/dwilhelm89/Leaflet.StyleEditor) */
-        // Initialize the StyleEditor
-        var styleEditor = L.control.styleEditor({
-            // position: 'topleft',
-            // colorRamp: ['#1abc9c', '#2ecc71', '#3498db'],
-            // markers: ['circle-stroked', 'circle', 'square-stroked', 'square'],
-            strings: {
-                save: Omeka.jsTranslate('Save'),
-                saveTitle: Omeka.jsTranslate('Save Styling'),
-                cancel: Omeka.jsTranslate('Cancel'),
-                cancelTitle: Omeka.jsTranslate('Cancel Styling'),
-                tooltip: Omeka.jsTranslate('Click on the element you want to style'),
-                tooltipNext: Omeka.jsTranslate('Choose another element you want to style'),
-            },
-            useGrouping: false,
-        });
-        map.addControl(styleEditor);
+        annotateControl(map, drawnItems);
     }
 
     setView();
@@ -745,46 +757,10 @@ var initLocate = function() {
         retainZoomLevel: true,
     });
     map.addControl(geoSearchControl);
-    map.addControl(new L.control.scale({'position':'bottomleft','metric':true,'imperial':false}));
+    map.addControl(new L.control.scale({'position': 'bottomleft', 'metric': true, 'imperial': false}));
 
     if (rightAnnotate) {
-        var drawControl = new L.Control.Draw({
-            draw: {
-                polyline: true,
-                polygon: true,
-                rectangle: true,
-                circle: true,
-                marker: true,
-                circlemarker: false,
-            },
-            edit: {
-                featureGroup: drawnItems,
-                remove: true,
-            }
-        });
-        // Don't display the button "clear all".
-        L.EditToolbar.Delete.include({
-            removeAllLayers: false,
-        });
-        map.addControl(drawControl);
-
-        /* Style Editor (https://github.com/dwilhelm89/Leaflet.StyleEditor) */
-        // Initialize the StyleEditor
-        var styleEditor = L.control.styleEditor({
-            // position: 'topleft',
-            // colorRamp: ['#1abc9c', '#2ecc71', '#3498db'],
-            // markers: ['circle-stroked', 'circle', 'square-stroked', 'square'],
-            strings: {
-                save: Omeka.jsTranslate('Save'),
-                saveTitle: Omeka.jsTranslate('Save Styling'),
-                cancel: Omeka.jsTranslate('Cancel'),
-                cancelTitle: Omeka.jsTranslate('Cancel Styling'),
-                tooltip: Omeka.jsTranslate('Click on the element you want to style'),
-                tooltipNext: Omeka.jsTranslate('Choose another element you want to style'),
-            },
-            useGrouping: false,
-        });
-        map.addControl(styleEditor);
+        annotateControl(map, drawnItems);
     }
 
     // Append the opacity control at the end of the toolbar for better ux.
@@ -814,7 +790,16 @@ var initLocate = function() {
 
 /* Manage geometries. */
 
-function annotateGeometries(map, section, drawnItems) {
+/**
+ * Add specific controls to annotate.
+ *
+ * @todo remove argument "section".
+ *
+ * @var Leaflet.Map map
+ * @var string section
+ * @var L.FeatureGroup drawnItems
+ */
+var annotateGeometries = function(map, section, drawnItems) {
     // Handle adding new geometries.
     map.on('draw:created', function (element) {
         addGeometry(element.layer, null, drawnItems);

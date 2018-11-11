@@ -342,7 +342,7 @@ class Module extends AbstractModule
             'type' => Element\Checkbox::class,
             'options' => [
                 'label' => 'Enable annotation', // @translate
-                'info' => 'Allows to enable/disable the image/map annotation on this specific site', // @translate
+                'info' => 'Allows to enable/disable the image/map annotation on this specific site. In all cases, the rights are defined by the module Annotate.', // @translate
             ],
             'attributes' => [
                 'id' => 'cartography_annotate',

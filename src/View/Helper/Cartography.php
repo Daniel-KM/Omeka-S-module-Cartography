@@ -3,6 +3,7 @@ namespace Cartography\View\Helper;
 
 use Omeka\Api\Exception\NotFoundException;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
+use Omeka\Entity\User;
 use Zend\View\Helper\AbstractHelper;
 
 class Cartography extends AbstractHelper
@@ -17,8 +18,8 @@ class Cartography extends AbstractHelper
      * @param AbstractResourceEntityRepresentation $resource
      * @param array $options Associative array of params:
      * - type (string): string, "locate" (default) or "describe"
-     * - annotate (bool): display the toolbar to create/update/delete, if the
-     * user has the rights (default: false).
+     * - annotate (bool): display the toolbar to create/edit/delete, if the user
+     * has the rights (default: false).
      * Next params will be removed in a future release.
      * - headers (bool): prepend headers or not (default: true), that is useful
      * when there are multiple blocks).
@@ -83,13 +84,10 @@ class Cartography extends AbstractHelper
 
         // Add specific code for annotation.
         if ($annotate) {
-            $rights = [
-                'create' => $view->userIsAllowed(\Annotate\Entity\Annotation::class, 'create'),
-                'update' => $view->userIsAllowed(\Annotate\Entity\Annotation::class, 'update'),
-                'delete' => $view->userIsAllowed(\Annotate\Entity\Annotation::class, 'delete'),
-            ];
+            $user = $view->identity();
+            $rights = $this->globalRights($user, $annotate);
 
-            // Edition via draw (used for creation, update or delete).
+            // Edition via draw (used for creation, edit or delete).
             $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-draw/leaflet.draw.css', 'Cartography'));
             $headScript->appendFile($view->assetUrl('vendor/leaflet-draw/leaflet.draw.js', 'Cartography'));
 
@@ -102,7 +100,7 @@ class Cartography extends AbstractHelper
                 $headScript->appendFile($view->assetUrl('vendor/leaflet-paste/js/Leaflet.paste.js', 'Cartography'));
             }
 
-            if ($rights['update']) {
+            if ($rights['edit']) {
                 // Style editor.
                 $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-styleeditor/css/Leaflet.StyleEditor.min.css', 'Cartography'));
                 $headScript->appendFile($view->assetUrl('vendor/leaflet-styleeditor/javascript/Leaflet.StyleEditor.min.js', 'Cartography'));
@@ -206,6 +204,10 @@ var valuesJson =  ' . json_encode($resource->values(), 320). ';
 var oaMotivatedBySelect = ' . json_encode($options['oaMotivatedBySelect'], 320) . ';
 var oaHasPurposeSelect = ' . json_encode($options['oaHasPurposeSelect'], 320) . ';
 var cartographyUncertaintySelect = ' . json_encode($options['cartographyUncertaintySelect'], 320) . ';';
+        } else {
+            $script .= '
+var userId = 0;
+var userRights = {"create":false,"edit":false,"delete":false};';
         }
 
         $headScript->appendScript($script);
@@ -216,5 +218,62 @@ var cartographyUncertaintySelect = ' . json_encode($options['cartographyUncertai
         }
 
         return $html;
+    }
+
+    /**
+     * Get the global rights of a user.
+     *
+     * @param User $user
+     * @param bool $annotate
+     * @return array
+     */
+    protected function globalRights(User $user = null, $annotate = false)
+    {
+        // TODO Get the rights directly from the acl, not from the role.
+        $role = $user ? $user->getRole() : 'annotator_visitor';
+        switch ($role) {
+            case \Omeka\Permissions\Acl::ROLE_GLOBAL_ADMIN:
+            case \Omeka\Permissions\Acl::ROLE_SITE_ADMIN:
+            case \Omeka\Permissions\Acl::ROLE_EDITOR:
+                $rights = [
+                    'create' => true,
+                    'edit' => true,
+                    'delete' => true,
+                ];
+                break;
+            case \Omeka\Permissions\Acl::ROLE_REVIEWER:
+                $rights = [
+                    'create' => true,
+                    'edit' => true,
+                    'delete' => 'own',
+                ];
+                break;
+            case \Omeka\Permissions\Acl::ROLE_AUTHOR:
+            case \Omeka\Permissions\Acl::ROLE_RESEARCHER:
+            case \Annotate\Permissions\Acl::ROLE_ANNOTATOR:
+                $rights = [
+                    'create' => true,
+                    'edit' => 'own',
+                    'delete' => 'own',
+                ];
+                break;
+            case 'annotator_visitor':
+            case 'guest':
+                $rights = [
+                'create' => $annotate,
+                'edit' => $annotate ? 'own' : false,
+                'delete' => $annotate ? 'own' : false,
+                ];
+                break;
+            default:
+                $rights = [
+                    'create' => false,
+                    'edit' => false,
+                    'delete' => false,
+                ];
+                break;
+        }
+
+        return $rights;
     }
 }

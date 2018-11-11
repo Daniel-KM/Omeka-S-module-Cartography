@@ -416,7 +416,6 @@ abstract class AbstractCartographyController extends AbstractActionController
             'status' => 'success',
             'result' => [
                 'id' => $annotation->id(),
-                'moderation' => !$this->userIsAllowed(Annotation::class, 'update'),
                 'resourceId' => $resource->id(),
                 'annotation' => $annotation->getJsonLd(),
             ],
@@ -605,7 +604,6 @@ abstract class AbstractCartographyController extends AbstractActionController
             'status' => 'success',
             'result' => [
                 'id' => $annotation->id(),
-                'moderation' => !$this->userIsAllowed(Annotation::class, 'update'),
                 // 'resourceId' => $resource->id(),
                 'annotation' => $annotation->getJsonLd(),
             ],
@@ -889,7 +887,7 @@ abstract class AbstractCartographyController extends AbstractActionController
             $geometry['options']['date'] = $annotation->created()->format('Y-m-d H:i:s');
 
             $geometry['options']['right'] = [
-                'update' => $annotation->userIsAllowed('update'),
+                'edit' => $annotation->userIsAllowed('update'),
                 'delete' => $annotation->userIsAllowed('delete'),
             ];
 

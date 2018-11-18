@@ -183,8 +183,5 @@ return [
             ],
             'cartography_annotate' => false,
         ],
-        'dependencies' => [
-            'Annotate',
-        ],
     ],
 ];

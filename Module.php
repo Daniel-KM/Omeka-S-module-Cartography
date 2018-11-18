@@ -1,9 +1,7 @@
 <?php
 namespace Cartography;
 
-use Cartography\Form\ConfigForm;
 use Omeka\Api\Exception\NotFoundException;
-use Omeka\Module\AbstractModule;
 use Omeka\Module\Exception\ModuleCannotInstallException;
 use Omeka\Mvc\Controller\Plugin\Messenger;
 use Omeka\Stdlib\Message;
@@ -11,10 +9,12 @@ use Zend\EventManager\Event;
 use Zend\EventManager\SharedEventManagerInterface;
 use Zend\Form\Element;
 use Zend\Form\Fieldset;
-use Zend\Mvc\Controller\AbstractController;
 use Zend\Mvc\MvcEvent;
 use Zend\ServiceManager\ServiceLocatorInterface;
 use Zend\View\Renderer\PhpRenderer;
+
+// TODO Remove this requirement.
+require_once 'AbstractGenericModule.php';
 
 /**
  * Cartography
@@ -24,171 +24,32 @@ use Zend\View\Renderer\PhpRenderer;
  * @copyright Daniel Berthereau, 2018
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt
  */
-class Module extends AbstractModule
+class Module extends AbstractGenericModule
 {
-    public function getConfig()
-    {
-        return include __DIR__ . '/config/module.config.php';
-    }
+    protected $dependency = 'Annotate';
 
     public function onBootstrap(MvcEvent $event)
     {
         parent::onBootstrap($event);
 
-        // TODO Find a better way to disable a module when dependencies are unavailable.
+        // Manage the module dependency, in particular when upgrading.
+        // Once disabled, this current method and other ones are no more called.
         $services = $event->getApplication()->getServiceManager();
-        if ($this->checkDependencies($services)) {
-            $this->addAclRules();
-        } else {
-            $this->disableModule($services);
-            $translator = $services->get('MvcTranslator');
-            $message = new Message($translator->translate('The module "%s" was automatically deactivated because the dependencies are unavailable.'), // @translate
-                __NAMESPACE__
-            );
-            $messenger = new Messenger();
-            $messenger->addWarning($message);
+        if (!$this->isModuleActive($services, $this->dependency)) {
+            $this->disableModule($services, __NAMESPACE__);
+            return;
         }
+
+        $this->addAclRules();
     }
 
     public function install(ServiceLocatorInterface $serviceLocator)
     {
-        $api = $serviceLocator->get('Omeka\ApiManager');
-        $translator = $serviceLocator->get('MvcTranslator');
-
-        if (!$this->checkDependencies($serviceLocator)) {
-            $message = new Message($translator->translate('This module requires the module "%s".'), // @translate
-                'Annotate'
-            );
-            throw new ModuleCannotInstallException($message);
-        }
-
-        $vocabulary = [
-            'vocabulary' => [
-                'o:namespace_uri' => 'http://localhost/ns/cartography/',
-                'o:prefix' => 'cartography',
-                'o:label' => 'Cartography', // @translate
-                'o:comment' => 'Specific metadata for cartography (to be removed).', // @translate
-            ],
-            'strategy' => 'file',
-            'file' => 'cartography.ttl',
-            'format' => 'turtle',
-        ];
-        $this->createVocabulary($vocabulary, $serviceLocator);
-
-        // Complete the annotation custom vocabularies.
-        $customVocabPaths = [
-            __DIR__ . '/data/custom-vocabs/Cartography-Target-dcterms-format.json',
-            __DIR__ . '/data/custom-vocabs/Cartography-Target-rdf-type.json',
-        ];
-        foreach ($customVocabPaths as $filepath) {
-            $data = json_decode(file_get_contents($filepath), true);
-            $label = $data['o:label'];
-            try {
-                $customVocab = $api
-                    ->read('custom_vocabs', ['label' => $label])->getContent();
-            } catch (NotFoundException $e) {
-                throw new ModuleCannotInstallException(
-                    sprintf(
-                        'The custom vocab named "%s" is not available.', // @translate
-                        $label
-                    ));
-            }
-            $terms = array_map('trim', explode(PHP_EOL, $customVocab->terms()));
-            $terms = array_merge($terms, $data['o:terms']);
-            $api->update('custom_vocabs', $customVocab->id(), [
-                'o:label' => $label,
-                'o:terms' => implode(PHP_EOL, $terms),
-            ], [], ['isPartial' => true]);
-        }
-
-        // Add specific custom vocabularies.
-        $customVocabPaths = [
-            // TODO Move custom vocab into annotation or use a specific to Cartography?
-            __DIR__ . '/data/custom-vocabs/Annotation-Body-oa-hasPurpose.json',
-            __DIR__ . '/data/custom-vocabs/Cartography-cartography-uncertainty.json',
-        ];
-        foreach ($customVocabPaths as $filepath) {
-            $data = json_decode(file_get_contents($filepath), true);
-            $data['o:terms'] = implode(PHP_EOL, $data['o:terms']);
-            $api->create('custom_vocabs', $data);
-        }
-
-        $this->manageSettings($serviceLocator->get('Omeka\Settings'), 'install');
-        $this->manageSiteSettings($serviceLocator, 'install');
+        parent::install($serviceLocator);
+        $this->installResources($serviceLocator);
     }
 
-    public function uninstall(ServiceLocatorInterface $serviceLocator)
-    {
-        // TODO Cartography vocabulary is not removed.
-
-        $this->manageSettings($serviceLocator->get('Omeka\Settings'), 'uninstall');
-        $this->manageSiteSettings($serviceLocator, 'uninstall');
-    }
-
-    public function upgrade($oldVersion, $newVersion,
-        ServiceLocatorInterface $serviceLocator
-    ) {
-        require_once 'data/scripts/upgrade.php';
-    }
-
-    protected function manageSettings($settings, $process, $key = 'config')
-    {
-        $config = require __DIR__ . '/config/module.config.php';
-        $defaultSettings = $config[strtolower(__NAMESPACE__)][$key];
-        foreach ($defaultSettings as $name => $value) {
-            switch ($process) {
-                case 'install':
-                    $settings->set($name, $value);
-                    break;
-                case 'uninstall':
-                    $settings->delete($name);
-                    break;
-            }
-        }
-    }
-
-    protected function manageSiteSettings(ServiceLocatorInterface $serviceLocator, $process)
-    {
-        $siteSettings = $serviceLocator->get('Omeka\Settings\Site');
-        $api = $serviceLocator->get('Omeka\ApiManager');
-        $sites = $api->search('sites')->getContent();
-        foreach ($sites as $site) {
-            $siteSettings->setTargetId($site->id());
-            $this->manageSettings($siteSettings, $process, 'site_settings');
-        }
-    }
-
-    /**
-     * Check if all dependencies are enabled.
-     *
-     * @param ServiceLocatorInterface $services
-     * @return bool
-     */
-    protected function checkDependencies(ServiceLocatorInterface $services)
-    {
-        $moduleManager = $services->get('Omeka\ModuleManager');
-        $config = require __DIR__ . '/config/module.config.php';
-        $dependencies = $config[strtolower(__NAMESPACE__)]['dependencies'];
-        foreach ($dependencies as $moduleClass) {
-            $module = $moduleManager->getModule($moduleClass);
-            if (empty($module) || $module->getState() !== \Omeka\Module\Manager::STATE_ACTIVE) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Disable the module.
-     *
-     * @param ServiceLocatorInterface $services
-     */
-    protected function disableModule(ServiceLocatorInterface $services)
-    {
-        $moduleManager = $services->get('Omeka\ModuleManager');
-        $module = $moduleManager->getModule(__NAMESPACE__);
-        $moduleManager->deactivate($module);
-    }
+    // TODO Cartography vocabulary is not removed.
 
     /**
      * Add ACL rules for this module.
@@ -196,18 +57,17 @@ class Module extends AbstractModule
     protected function addAclRules()
     {
         /** @var \Omeka\Permissions\Acl $acl */
-        $services = $this->getServiceLocator();
-        $acl = $services->get('Omeka\Acl');
+        $acl = $this->getServiceLocator()->get('Omeka\Acl');
 
         $roles = $acl->getRoles();
         // TODO Limit rights to access annotate actions too (annotations are already managed).
         $acl->allow(
             null,
-            Controller\Site\CartographyController::class
+            [Controller\Site\CartographyController::class]
         );
         $acl->allow(
             $roles,
-            Controller\Admin\CartographyController::class
+            [Controller\Admin\CartographyController::class]
         );
     }
 
@@ -258,47 +118,8 @@ class Module extends AbstractModule
 
     public function getConfigForm(PhpRenderer $renderer)
     {
-        $services = $this->getServiceLocator();
-        $config = $services->get('Config');
-        $settings = $services->get('Omeka\Settings');
-        $form = $services->get('FormElementManager')->get(ConfigForm::class);
-
-        $data = [];
-        $defaultSettings = $config[strtolower(__NAMESPACE__)]['config'];
-        foreach ($defaultSettings as $name => $value) {
-            $data[$name] = $settings->get($name, $value);
-        }
-
         $renderer->ckEditor();
-
-        $form->init();
-        $form->setData($data);
-        $html = $renderer->formCollection($form);
-        return $html;
-    }
-
-    public function handleConfigForm(AbstractController $controller)
-    {
-        $services = $this->getServiceLocator();
-        $config = $services->get('Config');
-        $settings = $services->get('Omeka\Settings');
-        $form = $services->get('FormElementManager')->get(ConfigForm::class);
-
-        $params = $controller->getRequest()->getPost();
-
-        $form->init();
-        $form->setData($params);
-        if (!$form->isValid()) {
-            $controller->messenger()->addErrors($form->getMessages());
-            return false;
-        }
-
-        $params = $form->getData();
-        $defaultSettings = $config[strtolower(__NAMESPACE__)]['config'];
-        $params = array_intersect_key($params, $defaultSettings);
-        foreach ($params as $name => $value) {
-            $settings->set($name, $value);
-        }
+        return parent::getConfigForm($renderer);
     }
 
     public function addFormElementsSiteSettings(Event $event)
@@ -486,18 +307,53 @@ class Module extends AbstractModule
         }
     }
 
+    protected function installResources(ServiceLocatorInterface $services)
+    {
+        $vocabulary = [
+            'vocabulary' => [
+                'o:namespace_uri' => 'http://localhost/ns/cartography/',
+                'o:prefix' => 'cartography',
+                'o:label' => 'Cartography', // @translate
+                'o:comment' => 'Specific metadata for cartography (to be removed).', // @translate
+            ],
+            'strategy' => 'file',
+            'file' => 'cartography.ttl',
+            'format' => 'turtle',
+        ];
+        $this->createVocabulary($services, $vocabulary);
+
+        // Add specific custom vocabularies.
+        $customVocabPaths = [
+            // TODO Move custom vocab into annotation or use a specific to Cartography?
+            __DIR__ . '/data/custom-vocabs/Annotation-Body-oa-hasPurpose.json',
+            __DIR__ . '/data/custom-vocabs/Cartography-cartography-uncertainty.json',
+        ];
+        foreach ($customVocabPaths as $filepath) {
+            $this->createCustomVocab($services, $filepath);
+        }
+
+        // Complete the annotation custom vocabularies.
+        $customVocabPaths = [
+            __DIR__ . '/data/custom-vocabs/Cartography-Target-dcterms-format.json',
+            __DIR__ . '/data/custom-vocabs/Cartography-Target-rdf-type.json',
+        ];
+        foreach ($customVocabPaths as $filepath) {
+            $this->updateCustomVocab($services, $filepath);
+        }
+    }
+
     /**
      * Create a vocabulary, with a check of its existence before.
      *
+     * @param ServiceLocatorInterface $services
      * @param array $vocabulary
-     * @param ServiceLocatorInterface $serviceLocator
      * @throws ModuleCannotInstallException
-     * @return bool True if the vocabulary has been created, false if it
-     * exists already, so it is not created twice.
+     * @return bool True if the vocabulary has been created, false if it exists
+     * already, so it is not created twice.
      */
-    protected function createVocabulary(array $vocabulary, ServiceLocatorInterface $serviceLocator)
+    protected function createVocabulary(ServiceLocatorInterface $services, array $vocabulary)
     {
-        $api = $serviceLocator->get('Omeka\ApiManager');
+        $api = $services->get('Omeka\ApiManager');
 
         // Check if the vocabulary have been already imported.
         $prefix = $vocabulary['vocabulary']['o:prefix'];
@@ -522,14 +378,14 @@ class Module extends AbstractModule
 
             // It is another vocabulary with the same prefix.
             throw new ModuleCannotInstallException(
-                sprintf(
+                new Message(
                     'An error occured when adding the prefix "%s": another vocabulary exists. Resolve the conflict before installing this module.', // @translate
                     $vocabulary['vocabulary']['o:prefix']
                 ));
         }
 
         /** @var \Omeka\Stdlib\RdfImporter $rdfImporter */
-        $rdfImporter = $serviceLocator->get('Omeka\RdfImporter');
+        $rdfImporter = $services->get('Omeka\RdfImporter');
 
         try {
             $rdfImporter->import(
@@ -542,12 +398,58 @@ class Module extends AbstractModule
             );
         } catch (\Omeka\Api\Exception\ValidationException $e) {
             throw new ModuleCannotInstallException(
-                sprintf(
+                new Message(
                     'An error occured when adding the prefix "%s" and the associated properties: %s', // @translate
                     $vocabulary['vocabulary']['o:prefix'], $e->getMessage()
                 ));
         }
 
         return true;
+    }
+
+    /**
+     * Create a custom vocab.
+     *
+     * @param ServiceLocatorInterface $services
+     * @param string $filepath
+     */
+    protected function createCustomVocab(ServiceLocatorInterface $services, $filepath)
+    {
+        $api = $services->get('Omeka\ApiManager');
+        $data = json_decode(file_get_contents($filepath), true);
+        $data['o:terms'] = implode(PHP_EOL, $data['o:terms']);
+        $api->create('custom_vocabs', $data);
+    }
+
+    /**
+     * Update a vocabulary, with a check of its existence before.
+     *
+     * @param ServiceLocatorInterface $services
+     * @param string $filepath
+     * @throws ModuleCannotInstallException
+     */
+    protected function updateCustomVocab(ServiceLocatorInterface $services, $filepath)
+    {
+        $api = $services->get('Omeka\ApiManager');
+        $data = json_decode(file_get_contents($filepath), true);
+
+        $label = $data['o:label'];
+        try {
+            $customVocab = $api
+                ->read('custom_vocabs', ['label' => $label])->getContent();
+        } catch (NotFoundException $e) {
+            throw new ModuleCannotInstallException(
+                new Message(
+                    'The custom vocab named "%s" is not available.', // @translate
+                    $label
+                ));
+        }
+
+        $terms = array_map('trim', explode(PHP_EOL, $customVocab->terms()));
+        $terms = array_merge($terms, $data['o:terms']);
+        $api->update('custom_vocabs', $customVocab->id(), [
+            'o:label' => $label,
+            'o:terms' => implode(PHP_EOL, $terms),
+        ], [], ['isPartial' => true]);
     }
 }

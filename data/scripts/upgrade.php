@@ -2,6 +2,7 @@
 namespace Cartography;
 
 /**
+ * @var Module $this
  * @var \Zend\ServiceManager\ServiceLocatorInterface $serviceLocator
  * @var string $newVersion
  * @var string $oldVersion
@@ -18,44 +19,25 @@ $entityManager = $services->get('Omeka\EntityManager');
 $api = $services->get('Omeka\ApiManager');
 
 if (version_compare($oldVersion, '3.0.1', '<')) {
-    $settings->set('cartography_user_guide', $config['cartography']['config']['cartography_user_guide']);
+    $settings->set('cartography_user_guide',
+        $config['cartography']['config']['cartography_user_guide']);
 }
 
 if (version_compare($oldVersion, '3.0.2-alpha', '<')) {
-    // Complete the annotation custom vocabularies.
+    $customVocabPaths = [
+        dirname(dirname(__DIR__)) . '/data/custom-vocabs/Annotation-Body-oa-hasPurpose.json',
+        dirname(dirname(__DIR__)) . '/data/custom-vocabs/Cartography-cartography-uncertainty.json',
+    ];
+    foreach ($customVocabPaths as $filepath) {
+        $this->createCustomVocab($services, $filepath);
+    }
+
     $customVocabPaths = [
         dirname(dirname(__DIR__)) . '/data/custom-vocabs/Cartography-Target-dcterms-format.json',
         dirname(dirname(__DIR__)) . '/data/custom-vocabs/Cartography-Target-rdf-type.json',
     ];
     foreach ($customVocabPaths as $filepath) {
-        $data = json_decode(file_get_contents($filepath), true);
-        $label = $data['o:label'];
-        try {
-            $customVocab = $api
-                ->read('custom_vocabs', ['label' => $label])->getContent();
-        } catch (\Omeka\Api\Exception\NotFoundException $e) {
-            throw new \Omeka\Module\Exception\ModuleCannotInstallException(
-                new \Omeka\Stdlib\Message(
-                    'The custom vocab named "%s" is not available.', // @translate
-                    $label
-                ));
-        }
-        $terms = array_map('trim', explode(PHP_EOL, $customVocab->terms()));
-        $terms = array_unique(array_merge($terms, $data['o:terms']));
-        $api->update('custom_vocabs', $customVocab->id(), [
-            'o:label' => $label,
-            'o:terms' => implode(PHP_EOL, $terms),
-        ], [], ['isPartial' => true]);
-    }
-
-     $customVocabPaths = [
-        dirname(dirname(__DIR__)) . '/data/custom-vocabs/Annotation-Body-oa-hasPurpose.json',
-        dirname(dirname(__DIR__)) . '/data/custom-vocabs/Cartography-cartography-uncertainty.json',
-    ];
-    foreach ($customVocabPaths as $filepath) {
-        $data = json_decode(file_get_contents($filepath), true);
-        $data['o:terms'] = implode(PHP_EOL, $data['o:terms']);
-        $api->create('custom_vocabs', $data);
+        $this->updateCustomVocab($services, $filepath);
     }
 
     $oldTabs = $settings->get('cartography_display_tab', []);

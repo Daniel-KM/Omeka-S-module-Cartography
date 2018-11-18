@@ -132,7 +132,7 @@ class Module extends AbstractGenericModule
         $defaultSiteSettings = $config[strtolower(__NAMESPACE__)]['site_settings'];
 
         $fieldset = new Fieldset('cartography');
-        $fieldset->setLabel('Annotate images and maps (cartography)'); // @translate
+        $fieldset->setLabel('Cartography (annotate images and maps)'); // @translate
 
         $fieldset->add([
             'name' => 'cartography_append_public',
@@ -158,22 +158,21 @@ class Module extends AbstractGenericModule
             ],
         ]);
 
-        $fieldset->add([
-            'name' => 'cartography_annotate',
-            'type' => Element\Checkbox::class,
-            'options' => [
-                'label' => 'Enable annotation', // @translate
-                'info' => 'Allows to enable/disable the image/map annotation on this specific site. In all cases, the rights are defined by the module Annotate.', // @translate
-            ],
-            'attributes' => [
-                'id' => 'cartography_annotate',
-                'disabled' => 'disabled',
-                'value' => $siteSettings->get(
-                    'cartography_annotate',
-                    $defaultSiteSettings['cartography_annotate']
-                ),
-            ],
-        ]);
+        // $fieldset->add([
+        //     'name' => 'cartography_annotate',
+        //     'type' => Element\Checkbox::class,
+        //     'options' => [
+        //         'label' => 'Enable annotation', // @translate
+        //         'info' => 'Allows to enable/disable the image/map annotation on this specific site. In all cases, the rights are defined by the module Annotate.', // @translate
+        //     ],
+        //     'attributes' => [
+        //         'id' => 'cartography_annotate',
+        //         'value' => $siteSettings->get(
+        //             'cartography_annotate',
+        //             $defaultSiteSettings['cartography_annotate']
+        //         ),
+        //     ],
+        // ]);
 
         $form->add($fieldset);
     }
@@ -183,6 +182,10 @@ class Module extends AbstractGenericModule
         $inputFilter = $event->getParam('inputFilter');
         $inputFilter->get('cartography')->add([
             'name' => 'cartography_append_public',
+            'required' => false,
+        ]);
+        $inputFilter->get('cartography')->add([
+            'name' => 'cartography_annotate',
             'required' => false,
         ]);
     }
@@ -327,6 +330,7 @@ class Module extends AbstractGenericModule
             // TODO Move custom vocab into annotation or use a specific to Cartography?
             __DIR__ . '/data/custom-vocabs/Annotation-Body-oa-hasPurpose.json',
             __DIR__ . '/data/custom-vocabs/Cartography-cartography-uncertainty.json',
+            __DIR__ . '/data/custom-vocabs/Cartography-oa-MotivatedBy-Locate.json',
         ];
         foreach ($customVocabPaths as $filepath) {
             $this->createCustomVocab($services, $filepath);
@@ -339,6 +343,17 @@ class Module extends AbstractGenericModule
         ];
         foreach ($customVocabPaths as $filepath) {
             $this->updateCustomVocab($services, $filepath);
+        }
+
+        // Create resource templates for annotations.
+        $settings = $services->get('Omeka\Settings');
+        $resourceTemplatePaths = [
+            'cartography_template_describe' => __DIR__ . '/data/resource-templates/Cartography_Describe.json',
+            'cartography_template_locate' => __DIR__ . '/data/resource-templates/Cartography_Locate.json',
+        ];
+        foreach ($resourceTemplatePaths as $key => $filepath) {
+            $resourceTemplate = $this->createResourceTemplate($services, $filepath);
+            $settings->set($key, [$resourceTemplate->id()]);
         }
     }
 
@@ -451,5 +466,145 @@ class Module extends AbstractGenericModule
             'o:label' => $label,
             'o:terms' => implode(PHP_EOL, $terms),
         ], [], ['isPartial' => true]);
+    }
+
+    /**
+     * Create a resource template, with a check of its existence before.
+     *
+     * @todo Some checks of the resource termplate controller are skipped currently.
+     *
+     * @param ServiceLocatorInterface $services
+     * @param string $filepath
+     * @return \Omeka\Api\Representation\ResourceTemplateRepresentation
+     * @throws ModuleCannotInstallException
+     */
+    protected function createResourceTemplate(ServiceLocatorInterface $services, $filepath)
+    {
+        $api = $services->get('ControllerPluginManager')->get('api');
+        $data = json_decode(file_get_contents($filepath), true);
+
+        // Check if the resource template exists, so it is not replaced.
+        $label = $data['o:label'];
+        try {
+            $api->read('resource_templates', ['label' => $label]);
+            $message = new Message(
+                'The resource template named "%s" is already available and is skipped.', // @translate
+                $label
+            );
+            $messenger = new Messenger();
+            $messenger->addWarning($message);
+            return;
+        } catch (NotFoundException $e) {
+        }
+
+        // Set the iinternal ids of classes, properties and data types.
+        // TODO Check if the output is valid (else an error will be thrown during import).
+        $data = $this->flagValid($services, $data);
+
+        // Manage the custom vocabs that may be set inside the template.
+        foreach ($data['o:resource_template_property'] as &$templateProperty) {
+            if (strpos($templateProperty['data_type_name'], 'customvocab:') !== 0) {
+                continue;
+            }
+            $label = $templateProperty['data_type_label'];
+            try {
+                $customVocab = $api
+                    ->read('custom_vocabs', ['label' => $label])->getContent();
+            } catch (NotFoundException $e) {
+                throw new ModuleCannotInstallException(
+                    new Message(
+                        'The custom vocab named "%s" is not available.', // @translate
+                        $label
+                    ));
+            }
+            $templateProperty['data_type_name'] = 'customvocab:' . $customVocab->id();
+        }
+        unset($templateProperty);
+
+        // Process import.
+        $resourceTemplate = $api->create('resource_templates', $data)->getContent();
+        return $resourceTemplate;
+    }
+
+    /**
+     * Flag members and data types as valid.
+     *
+     * Copy of the method of the resource template controller (with services).
+     *
+     * @see \Omeka\Controller\Admin\ResourceTemplateController::flagValid()
+     *
+     * All members start as invalid until we determine whether the corresponding
+     * vocabulary and member exists in this installation. All data types start
+     * as "Default" (i.e. none declared) until we determine whether they match
+     * the native types (literal, uri, resource).
+     *
+     * We flag a valid vocabulary by adding [vocabulary_prefix] to the member; a
+     * valid class by adding [o:id]; and a valid property by adding
+     * [o:property][o:id]. We flag a valid data type by adding [o:data_type] to
+     * the property. By design, the API will only hydrate members and data types
+     * that are flagged as valid.
+     *
+     * @param ServiceLocatorInterface $services
+     * @param array $import
+     * @return array
+     */
+    protected function flagValid(ServiceLocatorInterface $services, array $import)
+    {
+        $vocabs = [];
+        $dataTypes = [
+            'literal',
+            'uri',
+            'resource',
+            'resource:item',
+            'resource:itemset',
+            'resource:media',
+        ];
+
+        $api = $services->get('ControllerPluginManager')->get('api');
+
+        $getVocab = function ($namespaceUri) use (&$vocabs, $api) {
+            if (isset($vocabs[$namespaceUri])) {
+                return $vocabs[$namespaceUri];
+            }
+            $vocab = $api->searchOne('vocabularies', [
+                'namespace_uri' => $namespaceUri,
+            ])->getContent();
+            if ($vocab) {
+                $vocabs[$namespaceUri] = $vocab;
+                return $vocab;
+            }
+            return false;
+        };
+
+        if (isset($import['o:resource_class'])) {
+            if ($vocab = $getVocab($import['o:resource_class']['vocabulary_namespace_uri'])) {
+                $import['o:resource_class']['vocabulary_prefix'] = $vocab->prefix();
+                $class = $api->searchOne('resource_classes', [
+                    'vocabulary_namespace_uri' => $import['o:resource_class']['vocabulary_namespace_uri'],
+                    'local_name' => $import['o:resource_class']['local_name'],
+                ])->getContent();
+                if ($class) {
+                    $import['o:resource_class']['o:id'] = $class->id();
+                }
+            }
+        }
+
+        foreach ($import['o:resource_template_property'] as $key => $property) {
+            if ($vocab = $getVocab($property['vocabulary_namespace_uri'])) {
+                $import['o:resource_template_property'][$key]['vocabulary_prefix'] = $vocab->prefix();
+                $prop = $api->searchOne('properties', [
+                    'vocabulary_namespace_uri' => $property['vocabulary_namespace_uri'],
+                    'local_name' => $property['local_name'],
+                ])->getContent();
+                if ($prop) {
+                    $import['o:resource_template_property'][$key]['o:property'] = ['o:id' => $prop->id()];
+                    if (in_array($import['o:resource_template_property'][$key]['data_type_name'], $dataTypes)) {
+                        $import['o:resource_template_property'][$key]['o:data_type'] = $import['o:resource_template_property'][$key]['data_type_name'];
+                    }
+                }
+            }
+        }
+
+        return $import;
     }
 }

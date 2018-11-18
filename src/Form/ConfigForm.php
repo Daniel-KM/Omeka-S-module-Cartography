@@ -2,6 +2,7 @@
 namespace Cartography\Form;
 
 use Omeka\Form\Element\CkeditorInline;
+use Omeka\Form\Element\ResourceTemplateSelect;
 use Zend\Form\Element;
 use Zend\Form\Form;
 
@@ -34,6 +35,42 @@ class ConfigForm extends Form
             ],
             'attributes' => [
                 'id' => 'cartography_display_tab',
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'cartography_template_describe',
+            'type' => ResourceTemplateSelect::class,
+            'options' => [
+                'label' => 'Templates to use for Describe', // @translate
+                'info' => 'Allow to preset different properties to simplify cartography. If none, only the style editor will be available.', // @translate
+                'empty_option' => 'Select templates to annotate…', // @translate
+                'name_as_value' => true,
+                'term_as_value' => true,
+            ],
+            'attributes' => [
+                'id' => 'cartography_template_describe',
+                'class' => 'chosen-select',
+                'multiple' => true,
+                'data-placeholder' => 'Select templates to annotate…', // @translate
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'cartography_template_locate',
+            'type' => ResourceTemplateSelect::class,
+            'options' => [
+                'label' => 'Templates to use for Locate', // @translate
+                'info' => 'Allow to preset different properties to simplify cartography. If none, only the style editor will be available.', // @translate
+                'empty_option' => 'Select templates to annotate…', // @translate
+                'name_as_value' => true,
+                'term_as_value' => true,
+            ],
+            'attributes' => [
+                'id' => 'cartography_template_locate',
+                'class' => 'chosen-select',
+                'multiple' => true,
+                'data-placeholder' => 'Select templates to annotate…', // @translate
             ],
         ]);
 

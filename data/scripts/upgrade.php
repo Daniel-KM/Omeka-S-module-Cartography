@@ -253,3 +253,21 @@ if (version_compare($oldVersion, '3.0.5-beta2', '<')) {
     $settings->delete('cartography_append_item_show');
     $settings->delete('cartography_append_media_show');
 }
+
+if (version_compare($oldVersion, '3.0.6-beta3', '<')) {
+    $customVocabPaths = [
+        dirname(dirname(__DIR__)) . '/data/custom-vocabs/Cartography-oa-MotivatedBy-Locate.json',
+    ];
+    foreach ($customVocabPaths as $filepath) {
+        $this->createCustomVocab($services, $filepath);
+    }
+
+    $resourceTemplatePaths = [
+        'cartography_template_describe' => dirname(dirname(__DIR__)) . '/data/resource-templates/Cartography_Describe.json',
+        'cartography_template_locate' => dirname(dirname(__DIR__)) . '/data/resource-templates/Cartography_Locate.json',
+    ];
+    foreach ($resourceTemplatePaths as $key => $filepath) {
+        $resourceTemplate = $this->createResourceTemplate($services, $filepath);
+        $settings->set($key, [$resourceTemplate->id()]);
+    }
+}

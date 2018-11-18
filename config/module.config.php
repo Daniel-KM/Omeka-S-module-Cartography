@@ -169,6 +169,12 @@ return [
                 'describe',
                 'locate',
             ],
+            'cartography_template_describe' => [
+                'Annotation describe',
+            ],
+            'cartography_template_locate' => [
+                'Annotation locate',
+            ],
             'cartography_js_describe' => '',
             'cartography_js_locate' => '',
         ],

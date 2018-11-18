@@ -7,8 +7,6 @@ use Omeka\Mvc\Controller\Plugin\Messenger;
 use Omeka\Stdlib\Message;
 use Zend\EventManager\Event;
 use Zend\EventManager\SharedEventManagerInterface;
-use Zend\Form\Element;
-use Zend\Form\Fieldset;
 use Zend\Mvc\MvcEvent;
 use Zend\ServiceManager\ServiceLocatorInterface;
 use Zend\View\Renderer\PhpRenderer;
@@ -107,12 +105,12 @@ class Module extends AbstractGenericModule
         $sharedEventManager->attach(
             \Omeka\Form\SiteSettingsForm::class,
             'form.add_elements',
-            [$this, 'addFormElementsSiteSettings']
+            [$this, 'handleSiteSettings']
         );
         $sharedEventManager->attach(
             \Omeka\Form\SiteSettingsForm::class,
             'form.add_input_filters',
-            [$this, 'addSiteSettingsFilters']
+            [$this, 'handleSiteSettingsFilters']
         );
     }
 
@@ -122,62 +120,7 @@ class Module extends AbstractGenericModule
         return parent::getConfigForm($renderer);
     }
 
-    public function addFormElementsSiteSettings(Event $event)
-    {
-        $services = $this->getServiceLocator();
-        $siteSettings = $services->get('Omeka\Settings\Site');
-        $config = $services->get('Config');
-        $form = $event->getTarget();
-
-        $defaultSiteSettings = $config[strtolower(__NAMESPACE__)]['site_settings'];
-
-        $fieldset = new Fieldset('cartography');
-        $fieldset->setLabel('Cartography (annotate images and maps)'); // @translate
-
-        $fieldset->add([
-            'name' => 'cartography_append_public',
-            'type' => Element\MultiCheckbox::class,
-            'options' => [
-                'label' => 'Append to pages', // @translate
-                'info' => 'If unchecked, the viewer can be added via the helper in the theme or the block in any page.', // @translate
-                'value_options' => [
-                    // 'describe_item_sets_show' => 'Describe item set', // @translate
-                    'describe_items_show' => 'Describe item', // @translate
-                    // 'describe_media_show' => 'Describe media', // @translate
-                    // 'locate_item_sets_show' => 'Locate item set', // @translate
-                    'locate_items_show' => 'Locate item', // @translate
-                    // 'locate_media_show' => 'Locate media', // @translate
-                ],
-            ],
-            'attributes' => [
-                'id' => 'cartography_append_public',
-                'value' => $siteSettings->get(
-                    'cartography_append_public',
-                    $defaultSiteSettings['cartography_append_public']
-                ),
-            ],
-        ]);
-
-        // $fieldset->add([
-        //     'name' => 'cartography_annotate',
-        //     'type' => Element\Checkbox::class,
-        //     'options' => [
-        //         'label' => 'Enable annotation', // @translate
-        //         'info' => 'Allows to enable/disable the image/map annotation on this specific site. In all cases, the rights are defined by the module Annotate.', // @translate
-        //     ],
-        //     'attributes' => [
-        //         'id' => 'cartography_annotate',
-        //         'value' => $siteSettings->get(
-        //             'cartography_annotate',
-        //             $defaultSiteSettings['cartography_annotate']
-        //         ),
-        //     ],
-        // ]);
-
-        $form->add($fieldset);
-    }
-
-    public function addSiteSettingsFilters(Event $event)
+    public function handleSiteSettingsFilters(Event $event)
     {
         $inputFilter = $event->getParam('inputFilter');
         $inputFilter->get('cartography')->add([

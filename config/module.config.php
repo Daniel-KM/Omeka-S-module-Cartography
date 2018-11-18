@@ -22,6 +22,7 @@ return [
     'form_elements' => [
         'invokables' => [
             Form\ConfigForm::class => Form\ConfigForm::class,
+            Form\SiteSettingsFieldset::class => Form\SiteSettingsFieldset::class,
         ],
         'factories' => [
             // For compatibility with Omeka < 1.2.1.

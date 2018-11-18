@@ -31,13 +31,14 @@ namespace Cartography;
 use Omeka\Module\AbstractModule;
 use Omeka\Module\Exception\ModuleCannotInstallException;
 use Omeka\Stdlib\Message;
+use Zend\EventManager\Event;
 use Zend\Mvc\Controller\AbstractController;
 use Zend\ServiceManager\ServiceLocatorInterface;
 use Zend\View\Renderer\PhpRenderer;
 
 /**
  * This generic class allows to manage all methods that should run once only
- * and that are generic to all modules.
+ * and that are generic to all modules. A little config over code.
  */
 abstract class AbstractGenericModule extends AbstractModule
 {
@@ -51,7 +52,8 @@ abstract class AbstractGenericModule extends AbstractModule
         $this->checkDependency($serviceLocator);
         $this->execSqlFromFile($serviceLocator, __DIR__ . '/data/install/schema.sql');
         $settings = $serviceLocator->get('Omeka\Settings');
-        $this->manageSettings($settings, 'install');
+        $this->manageSettings($settings, 'install', 'config');
+        $this->manageSettings($settings, 'install', 'settings');
         $this->manageSiteSettings($serviceLocator, 'install');
     }
 
@@ -59,7 +61,8 @@ abstract class AbstractGenericModule extends AbstractModule
     {
         $this->execSqlFromFile($serviceLocator, __DIR__ . '/data/install/uninstall.sql');
         $settings = $serviceLocator->get('Omeka\Settings');
-        $this->manageSettings($settings, 'uninstall');
+        $this->manageSettings($settings, 'uninstall', 'config');
+        $this->manageSettings($settings, 'uninstall', 'settings');
         $this->manageSiteSettings($serviceLocator, 'uninstall');
     }
 
@@ -114,6 +117,39 @@ abstract class AbstractGenericModule extends AbstractModule
         }
     }
 
+    public function handleSettings(Event $event)
+    {
+        $this->handleAnySettings($event, __NAMESPACE__ . '\Form\SettingsFieldset', 'settings');
+    }
+
+    public function handleSiteSettings(Event $event)
+    {
+        $this->handleAnySettings($event, __NAMESPACE__ . '\Form\SiteSettingsFieldset', 'site_settings');
+    }
+
+    protected function handleAnySettings(Event $event, \Zend\Form\Fieldset $fieldset, $key)
+    {
+        $services = $this->getServiceLocator();
+        $config = $services->get('Config');
+        $settings = $key === 'settings'
+            ? $services->get('Omeka\Settings')
+            : $services->get('Omeka\Settings\Site');
+        $form = $event->getTarget();
+        $fieldset = $services->get('FormElementManager')->get($fieldset);
+
+        $space = strtolower(__NAMESPACE__);
+
+        $data = [];
+        $defaultSettings = $config[$space][$key];
+        foreach ($defaultSettings as $name => $value) {
+            $data[$name] = $settings->get($name, $value);
+        }
+
+        $fieldset->setName($space);
+        $form->add($fieldset);
+        $form->get($space)->populateValues($data);
+    }
+
     protected function execSqlFromFile(ServiceLocatorInterface $services, $filepath)
     {
         if (!file_exists($filepath) || !filesize($filepath) || !is_readable($filepath)) {
@@ -124,10 +160,10 @@ abstract class AbstractGenericModule extends AbstractModule
         $connection->exec($sql);
     }
 
-    protected function manageSettings($settings, $process, $key = 'config')
+    protected function manageSettings($settings, $process, $key)
     {
         $config = require __DIR__ . '/config/module.config.php';
-        if (!isset($config[strtolower(__NAMESPACE__)][$key])) {
+        if (empty($config[strtolower(__NAMESPACE__)][$key])) {
             return;
         }
         $defaultSettings = $config[strtolower(__NAMESPACE__)][$key];

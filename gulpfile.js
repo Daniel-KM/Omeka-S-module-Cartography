@@ -11,10 +11,11 @@ const bundle = [
         'source': 'node_modules/leaflet/dist/**',
         'dest': 'asset/vendor/leaflet',
     },
-    {
-        'source': 'node_modules/leaflet-draw/dist/**',
-        'dest': 'asset/vendor/leaflet-draw',
-    },
+    // A small patch allows to manage permissions.
+    // {
+    //     'source': 'node_modules/leaflet-draw/dist/**',
+    //     'dest': 'asset/vendor/leaflet-draw',
+    // },
     {
         'source': 'node_modules/leaflet-fullscreen/dist/**',
         'dest': 'asset/vendor/leaflet-fullscreen',
@@ -79,6 +80,14 @@ const bundle = [
     },
 ];
 
+const hack_leaflet_draw = function (done) {
+    gulp.src('asset/vendor/leaflet-draw/leaflet.draw-src.js')
+        .pipe(uglify())
+        .pipe(rename('leaflet.draw.js'))
+        .pipe(gulp.dest('asset/vendor/leaflet-draw'));
+    done();
+};
+
 gulp.task('clean', function(done) {
     bundle.forEach(function (module) {
         return del.sync(module.dest);
@@ -96,7 +105,7 @@ gulp.task('sync', function (done) {
     done();
 });
 
-gulp.task('default', gulp.series('clean', 'sync'));
+gulp.task('default', gulp.series('clean', 'sync', hack_leaflet_draw));
 
 gulp.task('install', gulp.task('default'));
 

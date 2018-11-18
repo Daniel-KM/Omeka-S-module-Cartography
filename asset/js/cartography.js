@@ -218,12 +218,18 @@ var addGeometry = function(layer, identifier, drawnItems) {
                 alert(data.message);
                 return;
             }
+
             identifier = data.result.id;
             layer.options.annotationIdentifier = identifier;
             // Reserve the rectangle layer id.
             if (identifier && layer instanceof L.Rectangle) {
                 rectangleIds[identifier] = true;
             }
+
+            if (permissionService) {
+                permissionService.addUserIdForNewGeometryItem(layer);
+            }
+
             drawnItems.addLayer(layer);
             console.log('Geometry added.');
         })
@@ -550,6 +556,9 @@ var annotateControl = function(map, drawnItems) {
             remove: true,
         }
     };
+
+    drawControlOptions = permissionService.adjustDrawOptions(drawControlOptions);
+
     var drawControl = new L.Control.Draw(drawControlOptions);
     // Don't display the button "clear all".
     L.EditToolbar.Delete.include({
@@ -573,14 +582,16 @@ var annotateControl = function(map, drawnItems) {
         },
         useGrouping: false,
     };
-    var styleEditor = L.control.styleEditor(styleEditorControlOptions);
-    map.addControl(styleEditor);
+
+    if (userRights && userRights.edit !== false) {
+        var styleEditor = L.control.styleEditor(styleEditorControlOptions);
+        map.addControl(styleEditor);
+    }
 
     // The permission control.
-    var permissionService = createPermissionService(userId, userRights);
     permissionService
         .setMap(map)
-        .controlToolbars(drawControl, drawControlOptions, styleEditor, styleEditorControlOptions);
+        .applyControl();
 }
 
 /**
@@ -1162,7 +1173,10 @@ var currentAnnotation;
 // TODO Find the way to get the current map after a base map selection (in public).
 var currentMapElement = 'annotate-describe';
 
-//Disable the core resource-form.js bind for the sidebar selector.
+// The permission control.
+var permissionService = createPermissionService(userId, userRights);
+
+// Disable the core resource-form.js bind for the sidebar selector.
 $(document).off('o:prepare-value');
 
 if (cartographySections.indexOf('describe') > -1) {
@@ -1175,6 +1189,11 @@ if (cartographySections.indexOf('locate') > -1) {
 });
 
 /**
+ * @description Handle the permission by events fired from Style-Editor and
+ * Leaflet-Draw, in which new events are added to extend their abilities to
+ * handle permission for each layer.
+ * @author Ken, cancms@163.com
+ *
  * Handle user rights to create, edit, and delete items.
  *
  * There are four cases:
@@ -1183,8 +1202,6 @@ if (cartographySections.indexOf('locate') > -1) {
  * - reviewer: all rights, except deletion is limited to own items;
  * - editor: all rights.
  *
- * The drawnItems are the items drawn from geoJson backend.
- *
  * @param userId
  * @param userRights Rights to create can be true/false, rights to edit and
  * delete can be true/false/"own".
@@ -1192,146 +1209,89 @@ if (cartographySections.indexOf('locate') > -1) {
  */
 function createPermissionService(userId, userRights = {create:false, edit:false, delete:false}) {
     var service = {
-        setMapDrawnItems: setMapDrawnItems,
-        controlToolbars: controlToolbars,
-        setMap: setMap
+        applyControl: applyControl,
+        setMap: setMap,
+        adjustDrawOptions: adjustDrawOptions,
+        addUserIdForNewGeometryItem: addUserIdForNewGeometryItem,
     };
 
-    var controls;
+    var controls = {};
+
+    var _data = {
+        map: {},
+    };
+
     resetControls();
-
-    var _data = {};
-    var mapDrawnItems = {
-        // Used for edit enabled for current author(user).
-        userItems: {
-            // id: featureGroup
-        },
-        othersItems:  new L.FeatureGroup(),
-        allItems: new L.FeatureGroup()
-    };
+    permissionControl();
 
     function setMap(map) {
         _data.map = map;
         return service;
     }
 
-    // The layer items: featureGroup.
-    function setMapDrawnItems(items) {
-        if (items) {
-            mapDrawnItems.allItems = items;
-            _setUserDrawItems();
-        }
-        return service;
-    }
-
-    // Create, edit, remove only on his own item.
-    function _setUserDrawItems() {
-        if (mapDrawnItems.allItems && (mapDrawnItems.allItems instanceof L.FeatureGroup)) {
-            mapDrawnItems.allItems.eachLayer(function (layer) {
-
-                // Group all items by userId.
-                var id = getOwnerIdFromLayerOptions(layer);
-                if (!mapDrawnItems.userItems[id]) {
-                    mapDrawnItems.userItems[id] = new L.FeatureGroup();
-                }
-                mapDrawnItems.userItems[id].addLayer(layer);
-
-                // Others items.
-                if (id !== userId) {
-                    mapDrawnItems.othersItems.addLayer(layer);
-                }
-
-            });
-        }
-    }
-
-    function getCurrentUserItems() {
-        var rs = null;
-        var featureGroup = mapDrawnItems.userItems[userId];
-        if (featureGroup && featureGroup.getLayers) {
-            var layers = featureGroup.getLayers();
-            if (layers.length > 0) {
-                rs = featureGroup;
-            }
-        }
-        return rs;
-    }
-
-    // Layer item belong to others, not the author's.
-    function getOthersItems() {
-        var rs = null;
-        var items = mapDrawnItems.othersItems;
-        var layers = items.getLayers();
-        if (layers.length > 0) {
-            rs = items;
-        }
-        return rs;
-    }
-
-    function controlToolbars(drawControl, drawControlOptions, styleEditorControl, styleEditorDefaultOptions ) {
-        _data.map.on('fetchGeometries:done', function (data) {
-            if (! data.drawnItems) {
-                return false;
-            }
-            // Passing data in.
-            setMapDrawnItems(data.drawnItems);
-            permissionControl();
-            leafletDrawControl(drawControl, drawControlOptions);
-            if (controls.edit === true) {
-                leafletStyleEditorControl(styleEditorControl, styleEditorDefaultOptions);
-            }
-        });
-
+    function applyControl( ) {
         _data.map.on('styleeditor:beforeInitChangeStyle', function (data) {
             if (!(data && data.control && data.layer)) {
                 return false;
             }
             // If no edit permission, hide it.
-            if (isCurrentUsersLayer(data.layer) === false) {
+            if (canEdit(data.layer) === false) {
                 data.control.hideEditor();
+                // Force exit inside the initChangeStyle() function in style-editor.
+                data._dataFromOutside.forceExit = true;
+            }
+        });
+        _data.map.on('leafletDraw:beforeEnableDelete', function (data) {
+            if (!(data && data.control && data.layer)) {
+                return false;
+            }
+            // If no  permission
+            if (canDelete(data.layer) === false) {
+                // Force exit inside the initChangeStyle() function in style-editor.
+                data._dataFromOutside.forceExit = true;
+            }
+        });
+        _data.map.on('leafletDraw:beforeEnableEdit', function (data) {
+            if (!(data && data.control && data.layer)) {
+                return false;
+            }
+            // If no  permission
+            if (canEdit(data.layer) === false) {
                 // Force exit inside the initChangeStyle() function in style-editor.
                 data._dataFromOutside.forceExit = true;
             }
         });
     }
 
-    function leafletStyleEditorControl(styleEditorControl, styleEditorDefaultOptions ) {
-
-        var authorItems = getCurrentUserItems();
-        if (authorItems && controls.edit === true || controls.delete === true) {
-            styleEditorDefaultOptions.authorFeatureGroup = authorItems;
-            var permissionStyleEditorControl = L.control.styleEditor(styleEditorDefaultOptions);
-            _data.map.removeControl(styleEditorControl);
-            _data.map.addControl(permissionStyleEditorControl);
-        }
-
-    }
-
-    function leafletDrawControl(drawControl, drawControlOptions) {
-
-        var permissionDrawControl = new L.Control.Draw(getDrawOptions(drawControlOptions));
-        _data.map.removeControl(drawControl);
-        _data.map.addControl(permissionDrawControl);
-
-        var authorItems = getCurrentUserItems();
-        var othersItems = getOthersItems();
-        if (authorItems && othersItems) {
-            _data.map.removeLayer(mapDrawnItems.allItems);
-            // This part is controlled by leaflet-draw.
-            _data.map.addLayer(authorItems);
-            _data.map.addLayer(othersItems);
-        }
-    }
-
-    // Permissions.
-    function isCurrentUsersLayer(layer) {
-        var rs = true;
-        var authorItems = getCurrentUserItems();
-        // If the current user's items are specified, use it, otherwise, use the whole.
-        if (authorItems) {
-            rs = authorItems.hasLayer(layer);
+    function canEdit(layer) {
+        var rs = false;
+        if (controls.userRights.edit === true) {
+            rs = true;
+        } else if (controls.userRights.edit === 'own') {
+            if (userId === getOwnerIdFromLayerOptions(layer)) {
+                rs = true;
+            }
         }
         return rs;
+    }
+
+    function canDelete(layer) {
+        var rs = false;
+        if (controls.userRights.delete === true) {
+            rs = true;
+        } else if (controls.userRights.delete === 'own') {
+            if (userId === getOwnerIdFromLayerOptions(layer)) {
+                rs = true;
+            }
+        }
+        return rs;
+    }
+
+    // When new item is added, set the user id.
+    function addUserIdForNewGeometryItem(layer) {
+        layer.options = layer.options || {};
+        layer.options.owner = layer.options.owner || {};
+        layer.options.owner.id = userId;
     }
 
     function getOwnerIdFromLayerOptions(layer) {
@@ -1345,49 +1305,20 @@ function createPermissionService(userId, userRights = {create:false, edit:false,
         return id;
     }
 
-    // Get the drawnItems on the map.
-    function getFeatureGroup() {
-        // if edit == false, no editable items;
-        var featureGroup = new L.FeatureGroup();
-        if (controls.edit === true || controls.delete === true) {
-            // The user type is Author.
-            var authorItems = getCurrentUserItems();
-            if (authorItems) {
-                featureGroup = authorItems;
-            }  else {
-                // Not author.
-                featureGroup = mapDrawnItems.allItems;
-            }
-        }
+    function adjustDrawOptions(drawControlDefaultOptions) {
 
-        return featureGroup;
-    }
+        var drawOptions = drawControlDefaultOptions.draw;
 
-    function getDrawOptions(drawControlDefaultOptions) {
-
-        var drawOptions = {
-            polyline: true,
-            polygon: true,
-            rectangle: true,
-            circle: true,
-            marker: true,
-            circlemarker: false
-        };
-
-        if (controls.create === true) {
-            if (drawControlDefaultOptions && drawControlDefaultOptions.draw) {
-                drawOptions = $.extend(drawOptions, drawControlDefaultOptions.draw);
-            }
-        } else {
+        if (controls.create === false) {
             drawOptions = false;
         }
 
         var drawControlOptions = {
             draw: drawOptions,
             edit: {
-                featureGroup: getFeatureGroup(),
-                remove: controls.delete,
-                edit: controls.edit
+                featureGroup: drawControlDefaultOptions.edit.featureGroup,
+                edit: (controls.userRights.edit !== false) ? true : false,
+                remove: (controls.userRights.delete !== false) ? true : false,
             }
         };
 
@@ -1396,6 +1327,7 @@ function createPermissionService(userId, userRights = {create:false, edit:false,
 
     function permissionControl() {
         resetControls();
+
         if (userRights.create) {
             enableCreate();
         }
@@ -1412,6 +1344,7 @@ function createPermissionService(userId, userRights = {create:false, edit:false,
             create: false,
             edit: false,
             delete: false,
+            userRights: userRights || {}
         };
     }
 
@@ -1422,21 +1355,8 @@ function createPermissionService(userId, userRights = {create:false, edit:false,
     function enableEdit() {
         controls.edit = true;
     }
-
     function enableDelete() {
         controls.delete = true;
-    }
-
-    function disableCreate() {
-        controls.create = false;
-    }
-
-    function disableEdit() {
-        controls.edit = false;
-    }
-
-    function disableDelete() {
-        controls.delete = false;
     }
 
     return service;

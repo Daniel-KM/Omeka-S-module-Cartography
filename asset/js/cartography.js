@@ -493,7 +493,7 @@ var getMarkerIdentifier = function(layer) {
  * There is no media id in "locate", since anything is georeferenced and related
  * to the item.
  *
- * @todo Get id of the current ImageOverlay via Leaflet methods, not jQuery.
+ * @todo Finish the cleaning in order to use only the service.
  *
  * @return int|null
  */
@@ -509,9 +509,9 @@ var currentMediaId = function() {
     } else if (section !== 'describe') {
         return null;
     }
-    var mediaId = $('#annotate-describe').find('.leaflet-control-layers input[name="leaflet-base-layers"]:checked').next('span').text();
-    mediaId = mediaId.length < 1 ? 1 : mediaId.substring(mediaId.lastIndexOf('#') + 1).trim();
-    mediaId = images[mediaId - 1].id;
+
+    var mediaId = imageMediaService.getMediaId();
+
     return mediaId;
 }
 
@@ -634,14 +634,16 @@ var initDescribe = function() {
         var southWest = L.latLng(0, 0);
         var northEast = L.latLng(image.size[1], image.size[0]);
         var bounds = L.latLngBounds(southWest, northEast);
-        var imageOverlay = L.imageOverlay(image.url, bounds);
+        var imageOverlay = L.imageOverlay(image.url, bounds, {imageData: image});
         if (index === 0) {
             bounds = imageOverlay.getBounds();
             imageOverlay.addTo(map);
             map.panTo([bounds.getNorthEast().lat / 2, bounds.getNorthEast().lng / 2]);
             // FIXME Fit bounds first image overlay.
-            // map.fitBounds(bounds);
+            map.fitBounds(bounds);
             fetchGeometries(resourceId, {mediaId: image.id}, drawnItems);
+
+            imageMediaService.setMediaId(image.id);
         }
         baseMaps[Omeka.jsTranslate('Image #') + (index + 1)] = imageOverlay;
     });
@@ -664,6 +666,17 @@ var initDescribe = function() {
         currentMapElement = 'annotate-describe';
         // TODO Keep the layers in a invisible feature group layer by image? Check memory size.
         drawnItems.clearLayers();
+
+        // Set the new image id.
+        try {
+            var imageId = element.layer.options.imageData.id;
+            imageMediaService.setMediaId(parseInt(imageId));
+            imageMediaService.setImageView(element.layer, map);
+        } catch (e) {
+            // No data is passing in, set to default id 0.
+            imageMediaService.setMediaId(0);
+        }
+
         fetchGeometries(resourceId, {mediaId: currentMediaId()}, drawnItems);
     });
 
@@ -1162,6 +1175,7 @@ var annotateGeometries = function(map, section, drawnItems) {
 // var userRights;
 var images = [];
 var wmsLayers = [];
+
 // Manage the distinction between the rectangles/squares and the polygons.
 var rectangleIds = {};
 
@@ -1176,6 +1190,9 @@ var currentMapElement = 'annotate-describe';
 // The permission control.
 var permissionService = createPermissionService(userId, userRights);
 
+// Handle set, get the current image id
+var imageMediaService = createImageMediaService();
+
 // Disable the core resource-form.js bind for the sidebar selector.
 $(document).off('o:prepare-value');
 
@@ -1187,6 +1204,47 @@ if (cartographySections.indexOf('locate') > -1) {
 }
 
 });
+
+/**
+ * The currentMediaId is the image id used to manage multiple background.
+ */
+function createImageMediaService() {
+    var service = {
+        setMap: setMap,
+        setImageView: setImageView,
+        setMediaId: setMediaId,
+        getMediaId: getMediaId,
+    };
+
+    var _data = {
+        currentMediaId: 0,
+        mediaDrawnItems: new L.FeatureGroup(),
+        map: {}
+    };
+
+    function setMap(map) {
+        _data.map = map;
+        return service;
+    }
+
+    function setMediaId(id) {
+        _data.currentMediaId = id;
+        return service;
+    }
+
+    function getMediaId() {
+        return _data.currentMediaId;
+    }
+
+    // ImageOverlay, the image layer.
+    // Make the whole image inside the map in center
+    function setImageView(imageOverlay, map) {
+        var bounds = imageOverlay.getBounds();
+        // map.panTo([bounds.getNorthEast().lat / 2, bounds.getNorthEast().lng / 2]);
+        map.fitBounds(bounds);
+    }
+    return service;
+}
 
 /**
  * @description Handle the permission by events fired from Style-Editor and

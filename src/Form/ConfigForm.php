@@ -2,7 +2,7 @@
 namespace Cartography\Form;
 
 use Omeka\Form\Element\CkeditorInline;
-use Omeka\Form\Element\ResourceTemplateSelect;
+use Cartography\Form\Element\ResourceTemplateSelect;
 use Zend\Form\Element;
 use Zend\Form\Form;
 

@@ -14,10 +14,18 @@ return [
         'invokables' => [
             'cartography' => View\Helper\Cartography::class,
         ],
+        'factories' => [
+            // For compatibility with Omeka < 1.2.1.
+            'resourceTemplateSelect' => Service\ViewHelper\ResourceTemplateSelectFactory::class,
+        ],
     ],
     'form_elements' => [
         'invokables' => [
             Form\ConfigForm::class => Form\ConfigForm::class,
+        ],
+        'factories' => [
+            // For compatibility with Omeka < 1.2.1.
+            Form\Element\ResourceTemplateSelect::class => Service\Form\Element\ResourceTemplateSelectFactory::class,
         ],
     ],
     'controllers' => [

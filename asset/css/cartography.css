@@ -63,3 +63,12 @@
 .leaflet-styleeditor-interior  textarea.leaflet-styleeditor-input {
     max-height: unset;
 }
+.leaflet-styleeditor-header {
+    background-color: inherit;
+}
+.leaflet-styleeditor-button:hover {
+    background-color: #e8e8e8;
+}
+.leaflet-styleeditor-button {
+    background-color: inherit;
+}

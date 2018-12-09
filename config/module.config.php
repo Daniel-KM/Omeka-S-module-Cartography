@@ -34,6 +34,9 @@ return [
         'invokables' => [
             'cartography' => View\Helper\Cartography::class,
         ],
+        'factories' => [
+            'hasValueSuggest' => Service\ViewHelper\HasValueSuggestFactory::class,
+        ],
     ],
     'form_elements' => [
         'invokables' => [

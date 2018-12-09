@@ -111,10 +111,18 @@ class Cartography extends AbstractHelper
             $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-draw/leaflet.draw.css', 'Cartography'));
             $headScript->appendFile($view->assetUrl('vendor/leaflet-draw/leaflet.draw.js', 'Cartography'));
 
-            // TODO Check if valuesuggest is installed.
-            $headLink->appendStylesheet($view->assetUrl('css/valuesuggest.css', 'ValueSuggest'));
-            $headScript->appendFile($view->assetUrl('js/jQuery-Autocomplete/1.2.26/jquery.autocomplete.min.js', 'ValueSuggest'));
-            $headScript->appendFile($view->assetUrl('js/valuesuggest.js', 'ValueSuggest'));
+            // TODO Check if valuesuggest is used in one of the annotation templates.
+            if ($view->hasValueSuggest()) {
+                // $event = new \Zend\EventManager\Event('cartography.add_value_suggest', $view);
+                // (new \ValueSuggest\Module)->prepareResourceForm($event);
+                $headLink->appendStylesheet($view->assetUrl('css/valuesuggest.css', 'ValueSuggest'));
+                $headScript->appendFile($view->assetUrl('js/jQuery-Autocomplete/1.2.26/jquery.autocomplete.min.js', 'ValueSuggest'));
+                $headScript->appendFile($view->assetUrl('js/valuesuggest.js', 'ValueSuggest'));
+                $headScript->appendScript(sprintf(
+                    'var valueSuggestProxyUrl = "%s";',
+                    $view->escapeJs($view->url('admin/value-suggest/proxy'))
+                ));
+            }
 
             if ($rights['create']) {
                 // Leaflet paste.

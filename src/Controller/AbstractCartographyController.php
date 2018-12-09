@@ -899,15 +899,9 @@ abstract class AbstractCartographyController extends AbstractActionController
         $short['o:label'] = $template->label();
         $short['o:resource_template_property'] = [];
         foreach ($template->resourceTemplateProperties() as $templateProperty) {
-            // The data type may have been removed (custom vocab, etc.).
-            $dataType = $templateProperty->dataType();
-            if (empty($dataType)) {
-                $this->logger()->warn(new Message(
-                    'A data type is missing for the property "%s" of resource template "%s".', // @template
-                    $templateProperty->property()->term(), $template->label()
-                ));
-                continue;
-            }
+            // The data type may have been removed (custom vocab, etc.), so a
+            // default is forced.
+            $dataType = $templateProperty->dataType() ?: 'literal';
             $input = [];
             $input['o:id'] = $templateProperty->property()->id();
             $input['o:term'] = $templateProperty->property()->term();

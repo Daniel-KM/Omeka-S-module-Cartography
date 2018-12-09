@@ -1,14 +1,16 @@
 <?php
 namespace Cartography;
 
+// TODO Remove this requirement.
+require_once dirname(__DIR__) . '/Annotate/src/Module/AbstractGenericModule.php';
+require_once dirname(__DIR__) . '/Annotate/src/Module/ModuleResourcesTrait.php';
+
+use Annotate\Module\AbstractGenericModule;
+use Annotate\Module\ModuleResourcesTrait;
 use Zend\EventManager\Event;
 use Zend\EventManager\SharedEventManagerInterface;
 use Zend\Mvc\MvcEvent;
 use Zend\ServiceManager\ServiceLocatorInterface;
-
-// TODO Remove this requirement.
-require_once 'AbstractGenericModule.php';
-require_once 'ModuleResourcesTrait.php';
 
 /**
  * Cartography
@@ -27,9 +29,6 @@ class Module extends AbstractGenericModule
     public function onBootstrap(MvcEvent $event)
     {
         parent::onBootstrap($event);
-
-        // Manage the module dependency, in particular when upgrading.
-        // Once disabled, this current method and other ones are no more called.
         if (!$this->isModuleActive($this->dependency)) {
             $this->disableModule(__NAMESPACE__);
             return;
@@ -287,9 +286,6 @@ class Module extends AbstractGenericModule
         }
     }
 
-    /**
-     * @todo To be moved inside trait.
-     */
     protected function installResources()
     {
         $services = $this->getServiceLocator();
@@ -304,17 +300,15 @@ class Module extends AbstractGenericModule
             'file' => 'cartography.ttl',
             'format' => 'turtle',
         ];
-        $this->createVocabulary($services, $vocabulary);
+        $this->createVocabulary($vocabulary);
 
         // Add specific custom vocabularies.
         $customVocabPaths = [
-            // TODO Move custom vocab into annotation or use a specific to Cartography?
-            __DIR__ . '/data/custom-vocabs/Annotation-Body-oa-hasPurpose.json',
             __DIR__ . '/data/custom-vocabs/Cartography-cartography-uncertainty.json',
             __DIR__ . '/data/custom-vocabs/Cartography-oa-MotivatedBy-Locate.json',
         ];
         foreach ($customVocabPaths as $filepath) {
-            $this->createCustomVocab($services, $filepath);
+            $this->createCustomVocab($filepath);
         }
 
         // Complete the annotation custom vocabularies.
@@ -323,7 +317,7 @@ class Module extends AbstractGenericModule
             __DIR__ . '/data/custom-vocabs/Cartography-Target-rdf-type.json',
         ];
         foreach ($customVocabPaths as $filepath) {
-            $this->updateCustomVocab($services, $filepath);
+            $this->updateCustomVocab($filepath);
         }
 
         // Create resource templates for annotations.
@@ -333,7 +327,7 @@ class Module extends AbstractGenericModule
             'cartography_template_locate' => __DIR__ . '/data/resource-templates/Cartography_Locate.json',
         ];
         foreach ($resourceTemplatePaths as $key => $filepath) {
-            $resourceTemplate = $this->createResourceTemplate($services, $filepath);
+            $resourceTemplate = $this->createResourceTemplate($filepath);
             $settings->set($key, [$resourceTemplate->id()]);
         }
     }

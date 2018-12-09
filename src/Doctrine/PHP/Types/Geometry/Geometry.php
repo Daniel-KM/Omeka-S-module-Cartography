@@ -1,6 +1,6 @@
 <?php
 
-namespace Cartography\PHP\Types\Geometry;
+namespace Cartography\Doctrine\PHP\Types\Geometry;
 
 use CrEOF\Spatial\PHP\Types\AbstractGeometry;
 use CrEOF\Spatial\PHP\Types\Geometry\LineString;

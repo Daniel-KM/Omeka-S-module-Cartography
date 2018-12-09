@@ -73,6 +73,7 @@ trait QueryGeometryTrait
     {
         // With srid 4326 (Mercator), the radius should be in metre.
         $radiusMetre = $unit === 'm' ? $radius : $radius * 1000;
+        // Note: "ST_GeomFromText('Point(2 50)')" is the same than "Point(2, 50)".
         $point = vsprintf('Point(%s, %s)', array_reverse($latlong));
         $qb->andWhere($qb->expr()->lte(
             "ST_Distance($point, $geometryAlias.value)",
@@ -89,6 +90,11 @@ trait QueryGeometryTrait
      */
     protected function searchXy(AdapterInterface $adapter, QueryBuilder $qb, array $xy, $radius, $geometryAlias)
     {
+        $point = vsprintf('Point(%s, %s)', $xy);
+        $qb->andWhere($qb->expr()->lte(
+            "ST_Distance($point, $geometryAlias.value)",
+            $adapter->createNamedParameter($qb, $radius)
+        ));
     }
 
     /**
@@ -99,6 +105,14 @@ trait QueryGeometryTrait
      */
     protected function searchMapBox(AdapterInterface $adapter, QueryBuilder $qb, array $mapbox, $geometryAlias)
     {
+        $polygon = 'Polygon((%2$s %1$s, %2$s %3$s, %4$s %3$s, %4$s %1$s, %2$s %1$s))';
+        $mbr = vsprintf($polygon, $mapbox);
+        // "= true" is needed only to avoid an issue when converting dql to sql.
+        $expr = $qb->expr();
+        $qb->andWhere($expr->eq(
+            "MBRContains(ST_GeomFromText('$mbr'), $geometryAlias.value)",
+            $expr->literal(true)
+        ));
     }
 
     /**
@@ -109,6 +123,14 @@ trait QueryGeometryTrait
      */
     protected function searchBox(AdapterInterface $adapter, QueryBuilder $qb, array $box, $geometryAlias)
     {
+        $polygon = 'Polygon((%1$s %2$s, %3$s %2$s, %3$s %4$s, %1$s %4$s, %1$s %2$s))';
+        $mbr = vsprintf($polygon, $box);
+        // "= true" is needed only to avoid an issue when converting dql to sql.
+        $expr = $qb->expr();
+        $qb->andWhere($expr->eq(
+            "MBRContains(ST_GeomFromText('$mbr'), $geometryAlias.value)",
+            $expr->literal(true)
+        ));
     }
 
     /**
@@ -119,6 +141,12 @@ trait QueryGeometryTrait
      */
     protected function searchWkt(AdapterInterface $adapter, QueryBuilder $qb, $wkt, $geometryAlias)
     {
+        // "= true" is needed only to avoid an issue when converting dql to sql.
+        $expr = $qb->expr();
+        $qb->andWhere($expr->eq(
+            "ST_Contains(ST_GeomFromText('$wkt'), $geometryAlias.value)",
+            $expr->literal(true)
+        ));
     }
 
     /**

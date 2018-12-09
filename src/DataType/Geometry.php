@@ -1,7 +1,7 @@
 <?php
 namespace Cartography\DataType;
 
-use Cartography\PHP\Types\Geometry\Geometry as GenericGeometry;
+use Cartography\Doctrine\PHP\Types\Geometry\Geometry as GenericGeometry;
 use CrEOF\Geo\WKT\Parser as GeoWktParser;
 use Omeka\Api\Adapter\AbstractEntityAdapter;
 use Omeka\Api\Representation\ValueRepresentation;

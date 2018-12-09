@@ -125,6 +125,8 @@ return [
                 'within' => \CrEOF\Spatial\ORM\Query\AST\Functions\MySql\Within::class,
                 'x' => \CrEOF\Spatial\ORM\Query\AST\Functions\MySql\X::class,
                 'y' => \CrEOF\Spatial\ORM\Query\AST\Functions\MySql\Y::class,
+                // Custom for this module (not yet available in Doctrine Spatial).
+                'st_geomfromtext' => \Cartography\Doctrine\ORM\Query\AST\Functions\MySql\STGeomFromText::class,
             ],
         ],
     ],

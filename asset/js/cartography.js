@@ -1,7 +1,837 @@
+/**
+ * @Description: To extend the style-editor, put annotation dynamic data form
+ * inside the side bar.
+ * This part is for rendering different types of elements like select, input,
+ * textarea ...links, input-select.
+ * To make a new type of element available, add a new service like
+ * createInputFieldService()
+ */
+// Field services
+(function (jQuery, L) {
+    function createElementRenderService(styleFormOptions = {}) {
+        var renderService = {
+            render: render
+        };
+
+        var $ = jQuery;
+        var _renderData = {
+            propDataModel: {},
+            propertyTplData: {},
+            tplDataService: {},
+            styleFormOptions: styleFormOptions
+        };
+
+        initialize();
+
+        function initialize() {
+
+        }
+
+        function createJqElement(strHtml) {
+            return $('<div/>').html(strHtml).contents();
+        }
+        function wrapper(element) {
+
+            var wrapper = null;
+
+            if ((typeof  element) === 'object') {
+                wrapper = createJqElement(`<div class="annotation-attribute leaflet-styleeditor-uiElement">
+                    <label class="leaflet-styleeditor-label"></label>
+                </div> `)
+                    .append(element);
+
+            } else if ((typeof  element) === 'string') {
+                wrapper = createJqElement(`<div class="annotation-attribute leaflet-styleeditor-uiElement">
+                    <label class="leaflet-styleeditor-label"></label>
+                    ${element}
+                </div> `);
+            }
+
+            return wrapper;
+        }
+        function initElementLabel(wrapper, propertyData) {
+            var propertyNode = wrapper.find('._annotate_property');
+            propertyData = propertyData || {};
+
+            // Fill label.
+            var labelNode = wrapper.find('.leaflet-styleeditor-label');
+            if (labelNode) {
+                labelNode.html(propertyData['o:label'] + ': ');
+            }
+        }
+
+        function getType() {
+            var rs = null;
+            var type = _renderData.propertyTplData['type'];
+            var allowTypes = ['text', 'textarea', 'select', 'resource'];
+            if (type && ($.inArray(type, allowTypes) > -1)) {
+                rs = type;
+            }
+            return rs;
+        }
+
+        function eventName(event) {
+            return getEditorOption('styleEditorEventPrefix') + event;
+        }
+
+        function getEditorOption(key) {
+            var rs = null;
+            try {
+                rs = _renderData.styleFormOptions.styleEditorOptions[key];
+            } catch (e) {
+                rs = null;
+            }
+            return rs;
+        }
+
+        function render(propertyTplData, propDataModel, tplDataService) {
+            _renderData.propertyTplData = propertyTplData;
+            _renderData.propDataModel = propDataModel;
+            _renderData.tplDataService = tplDataService;
+
+            var element = null;
+            switch (getType()) {
+                case 'text':
+                case 'textarea':
+                case 'select':
+                    element = createInputFieldService().createFieldElement();
+                    break;
+                case 'resource':
+                    element = createResourceLinksService().createFieldElement();
+                    break;
+            }
+            return element;
+        }
+
+        function appendDestroyEventsFn(element, eventNames = []) {
+            element.annotateElementDestroyEvents = function () {
+                eventNames.map(function (eName) {
+                    getEditorOption('map').off(eventName(eName));
+                });
+            };
+        }
+
+        function createInputFieldService() {
+            var service = {
+                createFieldElement: createFieldElement,
+            };
+            var _data = {
+                propertyTplData: _renderData.propertyTplData,
+                propDataModel: _renderData.propDataModel
+            };
+
+            function fillPropertyData(element, propertyTemplateData) {
+                propertyTemplateData = propertyTemplateData || {};
+                var propertyField = element.find('._annotate_property');
+                if (propertyField) {
+                    var initValue = _data.propDataModel.getPropertyData(
+                        propertyTemplateData['o:term'],
+                        _renderData.propertyTplData._jsFnGetUniqueKey()
+                    );
+
+                    propertyField.val(initValue);
+                }
+
+            }
+
+            function initElementSelectOptions(selectElement, propertyData) {
+                var options = propertyData['value_options'] || {};
+                $.each(options, function (key, value) {
+                    var option = `<option value="${key}">${value}</option>`;
+                    selectElement.append(option);
+                });
+            }
+
+            // Bind events.
+            function initElementEvents(propertyNode, propertyData) {
+                propertyNode.change(function () {
+                    _data.propDataModel.doOnPropertyChange({
+                        newData: {
+                            key: propertyData['o:term'],
+                            value: propertyNode.val(),
+                        },
+                        jqDomElement: propertyNode,
+                        propertyTplData: propertyData,
+                    });
+                });
+            }
+
+            function initElement(wrapper, propertyData) {
+                if (!wrapper) {
+                    return false;
+                }
+                var propertyNode = wrapper.find('._annotate_property');
+                propertyData = propertyData || {};
+
+                initElementLabel(wrapper, propertyData);
+
+                // add the select options
+                if (propertyNode && propertyData.type === 'select') {
+                    initElementSelectOptions(propertyNode, propertyData);
+                }
+
+                // set the value data from geometry item
+                fillPropertyData(wrapper, propertyData);
+
+                // bind the change event, input, select
+                if (propertyNode) {
+                    initElementEvents(propertyNode, propertyData);
+                }
+            }
+
+            function createFieldElement() {
+                var element = '<input class="_annotate_property leaflet-styleeditor-input " />';
+                switch (getType()) {
+                    case 'textarea':
+                        element = '<textarea class="_annotate_property leaflet-styleeditor-input"></textarea>';
+                        break;
+                    case 'select':
+                        element = '<select class="_annotate_property leaflet-styleeditor-select "></select>';
+                        break;
+                }
+                var wrapperElement = wrapper(element);
+                initElement(wrapperElement, _data.propertyTplData);
+
+                appendDestroyEventsFn(wrapperElement, []);
+                return wrapperElement;
+            }
+
+            return service;
+        }
+
+        function createResourceLinksService () {
+            var resourceLinksService = {
+                createFieldElement: createFieldElement
+            };
+
+            var listLinks = [];
+
+            var _data = {
+                linkItemsDiv: null,
+                sourcePropertyKey: _renderData.propertyTplData['o:term'],
+                events: {
+                    onAddNewResourceItem: 'onAddNewResourceItem'
+                }
+            };
+
+            initialize();
+            function initialize() {
+                listLinks = _renderData.propDataModel.getPropertyData(
+                    _data.sourcePropertyKey,
+                    _renderData.propertyTplData._jsFnGetUniqueKey()
+                ) || [];
+
+                // While opening the right sidebar,
+                // the editor is expecting a return of the new link item
+                getEditorOption('map').on(eventName(_data.events.onAddNewResourceItem), function (newItem) {
+                    doOnNewLinkItemReturn(newItem);
+                });
+            }
+
+            function removeLinkItem(resourceId) {
+                listLinks = listLinks.filter(function (item) {
+                    return (item.value_resource_id !== resourceId);
+                });
+                _renderData.propDataModel.doOnPropertyChange({
+                    newData: {key: _data.sourcePropertyKey, value: listLinks},
+                    propertyTplData: _renderData.propertyTplData
+                });
+            }
+
+            function addLinkItem(linkItem) {
+                listLinks.push(linkItem);
+                _renderData.propDataModel.doOnPropertyChange({
+                    newData: {key: _data.sourcePropertyKey, value: listLinks},
+                    propertyTplData: _renderData.propertyTplData
+                });
+            }
+
+            function onDeleteClick(resourceId) {
+                removeLinkItem(resourceId);
+                reRenderLinkItems();
+            }
+
+            function doOnNewLinkItemReturn(data) {
+                var linkItem = data.newChoseItem;
+                if (linkItem) {
+                    addLinkItem(linkItem);
+                    reRenderLinkItems();
+                }
+            }
+
+            function createFieldElement() {
+                var linkItemsDiv = `<div class="leaflet-styleeditor-oalinking value selecting-resource _oaLinking" 
+                                            ></div>`;
+
+                // add the list div
+                var wrapperElement = wrapper(linkItemsDiv);
+
+                // the add button
+                wrapperElement.append(addLinkButton());
+
+                // name the label
+                initElementLabel(wrapperElement, _renderData.propertyTplData);
+
+                // mark the list div
+                _data.linkItemsDiv = wrapperElement.find('._oaLinking');
+
+                // list the items
+                reRenderLinkItems();
+
+                appendDestroyEventsFn(wrapperElement, [_data.events.onAddNewResourceItem]);
+                return wrapperElement;
+            }
+
+            function reRenderLinkItems() {
+                if (! _data.linkItemsDiv) {
+                    return false;
+                }
+                // empty all the child nodes
+                _data.linkItemsDiv.empty();
+
+                var itemElements = createLinkItemElements( );
+                _data.linkItemsDiv.append(itemElements);
+            }
+
+            function createLinkItemElements() {
+                var itemTplFn = function (itemData) {
+                    var itemTpl = `<div class="value selecting-resource">
+                         <p class="selected-resource">
+                             <span class="o-title items-no">
+                                 <img class=""
+                                       src="${itemData.thumbnail_url || ''}" 
+                                       alt="${itemData.display_title || ''}" 
+                                       title="${itemData.display_title || ''}" 
+                                       >
+                                 <a class="" href="${itemData.url || ''}">${itemData.display_title || ''}</a>
+                              </span>
+                          </p>
+                          <ul class="actions">
+                              <li class="">
+                                  <a class="o-icon-delete remove-value"
+                                      href="#"
+                                      data-value-resource-id="${itemData.value_resource_id || ''}"
+                                      title="Remove value"
+                                      aria-label="Remove value"></a>
+                               </li>
+                           </ul>
+                      </div>`;
+                    var element = createJqElement(itemTpl);
+                    // Bind action.
+                    element.find('.actions .remove-value').click(function () {
+                        onDeleteClick(itemData.value_resource_id);
+                    });
+                    return element;
+                };
+                var itemElements = $();
+                listLinks.map(function (item) {
+                    itemElements = itemElements.add(itemTplFn(item));
+                });
+                return itemElements;
+            }
+
+            function addLinkButton() {
+                var sideBarContentUrl = basePath + '/admin/item/sidebar-select';
+                var addBtn = `<a class="leaflet-styleeditor-linking o-icon-items button resource-selection" 
+                                 href="#item-resource-select" 
+                                 id="item-resource-select-button" 
+                                 data-sidebar-content-url="${sideBarContentUrl}">
+                             Add links</a>`;
+
+                var btnElement = createJqElement(addBtn);
+                btnElement.click(function () {
+                    _openOmekaSidebar ( );
+                });
+
+                return btnElement;
+            }
+
+            function _openOmekaSidebar ( ) {
+                // There may be multiple style editors in tabs, so use the map of the current tab.
+                let selectButton = $('.section.active .leaflet-styleeditor.editor-enabled .button.resource-selection');
+                let sidebar = $('#select-resource');
+                let term = 'oa:hasBody';
+                $('#select-item a').data('property-term', term);
+                Omeka.populateSidebarContent(sidebar, selectButton.data('sidebar-content-url'));
+                Omeka.openSidebar(sidebar);
+                // FIXME This should be fired only when a new item is selected, or in Omeka.
+                // this.options.styleEditorOptions.util.fireEvent('changed', this.options.styleEditorOptions.util.getCurrentElement())
+            }
+
+            return resourceLinksService;
+        }
+
+        return renderService;
+    }
+
+    L.StyleEditorAnnotation = L.StyleEditorAnnotation || {};
+    L.StyleEditorAnnotation.createElementRenderService = createElementRenderService;
+
+}(jQuery, L));
+
+/**
+ * @Description: To extend the style-editor, put annotation dynamic data form
+ * inside the side bar.
+ */
+// Form services.
+(function (jQuery, L) {
+
+    function createAnnotateFormService() {
+        var formService = {
+            renderView: renderView
+        };
+
+        function createPropertyTemplateDataService(styleFormOptions = {}) {
+            var service = {
+                setJsonData: setJsonData,
+                getJsonData: getJsonData,
+                getTypeData: getTypeData,
+                getTypeResourceProperties: getTypeResourceProperties,
+                getFirstTypeId: getFirstTypeId,
+                hasTypes: hasTypes,
+                hasTypeId: hasTypeId,
+                getTypeSelectInitValue: getTypeSelectInitValue
+            };
+            var $ = jQuery;
+            var _data = {
+                jsonData: [],
+                sourceTypeDefaultId: -1,
+                allTypeIds: [],
+            };
+
+            initialize();
+
+            function initialize() {
+                _data.jsonData = styleFormOptions.styleEditorOptions.annotationFormData;
+                initTemplateData();
+            }
+
+            function getJsonData() {
+                return _data.jsonData;
+            }
+
+            // Re initialize the data.
+            function setJsonData(templateJson) {
+                styleFormOptions.styleEditorOptions.annotationFormData = templateJson;
+                _data.jsonData = templateJson;
+                initTemplateData();
+            }
+
+            function hasTypes() {
+                return (_data.jsonData.length > 0);
+            }
+
+            function getTypeData(typeId) {
+                var rs = _data.jsonData.find(function (item) {
+                    return item['o:id'] === typeId;
+                }) || {};
+                return rs;
+            }
+
+            function getTypeResourceProperties(typeId) {
+                var rs = getTypeData(typeId)['o:resource_template_property'] || [];
+                return rs;
+            }
+
+            function getFirstTypeId() {
+                var id = _data.sourceTypeDefaultId;
+                try {
+                    id = _data.jsonData[0]['o:id'];
+                } catch (e) {
+                }
+                return id;
+            }
+
+            function initTemplateData() {
+                _data.jsonData  = _data.jsonData || {};
+                _data.jsonData.map(function (item) {
+                    if (! item) {
+                        return false;
+                    }
+
+                    _initTemplateTypeData(item);
+
+                    item['o:resource_template_property'] = item['o:resource_template_property'] || [];
+                    _initTemplatePropertiesData( item['o:resource_template_property']);
+
+                });
+            }
+
+            function _initTemplateTypeData (typeData) {
+                typeData = typeData || {};
+                typeData['o:id'] = typeData['o:id'] || _data.sourceTypeDefaultId;
+                typeData['o:resource_template_property'] = typeData['o:resource_template_property'] || [];
+                typeData['o:label'] = typeData['o:label'] || (typeData.placeholder || 'Select type below...');
+                _data.allTypeIds.push(typeData['o:id']);
+            }
+
+            function _initTemplatePropertiesData (propertiesData) {
+                propertiesData.map(function (propertyItem, idx) {
+                    if (! propertyItem) {
+                        return false;
+                    }
+                    // Add the _jsUniqueKey.
+                    propertyItem._jsFnGetUniqueKey = function (onlyIndex = true) {
+                        return  idx;
+                    };
+                    propertyItem._jsFnIsArrayProperty = function () {
+                        return  true;
+                    };
+                });
+            }
+
+            function hasTypeId(typeId) {
+                return ($.inArray(typeId, _data.allTypeIds) > -1);
+            }
+
+            function getTypeSelectInitValue(useTypeId) {
+                var rs = _data.sourceTypeDefaultId;
+                if (hasTypeId(useTypeId)) {
+                    rs = useTypeId;
+                } else {
+                    rs = getFirstTypeId();
+                }
+                return rs;
+            }
+
+            return service;
+        }
+
+        function createPropertiesDataModel(styleFormOptions = {}) {
+            var service = {
+                getSourceTypeId: getSourceTypeId,
+                setSourceTypeId: setSourceTypeId,
+                doOnPropertyChange: doOnPropertyChange,
+                getPropertyData: getPropertyData,
+            };
+            var $ = jQuery;
+            var _data = {
+                sourceTypeDefaultId: -1,
+                styleFormOptions: {},
+                currentLayer: null,
+                unifiedLayerOptionsData: {},
+                // formTypeIdString: 'resourceTypeId'
+                formTypeIdString: 'o:resource_template' // ex: options['resource_template] = 5
+            };
+
+            initialize();
+
+            function initialize() {
+                _data.styleFormOptions = styleFormOptions;
+
+                getEditorOption('map').on(eventName('editing'), function (layer) {
+                    _data.currentLayer = currentLayer();
+                    _data.unifiedLayerOptionsData = getUnifiedLayerOptionsData();
+                });
+            }
+
+            function getEditorOption(key) {
+                var rs = null;
+                try {
+                    rs = _data.styleFormOptions.styleEditorOptions[key];
+                } catch (e) {
+                    rs = null;
+                }
+                return rs;
+            }
+
+            function eventName(event) {
+                return getEditorOption('styleEditorEventPrefix') + event;
+            }
+
+            function currentLayer() {
+                var layer = null;
+                try {
+                    layer = styleFormOptions.styleEditorOptions.util.getCurrentElement();
+                } catch (e) {
+                    layer = null;
+                }
+
+                return layer;
+            }
+
+            function unifyKeyTerm(key) {
+                // use the rdf key from template
+
+                // if (key) {
+                //     // remove the ':', and convert to lower case,
+                //     key = key.split(':').join('').toLowerCase();
+                // }
+
+                return key;
+            }
+
+            function getUnifiedLayerOptionsData() {
+                var data = {};
+                var layer = currentLayer();
+                var options = {};
+                if (layer) {
+                    options = layer.options;
+                }
+
+                // ONLY operates on the options.metadata
+                if (options && (!$.isEmptyObject(options))) {
+                    var metaData = options.metadata || {};
+                    $.each(metaData, function (key, value) {
+                        if (key) {
+                            data[unifyKeyTerm(key)] = value;
+                        }
+                    })
+                }
+
+                return data;
+            }
+
+            // The Leaflet Layer object.
+            function layerOptionChange(propertyKey, newValue, propertyTplData = null) {
+
+                var layer = currentLayer();
+                if (layer) {
+                    if (propertyKey !== null) {
+
+                        // ONLY operates on the options.metadata
+                        layer.options.metadata = layer.options.metadata || {};
+
+                        if ( propertyTplData && propertyTplData._jsFnIsArrayProperty && propertyTplData._jsFnIsArrayProperty()   ) {
+                            var uniqueKey = propertyTplData._jsFnGetUniqueKey() || 0;
+                            layer.options.metadata[propertyKey] = layer.options.metadata[propertyKey] || {};
+                            layer.options.metadata[propertyKey][uniqueKey] = newValue;
+
+                        } else {
+                            layer.options.metadata[propertyKey] = newValue;
+                        }
+
+                    }
+                    // Fire event for changed layer.
+                    getEditorOption('util').fireChangeEvent(layer)
+                }
+            }
+
+            function getPropertyData(propertyName, index = null) {
+                var rs = _data.unifiedLayerOptionsData[unifyKeyTerm(propertyName)];
+                // The property data is array stored.
+                // options.metadata.first_name = ['a', 'b', 'c']
+                if (index !== null && rs) {
+                    rs = rs[index] || '';
+                }
+                return rs;
+            }
+
+            function setPropertyData(key, value, propertyTplData = null,layerOptionsMetaDataChange = true) {
+                if (key !== null) {
+                    _data.unifiedLayerOptionsData[unifyKeyTerm(key)] = value;
+                    if (layerOptionsMetaDataChange === true) {
+
+                        layerOptionChange(key, value, propertyTplData);
+
+                    }
+                }
+                return service;
+            }
+
+            function getSourceTypeId() {
+                var propertyKey = _data.formTypeIdString;
+                return (getPropertyData(propertyKey) || _data.sourceTypeDefaultId);
+            }
+
+            function setSourceTypeId(id) {
+                var propertyKey = _data.formTypeIdString;
+                setPropertyData(propertyKey, id);
+
+                return service;
+            }
+
+            function doOnPropertyChange(data) {
+                // Set.
+                var propertyKey = data.newData.key;
+                var newValue = data.newData.value;
+                var propertyTplData = data.propertyTplData;
+                setPropertyData(propertyKey, newValue, propertyTplData);
+            }
+
+            return service;
+        }
+
+        function renderView(styleFormOptions = {}) {
+            var service = {
+                // createAnnotateForm: createAnnotateForm
+            };
+            var $ = jQuery;
+            var _data = {
+                styleFormOptions: {},
+                // the json template data
+                tplDataService: {},
+                // the data from geoItem
+                propDataModel: {},
+                // the element render service
+                elementRenderService: {},
+                // the holder for the dynamic form
+                placeHolderDiv: null,
+                // the dynamic form wrapper div element, a jq object
+                createdFormDiv: null,
+                // the property element, jq object
+                createdPropertyElements: [],
+            };
+
+            initialize();
+
+            function initialize() {
+                _data.styleFormOptions = styleFormOptions;
+
+                //  init data model service
+                _data.propDataModel = createPropertiesDataModel(styleFormOptions);
+                //  init the tpl element service
+                _data.tplDataService = createPropertyTemplateDataService(styleFormOptions);
+                _data.elementRenderService = L.StyleEditorAnnotation.createElementRenderService(styleFormOptions);
+
+                // where to put the form
+                addPlaceHolderDiv();
+
+                // once the user clicks on an item, create the form
+                getEditorOption('map').on(eventName('editing'), function (layer) {
+                    createAnnotateForm();
+                });
+
+                getEditorOption('map').on(eventName('afterTemplateJsonReLoaded'), function (data) {
+                    if (! (data && data.templateJsonData) ) {
+                        return false;
+                    }
+                    _data.tplDataService.setJsonData(data.templateJsonData);
+                    createAnnotateForm();
+                });
+            }
+
+            function eventName(event) {
+                return getEditorOption('styleEditorEventPrefix') + event;
+            }
+
+            function getEditorOption(key) {
+                var rs = null;
+                try {
+                    rs = _data.styleFormOptions.styleEditorOptions[key];
+                } catch (e) {
+                    rs = null;
+                }
+                return rs;
+            }
+
+            function addPlaceHolderDiv() {
+                var div = _createJqElement('<div></div>');
+                _data.styleFormOptions.styleEditorInterior.appendChild(_jqToDomElement(div));
+                _data.placeHolderDiv = div;
+            }
+
+            function formDivTemplate() {
+                var html = `<div>
+                <div class="annotation-types leaflet-styleeditor-uiElement">
+                    <label class="leaflet-styleeditor-label">Type:</label>
+                    <select class="leaflet-styleeditor-select "></select>
+                </div>
+            <hr>
+            </div>`;
+                return html;
+            }
+
+            function createAnnotateForm() {
+                if (_data.createdFormDiv) {
+                    _data.createdFormDiv.remove();
+                    _data.createdFormDiv = null;
+                }
+                if (!_data.tplDataService.hasTypes()) {
+                    return false;
+                }
+                _data.createdFormDiv = _createJqElement(formDivTemplate());
+                populateTypeSelect();
+                _data.placeHolderDiv.append(_data.createdFormDiv);
+            }
+
+            function populateTypeSelect() {
+                var select = _data.createdFormDiv.find('.annotation-types select');
+                if (!select) {
+                    return false;
+                }
+                $.each(_data.tplDataService.getJsonData(), function (idx, typeData) {
+                    var option = `<option value="${typeData['o:id']}">${typeData['o:label']}</option>`;
+                    select.append(option);
+                });
+
+                // set type's value
+                var layerOptionTypeId = _data.propDataModel.getSourceTypeId();
+                var initTypeId = _data.tplDataService.getTypeSelectInitValue(layerOptionTypeId);
+                select.val(initTypeId);
+
+                // on select change
+                select.change(function () {
+                    var typeId = parseInt($(this).val());
+                    _data.propDataModel.setSourceTypeId(typeId);
+                    createAnnotateProperties();
+                });
+                // default,
+                createAnnotateProperties();
+            }
+
+            function removeCreatedProperties() {
+                _data.createdPropertyElements.map(function (item) {
+                    if (item) {
+                        if (item.annotateElementDestroyEvents && $.isFunction(item.annotateElementDestroyEvents) ) {
+                            item.annotateElementDestroyEvents();
+                        }
+                        item.remove();
+                    }
+                });
+                _data.createdPropertyElements = [];
+            }
+
+            function createAnnotateProperties() {
+                removeCreatedProperties();
+                var layerTypeId = _data.propDataModel.getSourceTypeId();
+                var typeId = layerTypeId;
+                if (! _data.tplDataService.hasTypeId(layerTypeId)) {
+                    typeId = _data.tplDataService.getFirstTypeId();
+                }
+                // var typeId = _data.propDataModel.getSourceTypeId() || _data.tplDataService.getFirstTypeId();
+                $.each(_data.tplDataService.getTypeResourceProperties(typeId), function (idx, propertyData) {
+                    var jqPropertyHtml = _data.elementRenderService.render(
+                        propertyData,
+                        _data.propDataModel,
+                        _data.tplDataService
+                    );
+
+                    if (jqPropertyHtml) {
+
+                        _data.createdPropertyElements.push(jqPropertyHtml);
+                        _data.createdFormDiv.append(jqPropertyHtml);
+                    }
+                });
+
+            }
+
+            return service;
+        }
+
+        function _createJqElement(strHtml) {
+            return $('<div/>').html(strHtml).contents();
+        }
+
+        function _jqToDomElement(jqElement) {
+            var rs = null;
+            if (jqElement) {
+                rs = jqElement.get(0);
+            }
+            return rs;
+        }
+
+        return formService;
+    }
+
+    L.StyleEditorAnnotation = L.StyleEditorAnnotation || {};
+    L.StyleEditorAnnotation.createAnnotateFormService = createAnnotateFormService;
+
+}(jQuery, L));
+
 /*
  * Cartography annotate
  */
-
 $(document).ready( function() {
 
 /**
@@ -268,8 +1098,6 @@ var editGeometry = function(layer) {
     var url = basePath + baseUrl + '/cartography/annotate';
     var data = {
         id: identifier,
-        // TODO Remove the media id, since it cannot change (currently needed in controller).
-        mediaId: currentMediaId(),
         wkt: wkt,
         options: layer.options
     };
@@ -344,18 +1172,24 @@ var popupAnnotation = function(options) {
     var html = '';
 
     // Set default values if missing in original data.
-    options['date'] = options['date'] || '';
-    options['owner'] = options['owner'] || {};
-    options['owner']['id'] = options['owner']['id'] || '';
-    options['owner']['name'] = options['owner']['name'] || '';
+    // TODO Check if to set default values is is still needed (creation).
+    options['metadata'] = options['metadata'] || '';
+    options['metadata']['o:created'] = options['metadata']['o:created'] || '';
+    options['metadata']['o:modified'] = options['metadata']['o:modified'] || '';
+    options['metadata']['o:owner'] = options['metadata']['o:owner'] || {};
+    options['metadata']['o:owner']['id'] = options['metadata']['o:owner']['id'] || '';
+    options['metadata']['o:owner']['name'] = options['metadata']['o:owner']['name'] || '';
 
+    var metadata = options['metadata'];
     var content = options.popupContent || '';
     var oaLinking = options.oaLinking || [];
     var annotationIdentifier = options.annotationIdentifier || null;
     var url = '';
 
+    oaLinking.forEach(function(valueObj, index) {
+
     if (content.length) {
-        html += '<div class="annotation-body-rdf-value">' + content + '</div>';
+        html += '<div class="annotation-">' + content + '</div>';
     }
     if (oaLinking.length) {
         html += '<div class="annotation-body-oa-linking" >';
@@ -376,7 +1210,7 @@ var popupAnnotation = function(options) {
         });
         html += '</div>';
     }
-    html += '<div class="annotation-target-cartography-uncertainty"><i>Uncertainty:</i> ' + options['cartographyUncertainty'] + '</div>';
+//    html += '<div class="annotation-target-cartography-uncertainty"><i>Uncertainty:</i> ' + options['cartographyUncertainty'] + '</div>';
 
     html += '<div class="annotation-metadata">';
     if (annotationIdentifier) {
@@ -390,8 +1224,8 @@ var popupAnnotation = function(options) {
             + '</span></li></ul>'
             + '</div>';
     }
-    html += '<div class="annotation-owner">' + options['owner']['name'] + '</div>';
-    html += '<div class="annotation-created">' + options['date'] + '</div>';
+    html += '<div class="annotation-owner">' + metadata['o:owner']['name'] + '</div>';
+    html += '<div class="annotation-created">' + metadata['o:created'] + '</div>';
     html += '</div>';
 
     return html;
@@ -542,6 +1376,31 @@ var setView = function() {
  * @var L.FeatureGroup drawnItems
  */
 var annotateControl = function(map, drawnItems) {
+
+    var dynamicPropertiesUrl = basePath + '/admin/cartography/resource-templates';
+    var dynamicSection = window.location.hash.substr(1);
+    dynamicSection = dynamicSection.indexOf('?') == -1
+        ? dynamicSection
+        : dynamicSection.substr(0, dynamicSection.indexOf('?'));
+
+    // style-editor dynamic form
+    function styleEditorApplyDynamicForm() {
+        $.each({describe: 'describe-label', locate: 'locate-label'}, function (section, tabId) {
+            var tabElement = $('#' + tabId);
+            if (! tabElement) {
+                return false;
+            }
+            tabElement.click(function () {
+                $.ajax({ url: dynamicPropertiesUrl, data: {type: dynamicSection}}).done(function(data) {
+                    map.fireEvent('styleeditor:afterTemplateJsonReLoaded', {templateJsonData: data});
+                });
+            });
+        });
+        $.ajax({ url: dynamicPropertiesUrl, data: {type: dynamicSection}}).done(function(data) {
+            map.fireEvent('styleeditor:afterTemplateJsonReLoaded', {templateJsonData: data});
+        });
+    }
+
     var drawControlOptions = {
         draw: {
             polyline: true,
@@ -584,8 +1443,21 @@ var annotateControl = function(map, drawnItems) {
     };
 
     if (userRights && userRights.edit !== false) {
+        // var styleEditor = L.control.styleEditor(styleEditorControlOptions);
+        // map.addControl(styleEditor);
+
+        // use the annotation dynamic form for style-editor
+        styleEditorControlOptions = $.extend(styleEditorControlOptions, {
+            useAnnotationDynamicForm: true,
+            createAnnotateFormServiceFn: L.StyleEditorAnnotation.createAnnotateFormService,
+            annotationFormData: [],
+        });
+
         var styleEditor = L.control.styleEditor(styleEditorControlOptions);
         map.addControl(styleEditor);
+
+        styleEditorApplyDynamicForm();
+
     }
 
     // The permission control.
@@ -1079,8 +1951,12 @@ var annotateGeometries = function(map, section, drawnItems) {
                     return;
                 }
 
-                addLinkedResource(identifier, valueObj);
-                appendLinkedResource(valueObj);
+                // addLinkedResource(identifier, valueObj);
+                // appendLinkedResource(valueObj);
+
+                // dynamic form properties
+                map.fireEvent('styleeditor:onAddNewResourceItem', {newChoseItem: valueObj});
+
             })
             .fail(function(jqxhr) {
                 var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
@@ -1250,7 +2126,6 @@ function createImageMediaService() {
  * @description Handle the permission by events fired from Style-Editor and
  * Leaflet-Draw, in which new events are added to extend their abilities to
  * handle permission for each layer.
- * @author Ken, cancms@163.com
  *
  * Handle user rights to create, edit, and delete items.
  *

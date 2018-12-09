@@ -225,6 +225,14 @@ abstract class AbstractCartographyController extends AbstractActionController
         $metadata = isset($options['metadata']) ? $options['metadata'] : [];
         $styles = $options;
         unset($styles['metadata']);
+        // Clean old styles and useless leaflet data.
+        unset($styles['annotationIdentifier']);
+        unset($styles['owner']);
+        unset($styles['right']);
+        unset($styles['onEachFeature']);
+        if (empty($styles['_isRectangle'])) {
+            unset($styles['_isRectangle']);
+        }
 
         if (empty($data['id'])) {
             if (empty($data['resourceId'])) {

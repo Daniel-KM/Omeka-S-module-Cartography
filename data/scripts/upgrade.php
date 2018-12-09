@@ -357,3 +357,127 @@ SQL;
     $messenger = new \Omeka\Mvc\Controller\Plugin\Messenger();
     $messenger->addSuccess(sprintf('%d geometries were indexed in the new table "data_type_geometry".', $result)); // @translate
 }
+
+if (version_compare($oldVersion, '3.0.11-beta', '<')) {
+    // Clean the annotation styles.
+    $property = $api->searchOne('properties', [
+        'term' => 'oa:styledBy',
+    ])->getContent();
+    $propertyId = $property->id();
+
+    // The sqls manage the case where the key to remove is in the middle or the last one.
+
+    $sql = <<<SQL
+UPDATE value
+SET value =
+    CONCAT(
+        LEFT(value, LOCATE("annotationIdentifier", value) - 3),
+        IF (LOCATE(",", RIGHT(value, LENGTH(value) - LOCATE("annotationIdentifier", value) - 21)), ",", ""),
+        RIGHT(value, LENGTH(value) - LOCATE("annotationIdentifier", value) - 21
+            - IF(
+                LOCATE(",", RIGHT(value, LENGTH(value) - LOCATE("annotationIdentifier", value) - 21)),
+                LOCATE(",", RIGHT(value, LENGTH(value) - LOCATE("annotationIdentifier", value) - 21)),
+                LOCATE("}}", RIGHT(value, LENGTH(value) - LOCATE("annotationIdentifier", value) - 21))
+            )
+        )
+     )
+WHERE `property_id` = $propertyId
+AND value LIKE '%"annotationIdentifier":%'
+;
+SQL;
+    $connection->exec($sql);
+
+    $sql = <<<SQL
+UPDATE value
+SET value =
+    CONCAT(
+        LEFT(value, LOCATE("owner", value) - 3),
+        IF (LOCATE("},", RIGHT(value, LENGTH(value) - LOCATE("owner", value) - 5)), ",", ""),
+        RIGHT(value, LENGTH(value) - LOCATE("owner", value) - 5
+            - IF(
+                LOCATE("},", RIGHT(value, LENGTH(value) - LOCATE("owner", value) - 5)),
+                LOCATE("},", RIGHT(value, LENGTH(value) - LOCATE("owner", value) - 5)),
+                LOCATE("}}", RIGHT(value, LENGTH(value) - LOCATE("owner", value) - 5))
+            )
+        )
+     )
+WHERE `property_id` = $propertyId
+AND value LIKE '%"owner":%'
+;
+SQL;
+    $connection->exec($sql);
+
+    $sql = <<<SQL
+UPDATE value
+SET value =
+    CONCAT(
+        LEFT(value, LOCATE("right", value) - 3),
+        IF (LOCATE("},", RIGHT(value, LENGTH(value) - LOCATE("right", value) - 5)), ",", ""),
+        RIGHT(value, LENGTH(value) - LOCATE("right", value) - 5
+            - IF(
+                LOCATE("},", RIGHT(value, LENGTH(value) - LOCATE("right", value) - 5)),
+                LOCATE("},", RIGHT(value, LENGTH(value) - LOCATE("right", value) - 5)),
+                LOCATE("}}", RIGHT(value, LENGTH(value) - LOCATE("right", value) - 5))
+            )
+        )
+     )
+WHERE `property_id` = $propertyId
+AND value LIKE '%"right":%'
+;
+SQL;
+    $connection->exec($sql);
+
+    $sql = <<<SQL
+UPDATE value
+SET value = REPLACE(value, ',"onEachFeature":""', "")
+WHERE `property_id` = $propertyId
+AND value LIKE "%onEachFeature%"
+;
+SQL;
+    $connection->exec($sql);
+
+    $sql = <<<SQL
+UPDATE value
+SET value = REPLACE(value, '"onEachFeature":"",', "")
+WHERE `property_id` = $propertyId
+AND value LIKE "%onEachFeature%"
+;
+SQL;
+    $connection->exec($sql);
+
+    $sql = <<<SQL
+UPDATE value
+SET value = REPLACE(value, '"onEachFeature":""', "")
+WHERE `property_id` = $propertyId
+AND value LIKE "%onEachFeature%"
+;
+SQL;
+    $connection->exec($sql);
+
+    $sql = <<<SQL
+UPDATE value
+SET value = REPLACE(value, ',"_isRectangle":"0"', "")
+WHERE `property_id` = $propertyId
+AND value LIKE "%_isRectangle%"
+;
+SQL;
+    $connection->exec($sql);
+
+    $sql = <<<SQL
+UPDATE value
+SET value = REPLACE(value, '"_isRectangle":"0",', "")
+WHERE `property_id` = $propertyId
+AND value LIKE "%_isRectangle%"
+;
+SQL;
+    $connection->exec($sql);
+
+    $sql = <<<SQL
+UPDATE value
+SET value = REPLACE(value, '"_isRectangle":"0"', "")
+WHERE `property_id` = $propertyId
+AND value LIKE "%_isRectangle%"
+;
+SQL;
+    $connection->exec($sql);
+}

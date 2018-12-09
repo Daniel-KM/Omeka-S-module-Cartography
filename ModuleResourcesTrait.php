@@ -32,7 +32,6 @@ use Omeka\Api\Exception\NotFoundException;
 use Omeka\Module\Exception\ModuleCannotInstallException;
 use Omeka\Mvc\Controller\Plugin\Messenger;
 use Omeka\Stdlib\Message;
-use Zend\ServiceManager\ServiceLocatorInterface;
 
 /**
  * This generic trait allows to manage all resources methods that should run
@@ -40,19 +39,22 @@ use Zend\ServiceManager\ServiceLocatorInterface;
  */
 trait ModuleResourcesTrait
 {
-    abstract protected function installResources(ServiceLocatorInterface $services);
+    /**
+     * Install vocabulary resources (vocabulary, custom vocabulary, etc.).
+     */
+    abstract protected function installResources();
 
     /**
      * Create a vocabulary, with a check of its existence before.
      *
-     * @param ServiceLocatorInterface $services
      * @param array $vocabulary
      * @throws ModuleCannotInstallException
      * @return bool True if the vocabulary has been created, false if it exists
      * already, so it is not created twice.
      */
-    protected function createVocabulary(ServiceLocatorInterface $services, array $vocabulary)
+    protected function createVocabulary(array $vocabulary)
     {
+        $services = $this->getServiceLocator();
         $api = $services->get('Omeka\ApiManager');
 
         // Check if the vocabulary have been already imported.
@@ -110,11 +112,11 @@ trait ModuleResourcesTrait
     /**
      * Create a custom vocab.
      *
-     * @param ServiceLocatorInterface $services
      * @param string $filepath
      */
-    protected function createCustomVocab(ServiceLocatorInterface $services, $filepath)
+    protected function createCustomVocab($filepath)
     {
+        $services = $this->getServiceLocator();
         $api = $services->get('Omeka\ApiManager');
         $data = json_decode(file_get_contents($filepath), true);
         $data['o:terms'] = implode(PHP_EOL, $data['o:terms']);
@@ -124,12 +126,12 @@ trait ModuleResourcesTrait
     /**
      * Update a vocabulary, with a check of its existence before.
      *
-     * @param ServiceLocatorInterface $services
      * @param string $filepath
      * @throws ModuleCannotInstallException
      */
-    protected function updateCustomVocab(ServiceLocatorInterface $services, $filepath)
+    protected function updateCustomVocab($filepath)
     {
+        $services = $this->getServiceLocator();
         $api = $services->get('Omeka\ApiManager');
         $data = json_decode(file_get_contents($filepath), true);
 
@@ -158,13 +160,13 @@ trait ModuleResourcesTrait
      *
      * @todo Some checks of the resource termplate controller are skipped currently.
      *
-     * @param ServiceLocatorInterface $services
      * @param string $filepath
      * @return \Omeka\Api\Representation\ResourceTemplateRepresentation
      * @throws ModuleCannotInstallException
      */
-    protected function createResourceTemplate(ServiceLocatorInterface $services, $filepath)
+    protected function createResourceTemplate($filepath)
     {
+        $services = $this->getServiceLocator();
         $api = $services->get('ControllerPluginManager')->get('api');
         $data = json_decode(file_get_contents($filepath), true);
 
@@ -184,7 +186,7 @@ trait ModuleResourcesTrait
 
         // Set the iinternal ids of classes, properties and data types.
         // TODO Check if the output is valid (else an error will be thrown during import).
-        $data = $this->flagValid($services, $data);
+        $data = $this->flagValid($data);
 
         // Manage the custom vocabs that may be set inside the template.
         foreach ($data['o:resource_template_property'] as &$templateProperty) {
@@ -229,12 +231,14 @@ trait ModuleResourcesTrait
      * the property. By design, the API will only hydrate members and data types
      * that are flagged as valid.
      *
-     * @param ServiceLocatorInterface $services
      * @param array $import
      * @return array
      */
-    protected function flagValid(ServiceLocatorInterface $services, array $import)
+    protected function flagValid(array $import)
     {
+        $services = $this->getServiceLocator();
+        $api = $services->get('ControllerPluginManager')->get('api');
+
         $vocabs = [];
         $dataTypes = [
             'literal',
@@ -244,8 +248,6 @@ trait ModuleResourcesTrait
             'resource:itemset',
             'resource:media',
         ];
-
-        $api = $services->get('ControllerPluginManager')->get('api');
 
         $getVocab = function ($namespaceUri) use (&$vocabs, $api) {
             if (isset($vocabs[$namespaceUri])) {

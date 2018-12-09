@@ -31,9 +31,8 @@ class Module extends AbstractGenericModule
 
         // Manage the module dependency, in particular when upgrading.
         // Once disabled, this current method and other ones are no more called.
-        $services = $event->getApplication()->getServiceManager();
-        if (!$this->isModuleActive($services, $this->dependency)) {
-            $this->disableModule($services, __NAMESPACE__);
+        if (!$this->isModuleActive($this->dependency)) {
+            $this->disableModule(__NAMESPACE__);
             return;
         }
 
@@ -43,7 +42,7 @@ class Module extends AbstractGenericModule
     public function install(ServiceLocatorInterface $serviceLocator)
     {
         parent::install($serviceLocator);
-        $this->installResources($serviceLocator);
+        $this->installResources();
     }
 
     // TODO Cartography vocabulary is not removed.
@@ -254,10 +253,10 @@ class Module extends AbstractGenericModule
 
     /**
      * @todo To be moved inside trait.
-     * @param ServiceLocatorInterface $services
      */
-    protected function installResources(ServiceLocatorInterface $services)
+    protected function installResources()
     {
+        $services = $this->getServiceLocator();
         $vocabulary = [
             'vocabulary' => [
                 'o:namespace_uri' => 'http://localhost/ns/cartography/',

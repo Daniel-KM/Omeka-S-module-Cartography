@@ -2,7 +2,6 @@
 namespace Cartography\Controller;
 
 use Annotate\Api\Representation\AnnotationRepresentation;
-use Annotate\Entity\Annotation;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Zend\Http\Response;
 use Zend\Mvc\Controller\AbstractActionController;

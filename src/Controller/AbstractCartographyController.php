@@ -465,6 +465,18 @@ abstract class AbstractCartographyController extends AbstractActionController
             ]];
         }
 
+        // Remove duplicated motivations.
+        $list = [];
+        foreach ($data['oa:motivatedBy'] as $key => $oaMotivatedBy) {
+            $oaMotivatedBy = array_filter($oaMotivatedBy);
+            ksort($oaMotivatedBy);
+            if (in_array($oaMotivatedBy, $list, true)) {
+                unset($data['oa:motivatedBy'][$key]);
+            } else {
+                $list[] = $oaMotivatedBy;
+            }
+        }
+
         return $data;
     }
 
@@ -570,9 +582,16 @@ abstract class AbstractCartographyController extends AbstractActionController
             ];
         }
 
+        // List all single motivations.
         $motivatedBys = [];
+        $list = [];
         foreach ($metadata['oa:motivatedBy'] as $motivatedBy) {
-            $motivatedBys[] = $motivatedByBase + ['@value' => $motivatedBy];
+            if (in_array($motivatedBy, $list)) {
+                continue;
+            }
+            $list[] = $motivatedBy;
+            $motivatedBy = $motivatedByBase + ['@value' => $motivatedBy];
+            $motivatedBys[] = $motivatedBy;
         }
         return $motivatedBys;
     }

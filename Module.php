@@ -4,9 +4,11 @@ namespace Cartography;
 // TODO Remove this requirement.
 require_once dirname(__DIR__) . '/Annotate/src/Module/AbstractGenericModule.php';
 require_once dirname(__DIR__) . '/Annotate/src/Module/ModuleResourcesTrait.php';
+require_once __DIR__ . '/src/Api/Adapter/QueryGeometryTrait.php';
 
 use Annotate\Module\AbstractGenericModule;
 use Annotate\Module\ModuleResourcesTrait;
+use Cartography\Api\Adapter\QueryGeometryTrait;
 use Doctrine\Common\Collections\Criteria;
 use Zend\EventManager\Event;
 use Zend\EventManager\SharedEventManagerInterface;
@@ -24,6 +26,7 @@ use Zend\ServiceManager\ServiceLocatorInterface;
 class Module extends AbstractGenericModule
 {
     use ModuleResourcesTrait;
+    use QueryGeometryTrait;
 
     protected $dependency = 'Annotate';
 
@@ -122,7 +125,24 @@ class Module extends AbstractGenericModule
             );
         }
 
-        // Manage the geometry data type.
+        // Search resources and annotations by geometries.
+        $adapters = [
+            \Omeka\Api\Adapter\ItemAdapter::class,
+            \Omeka\Api\Adapter\ItemSetAdapter::class,
+            \Omeka\Api\Adapter\MediaAdapter::class,
+            \Annotate\Api\Adapter\AnnotationAdapter::class,
+            // TODO Remove body and target adapters.
+            \Annotate\Api\Adapter\AnnotationBodyAdapter::class,
+            \Annotate\Api\Adapter\AnnotationTargetAdapter::class,
+        ];
+        foreach ($adapters as $adapter) {
+            $sharedEventManager->attach(
+                $adapter,
+                'api.search.query',
+                [$this, 'searchQuery']
+            );
+        }
+
         $controllers = [
             'Omeka\Controller\Admin\Item',
             'Omeka\Controller\Admin\ItemSet',
@@ -130,6 +150,19 @@ class Module extends AbstractGenericModule
             \Annotate\Controller\Admin\AnnotationController::class,
         ];
         foreach ($controllers as $controller) {
+            // Display and filter the search for the advanced search pages.
+            $sharedEventManager->attach(
+                $controller,
+                'view.advanced_search',
+                [$this, 'displayAdvancedSearch']
+            );
+            $sharedEventManager->attach(
+                $controller,
+                'view.search.filters',
+                [$this, 'filterSearchFilters']
+            );
+
+            // Manage the geometry data type.
             $sharedEventManager->attach(
                 $controller,
                 'view.add.after',
@@ -343,6 +376,83 @@ class Module extends AbstractGenericModule
                 'sections' => $displayAll ? ['describe', 'locate'] : ['locate'],
             ]);
         }
+    }
+
+    /**
+     * Helper to filter search queries.
+     *
+     * @param Event $event
+     */
+    public function searchQuery(Event $event)
+    {
+        $adapter = $event->getTarget();
+        $qb = $event->getParam('queryBuilder');
+        $query = $event->getParam('request')->getContent();
+        $this->searchGeometry($adapter, $qb, $query);
+    }
+
+    /**
+     * Display the advanced search form via partial.
+     *
+     * @param Event $event
+     */
+    public function displayAdvancedSearch(Event $event)
+    {
+        $partials = $event->getParam('partials', []);
+        $partials[] = 'common/advanced-search/annotation-cartography';
+        $event->setParam('partials', $partials);
+    }
+
+    /**
+     * Filter search filters.
+     *
+     * @param Event $event
+     */
+    public function filterSearchFilters(Event $event)
+    {
+        $view = $event->getTarget();
+        $query = $event->getParam('query', []);
+
+        $normalizeGeometryQuery = $view->plugin('normalizeGeometryQuery');
+        $query = $normalizeGeometryQuery($query);
+        $event->setParam('query', $query);
+        if (empty($query['geo'])) {
+            return;
+        }
+
+        $filters = $event->getParam('filters');
+        $translate = $event->getTarget()->plugin('translate');
+        $geo = $query['geo'];
+        if (!empty($geo['latlong']) && !empty($geo['radius'])) {
+            $filterLabel = $translate('Geographic coordinates'); // @translate
+            $filters[$filterLabel][] = sprintf(
+                $translate('Within %1$s %2$s of point %3$s %4$s'), // @translate
+                $geo['radius'], $geo['unit'], $geo['latlong'][0], $geo['latlong'][1]
+            );
+        } elseif (!empty($geo['xy']) && !empty($geo['radius'])) {
+            $filterLabel = $translate('Geometric coordinates'); // @translate
+            $filters[$filterLabel][] = sprintf(
+                $translate('Within %1$s pixels of point x: %2$s, y: %3$s)'), // @translate
+                $geo['radius'], $geo['xy'][0], $geo['xy'][1]
+            );
+        } elseif (!empty($geo['mapbox'])) {
+            $filterLabel = $translate('Map box'); // @translate
+            $filters[$filterLabel][] = sprintf(
+                $translate('Within box %1$s,%2$s/%3$s,%4$s'), // @translate
+                $geo['mapbox'][0], $geo['mapbox'][1], $geo['mapbox'][2], $geo['mapbox'][3]
+            );
+        } elseif (!empty($geo['box'])) {
+            $filterLabel = $translate('Box'); // @translate
+            $filters[$filterLabel][] = sprintf(
+                $translate('Within box %1$s,%2$s/%3$s,%4$s'), // @translate
+                $geo['box'][0], $geo['box'][1], $geo['box'][2], $geo['box'][3]
+            );
+        } elseif (!empty($geo['wkt'])) {
+            $filterLabel = $translate('Within geometry'); // @translate
+            $filters[$filterLabel][] = $geo['wkt'];
+        }
+
+        $event->setParam('filters', $filters);
     }
 
     /**

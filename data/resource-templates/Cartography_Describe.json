@@ -11,7 +11,10 @@
             "vocabulary_namespace_uri": "http:\/\/www.w3.org\/ns\/oa#",
             "vocabulary_label": "Web Annotation Ontology",
             "local_name": "motivatedBy",
-            "label": "motivatedBy"
+            "label": "motivatedBy",
+            "data": {
+                "annotation_part": "oa:Annotation"
+            }
         },
         {
             "o:alternate_label": "Value",
@@ -23,7 +26,10 @@
             "vocabulary_namespace_uri": "http:\/\/www.w3.org\/1999\/02\/22-rdf-syntax-ns#",
             "vocabulary_label": "RDF Concepts Vocabulary (RDF)",
             "local_name": "value",
-            "label": "value"
+            "label": "value",
+            "data": {
+                "annotation_part": "oa:hasBody"
+            }
         },
         {
             "o:alternate_label": "Has purpose",
@@ -35,7 +41,10 @@
             "vocabulary_namespace_uri": "http:\/\/www.w3.org\/ns\/oa#",
             "vocabulary_label": "Web Annotation Ontology",
             "local_name": "hasPurpose",
-            "label": "hasPurpose"
+            "label": "hasPurpose",
+            "data": {
+                "annotation_part": "oa:hasBody"
+            }
         },
         {
             "o:alternate_label": "Related resource",
@@ -47,7 +56,10 @@
             "vocabulary_namespace_uri": "http:\/\/www.w3.org\/ns\/oa#",
             "vocabulary_label": "Web Annotation Ontology",
             "local_name": "hasBody",
-            "label": "hasBody"
+            "label": "hasBody",
+            "data": {
+                "annotation_part": "oa:Annotation"
+            }
         }
     ],
     "o:resource_class": {

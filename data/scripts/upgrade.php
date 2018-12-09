@@ -278,7 +278,7 @@ if (version_compare($oldVersion, '3.0.7-beta', '<')) {
     foreach (['cartography_template_describe', 'cartography_template_locate'] as $list) {
         $ids = [];
         $labels = $config[$space]['settings'][$list];
-        foreach ($labels as &$label) {
+        foreach ($labels as $label) {
             $resourceTemplate = $api->searchOne('resource_templates', ['label' => $label])->getContent();
             if ($resourceTemplate) {
                 $ids[] = $resourceTemplate->id();
@@ -290,4 +290,34 @@ if (version_compare($oldVersion, '3.0.7-beta', '<')) {
         $config[$space]['settings']['cartography_template_describe_empty']);
     $settings->set('cartography_template_locate_empty',
         $config[$space]['settings']['cartography_template_locate_empty']);
+}
+
+if (version_compare($oldVersion, '3.0.8-beta', '<')) {
+    $messenger = new \Omeka\Mvc\Controller\Plugin\Messenger();
+    $messenger->addWarning(
+        'This new version uses a resource template as a form to annotate image and maps.'
+        . ' ' . 'The default ones use the old static one, if they were not renamed.'
+        . ' ' . 'You may update them in "Resource templates" and select them in "Admin settings".' // @translate
+    );
+
+    $data = $settings->get('annotate_resource_template_data', []);
+    $map = [
+        'oa:motivatedBy' => 'oa:Annotation',
+        'rdf:value' => 'oa:hasBody',
+        'oa:hasPurpose' => 'oa:hasBody',
+        'oa:hasBody' => 'oa:Annotation',
+        'cartography:uncertainty' => 'oa:hasTarget',
+    ];
+    foreach (['Cartography Describe', 'Cartography Locate'] as $label) {
+        $resourceTemplate = $api->searchOne('resource_templates', ['label' => $label])->getContent();
+        if ($resourceTemplate) {
+            foreach ($map as $term => $part) {
+                $data[$resourceTemplate->id()][$term] = $part;
+            }
+        } else {
+            $messenger->addWarning(sprintf('Resource template "%s" was not found and was not updated.', $label)); // @translate
+        }
+    }
+
+    $settings->set('annotate_resource_template_data', $data);
 }

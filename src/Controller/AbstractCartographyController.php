@@ -445,13 +445,8 @@ abstract class AbstractCartographyController extends AbstractActionController
         $data['oa:hasBody'] = [];
         $data['oa:hasTarget'] = [];
 
-        // Body.
-        // No template means that only the data of the style editor are available.
-        $result = $this->fillDataForTemplate($resource, $metadata, $templateId, $data, $annotation);
-        if (!is_array($result)) {
-            return $result;
-        }
-        $data = $result;
+        // Manage target first, because the metadata filled from the template
+        // are appended to the required first target automatically.
 
         // Target.
         $target = $this->fillTarget($resource, $geometry, $styles, $media);
@@ -464,6 +459,14 @@ abstract class AbstractCartographyController extends AbstractActionController
                 '@value' => json_encode(['leaflet-interactive' => $styles], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             ]];
         }
+
+        // Body.
+        // No template means that only the data of the style editor are available.
+        $result = $this->fillDataForTemplate($resource, $metadata, $templateId, $data, $annotation);
+        if (!is_array($result)) {
+            return $result;
+        }
+        $data = $result;
 
         // Remove duplicated motivations.
         $list = [];
@@ -539,13 +542,13 @@ abstract class AbstractCartographyController extends AbstractActionController
         return (bool) array_filter($metadata, function($v, $k) {
             return
                 // Remove generic keys and empty values.
-                substr($k, 0, 2) === 'o:'
-                || in_array($k, ['csrf', 'oa:selector', 'oa:hasTarget', 'oa:hasSource', 'oa:styledBy', 'oa:styleClass'])
-                || !is_array($v)
-                || count($v) === 0
+                substr($k, 0, 2) !== 'o:'
+                && !in_array($k, ['csrf', 'oa:selector', 'oa:hasTarget', 'oa:hasSource', 'oa:styledBy', 'oa:styleClass', 'oa:Annotation'])
+                && is_array($v)
+                && count($v) !== 0
                 // Remove true empty values (0 character or empty array).
-                || !array_filter($v, function($w) {
-                    return is_array($w) ? empty($w) : strlen(trim($w)) === 0;
+                && array_filter($v, function($w) {
+                    return is_array($w) ? !empty($w) : strlen(trim($w)) !== 0;
                 })
             ;
         }, ARRAY_FILTER_USE_BOTH);
@@ -641,6 +644,10 @@ abstract class AbstractCartographyController extends AbstractActionController
         $template = json_decode(json_encode($template), 320);
         $templateProperties = $template['o:resource_template_property'];
 
+        // Get the special annotation mapping of this template.
+        $partValues = [];
+        $annotationPartMap = $this->resourceTemplateAnnotationPartMap($templateId);
+
         // Fill the annotation body with the annotation id if any.
         $data['oa:hasBody'] = [[
             'oa:Annotation' => $annotation ? ['o:id' => $annotation->id()] : null,
@@ -650,7 +657,6 @@ abstract class AbstractCartographyController extends AbstractActionController
         // term must be "oa:hasBody".
         $oaLinking = [];
 
-        // Properties are managed as body in most of the cases.
         foreach ($metadata as $term => $properties) {
             // Skip Omeka data if any.
             if (strpos($term, 'o:') === 0 || !is_array($properties)) {
@@ -666,13 +672,12 @@ abstract class AbstractCartographyController extends AbstractActionController
             // Note: the short key is not working in the front end, so use the
             // one of the short template.
             $shortKey = array_search($term, $terms);
-
-            // All data are filled first, then exception are managed.
+            $propertyId = $templateProperties[$shortKey]['o:property']['o:id'];
+            $dataType = $templateProperties[$shortKey]['o:data_type'];
+            $lang = empty($templateProperties[$shortKey]['o:lang'])
+                ? null
+                : $templateProperties[$shortKey]['o:lang'];
             foreach ($properties as $value) {
-                $lang = empty($templateProperties[$shortKey]['o:lang'])
-                    ? null
-                    : $templateProperties[$shortKey]['o:lang'];
-                $dataType = $templateProperties[$shortKey]['o:data_type'];
                 switch ($dataType) {
                     // TODO Currently, only item is managed for resource template link field.
                     // The short resource template for it to "oa:hasBody".
@@ -681,10 +686,15 @@ abstract class AbstractCartographyController extends AbstractActionController
                     case 'resource:itemset':
                     case 'resource:media':
                         // Currently, the resource is managed differently: it
-                        // can manage the multiple values...
+                        // can manage the multiple values…
+                        // This value can manage sub values as well (quick add).
+                        // TODO Fix/improve front-end to manage links.
+                        if ($value && isset($value['value_resource_id'])) {
+                            $value = [$value];
+                        }
                         foreach ($value as $v) {
                             $oaLinking[] = [
-                                'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
+                                'property_id' => $propertyId,
                                 'type' => $dataType,
                                 'value_resource_id' => $v['value_resource_id'],
                                 '@value' => null,
@@ -693,37 +703,21 @@ abstract class AbstractCartographyController extends AbstractActionController
                         }
                         break;
                     case 'uri':
-                        $data['oa:hasBody'][0][$term][] = [
-                            'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
+                    case strlen($dataType) && strpos($dataType, 'valuesuggest:') === 0:
+                        $partValues[$term][] = [
+                            'property_id' => $propertyId,
                             'type' => $dataType,
                             '@id' => $value,
                             'o:label' => null,
                             '@value' => null,
-                            '@lang' => null,
-                        ];
-                        break;
-                    case strpos($dataType, 'valuesuggest:') === 0:
-                        $data['oa:hasBody'][0][$term][] = [
-                            'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
-                            'type' => $dataType,
-                            '@id' => $value,
-                            'o:label' => null,
-                            '@value' => null,
-                            '@lang' => null,
-                        ];
-                        break;
-                    case strpos($dataType, 'customvocab:') === 0:
-                        $data['oa:hasBody'][0][$term][] = [
-                            'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
-                            'type' => $dataType,
-                            '@value' => $value,
                             '@lang' => null,
                         ];
                         break;
                     case 'literal':
+                    case strlen($dataType) && strpos($dataType, 'customvocab:') === 0:
                     default:
-                        $data['oa:hasBody'][0][$term][] = [
-                            'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
+                        $partValues[$term][] = [
+                            'property_id' => $propertyId,
                             'type' => $dataType,
                             '@value' => $value,
                             '@lang' => $lang,
@@ -731,11 +725,18 @@ abstract class AbstractCartographyController extends AbstractActionController
                         break;
                 }
             }
+        }
 
-            // Manage exceptions.
-            if ($term === 'oa:motivatedBy') {
-                $data['oa:motivatedBy'] = $data['oa:hasBody'][0][$term];
-                unset($data['oa:hasBody'][0][$term]);
+        foreach ($partValues as $term => $pValues) {
+            foreach ($pValues as $partValue) {
+                $annotationPart = isset($annotationPartMap[$term])
+                    ? $annotationPartMap[$term]
+                    : 'oa:Annotation';
+                if ($annotationPart === 'oa:Annotation') {
+                    $data[$term][] = $partValue;
+                } else {
+                    $data[$annotationPart][0][$term][] = $partValue;
+                }
             }
         }
 
@@ -784,6 +785,14 @@ abstract class AbstractCartographyController extends AbstractActionController
                     'value_resource_id' => $id,
                 ];
                 $data['oa:hasBody'][] = $oaLinkingValues;
+            }
+        }
+
+        // Remove empty bodies.
+        foreach ($data['oa:hasBody'] as $key => $oaHasBody) {
+            unset($oaHasBody['oa:Annotation']);
+            if (empty($oaHasBody)) {
+                unset($data['oa:hasBody'][$key]);
             }
         }
 

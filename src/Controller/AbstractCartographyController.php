@@ -1227,11 +1227,11 @@ abstract class AbstractCartographyController extends AbstractActionController
             // TODO Use a sub array for body and target (as the json representation)? Or a third prefix (body:rdf:value) just for the form? The form is annotation based or just for body?
 
             // Properties of the annotation.
-            $skipProperties = [
+            $specialProperties = [
                 'oa:styledBy' => true,
             ];
             /** @var \Annotate\Api\Representation\AnnotationRepresentation $annotation */
-            $metadata = $this->appendProperties($annotation, $metadata, $skipProperties);
+            $metadata = $this->appendProperties($annotation, $metadata, $specialProperties);
 
             // Properties of bodies.
             // In json-ld, when there is only one value, the array may be removed.
@@ -1239,10 +1239,15 @@ abstract class AbstractCartographyController extends AbstractActionController
                 if (!is_array($metadata['oa:hasBody'])) {
                     $metadata['oa:hasBody'] = [$metadata['oa:hasBody']];
                 }
-                $skipProperties = [];
+                $specialProperties = [
+                    // Manage the special case of the body resources: they are
+                    // managed as rdf:value resource internally, but oa:hasBody
+                    // in the front-end.
+                    'rdf:value' => ['resource' => 'oa:hasBody'],
+                ];
                 /** @var \Annotate\Api\Representation\AnnotationBodyRepresentation $annotationBody */
                 foreach ($metadata['oa:hasBody'] as $annotationBody) {
-                    $metadata = $this->appendProperties($annotationBody, $metadata, $skipProperties);
+                    $metadata = $this->appendProperties($annotationBody, $metadata, $specialProperties);
                 }
             }
 
@@ -1254,7 +1259,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 if (!is_array($metadata['oa:hasTarget'])) {
                     $metadata['oa:hasTarget'] = [$metadata['oa:hasTarget']];
                 }
-                $skipProperties = [
+                $specialProperties = [
                     'oa:hasSource' => true,
                     'rdf:type' => true,
                     'dcterms:format' => true,
@@ -1265,7 +1270,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 ];
                 /** @var \Annotate\Api\Representation\AnnotationTargetRepresentation $annotationBody */
                 foreach ($metadata['oa:hasTarget'] as $annotationTarget) {
-                    $metadata = $this->appendProperties($annotationTarget, $metadata, $skipProperties);
+                    $metadata = $this->appendProperties($annotationTarget, $metadata, $specialProperties);
                 }
             }
 
@@ -1299,19 +1304,21 @@ abstract class AbstractCartographyController extends AbstractActionController
      *
      * @param AbstractResourceEntityRepresentation $annotation
      * @param array $metadata
-     * @param array $skipProperties
+     * @param array $specialProperties
      * @return array
      */
     protected function appendProperties(
         AbstractResourceEntityRepresentation $resource,
         array $metadata,
-        array $skipProperties = [],
+        array $specialProperties = [],
         $valueResource = null
     ) {
         // TODO Metadata are already available: don't use values().
         foreach ($resource->values() as $term => $property) {
-            if (isset($skipProperties[$term])) {
-                if ($skipProperties[$term]) {
+            if (isset($specialProperties[$term])
+                && is_bool($specialProperties[$term])
+            ) {
+                if ($specialProperties[$term]) {
                     unset($metadata[$term]);
                 }
                 continue;
@@ -1319,6 +1326,9 @@ abstract class AbstractCartographyController extends AbstractActionController
             /** @var Omeka\Api\Representation\ValueRepresentation $value */
             foreach ($property['values'] as $value) switch ($value->type()) {
                 case 'resource':
+                    if (isset($specialProperties[$term]['resource'])) {
+                        $term = $specialProperties[$term]['resource'];
+                    }
                     $metadata[$term][] = $value->valueResource()->valueRepresentation();
                     break;
                 case 'uri':

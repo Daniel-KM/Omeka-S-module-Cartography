@@ -337,3 +337,23 @@ AND (value.uri = "" OR value.uri IS NULL);
 SQL;
     $connection->exec($sql);
 }
+
+if (version_compare($oldVersion, '3.0.10-beta', '<')) {
+    $useMyIsam = $this->requireMyIsamToSupportGeometry($serviceLocator);
+    $filepath = $useMyIsam
+        ? $this->modulePath() . '/data/install/schema-myisam.sql'
+        :  $this->modulePath() . '/data/install/schema.sql';
+    $this->execSqlFromFile($filepath);
+
+    // Index existing geometries.
+    $sql = <<<SQL
+INSERT INTO data_type_geometry (resource_id, property_id, value)
+SELECT resource_id, property_id, GeomFromText(value)
+FROM value
+WHERE type = "geometry"
+ORDER BY id ASC;
+SQL;
+    $result = $connection->exec($sql);
+    $messenger = new \Omeka\Mvc\Controller\Plugin\Messenger();
+    $messenger->addSuccess(sprintf('%d geometries were indexed in the new table "data_type_geometry".', $result)); // @translate
+}

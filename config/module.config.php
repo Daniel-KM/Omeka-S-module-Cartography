@@ -4,13 +4,13 @@ namespace Cartography;
 return [
     'entity_manager' => [
         'resource_discriminator_map' => [
-//             Entity\Geometry::class => Entity\Geometry::class,
+            Entity\DataTypeGeometry::class => Entity\DataTypeGeometry::class,
         ],
         'mapping_classes_paths' => [
-//             dirname(__DIR__) . '/src/Entity',
+            dirname(__DIR__) . '/src/Entity',
         ],
         'proxy_paths' => [
-//             dirname(__DIR__) . '/data/doctrine-proxies',
+            dirname(__DIR__) . '/data/doctrine-proxies',
         ],
     ],
     'data_types' => [

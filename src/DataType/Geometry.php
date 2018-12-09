@@ -1,6 +1,8 @@
 <?php
 namespace Cartography\DataType;
 
+use Cartography\PHP\Types\Geometry\Geometry as GenericGeometry;
+use CrEOF\Geo\WKT\Parser as GeoWktParser;
 use Omeka\Api\Adapter\AbstractEntityAdapter;
 use Omeka\Api\Representation\ValueRepresentation;
 use Omeka\DataType\AbstractDataType;
@@ -44,7 +46,13 @@ class Geometry extends AbstractDataType
 
     public function isValid(array $valueObject)
     {
-        return (bool) strlen(trim($valueObject['@value']));
+        try {
+            $geometry = new GeoWktParser($valueObject['@value']);
+            $geometry = $geometry->parse();
+        } catch (\Exception $e) {
+            return false;
+        }
+        return $geometry !== null;
     }
 
     public function hydrate(array $valueObject, Value $value, AbstractEntityAdapter $adapter)
@@ -60,15 +68,39 @@ class Geometry extends AbstractDataType
         return (string) $value->value();
     }
 
-    // public function toString(ValueRepresentation $value)
-    // {
-    //     return (string) $value->value();
-    // }
-
+    /**
+     * GeoJSON Specification (RFC 7946) is not used: it is not fully compliant
+     * with json-ld.
+     * @see https://github.com/json-ld/json-ld.org/issues/397
+     * @link https://tools.ietf.org/html/rfc7946
+     *
+     * {@inheritDoc}
+     * @see \Omeka\DataType\DataTypeInterface::getJsonLd()
+     */
     public function getJsonLd(ValueRepresentation $value)
     {
         return [
             '@value' => $value->value(),
+            '@type' => 'http://geovocab.org/geometry#asWKT',
         ];
+    }
+
+    /**
+     * Convert a string into a geometry representation.
+     *
+     * @param string $value Accept AbstractGeometry and geometry array too.
+     * @throws \InvalidArgumentException
+     * @return \CrEOF\Spatial\PHP\Types\AbstractGeometry
+     */
+    public function getGeometryFromValue($value)
+    {
+        if (empty($value)) {
+            throw new \InvalidArgumentException('Empty geometry.'); // @translate
+        }
+        try {
+            return (new GenericGeometry($value))->getGeometry();
+        } catch (\Exception $e) {
+            throw new \InvalidArgumentException('Invalid geometry.'); // @translate
+        }
     }
 }

@@ -7,8 +7,10 @@ require_once dirname(__DIR__) . '/Annotate/src/Module/ModuleResourcesTrait.php';
 
 use Annotate\Module\AbstractGenericModule;
 use Annotate\Module\ModuleResourcesTrait;
+use Doctrine\Common\Collections\Criteria;
 use Zend\EventManager\Event;
 use Zend\EventManager\SharedEventManagerInterface;
+use Zend\ModuleManager\ModuleManager;
 use Zend\Mvc\MvcEvent;
 use Zend\ServiceManager\ServiceLocatorInterface;
 
@@ -26,6 +28,18 @@ class Module extends AbstractGenericModule
 
     protected $dependency = 'Annotate';
 
+    public function init(ModuleManager $moduleManager)
+    {
+        // Load composer dependencies.
+        require_once __DIR__ . '/vendor/autoload.php';
+
+        // TODO It is possible to register each geometry separately (line, point…). Is it useful? Or a Omeka type is enough (geometry:point…)? Or a column in the table (no)?
+        \Doctrine\DBAL\Types\Type::addType(
+            'geometry',
+            \CrEOF\Spatial\DBAL\Types\GeometryType::class
+        );
+    }
+
     public function onBootstrap(MvcEvent $event)
     {
         parent::onBootstrap($event);
@@ -39,7 +53,21 @@ class Module extends AbstractGenericModule
 
     public function install(ServiceLocatorInterface $serviceLocator)
     {
-        parent::install($serviceLocator);
+        // Copy of the parent process in order to check the database version.
+        $useMyIsam = $this->requireMyIsamToSupportGeometry($serviceLocator);
+        $filepath = $useMyIsam
+            ? $this->modulePath() . '/data/install/schema-myisam.sql'
+            :  $this->modulePath() . '/data/install/schema.sql';
+
+        $this->setServiceLocator($serviceLocator);
+        $this->checkDependency();
+        $this->checkDependencies();
+        $this->execSqlFromFile($filepath);
+        $this->manageConfig('install');
+        $this->manageMainSettings('install');
+        $this->manageSiteSettings('install');
+        $this->manageUserSettings('install');
+
         $this->installResources();
     }
 
@@ -115,6 +143,21 @@ class Module extends AbstractGenericModule
                 $controller,
                 'view.edit.after',
                 [$this, 'prepareResourceForm']
+            );
+        }
+        $adapters = [
+            \Omeka\Api\Adapter\ItemAdapter::class,
+            \Omeka\Api\Adapter\ItemSetAdapter::class,
+            \Omeka\Api\Adapter\MediaAdapter::class,
+            \Annotate\Api\Adapter\AnnotationAdapter::class,
+            \Annotate\Api\Adapter\AnnotationBodyAdapter::class,
+            \Annotate\Api\Adapter\AnnotationTargetAdapter::class,
+        ];
+        foreach ($adapters as $adapter) {
+            $sharedEventManager->attach(
+                $adapter,
+                'api.hydrate.post',
+                [$this, 'saveGeometryData']
             );
         }
 
@@ -325,6 +368,99 @@ class Module extends AbstractGenericModule
         $headScript->appendFile($view->assetUrl('js/cartography-geometry-datatype.js', 'Cartography'));
     }
 
+    /**
+     * Save geometric data into the geometry table.
+     *
+     * This clears all existing geometries and (re)saves them during create and
+     * update operations for a resource (item, item set, media). We do this as
+     * an easy way to ensure that the geometries in the geometry table are in
+     * sync with the geometries in the value table.
+     *
+     * @see \NumericDataTypes\Module::saveNumericData()
+     *
+     * @param Event $event
+     */
+    public function saveGeometryData(Event $event)
+    {
+        $entity = $event->getParam('entity');
+        if (!$entity instanceof \Omeka\Entity\Resource) {
+            // This is not a resource.
+            return;
+        }
+
+        $services = $this->getServiceLocator();
+        $dataTypeName = 'geometry';
+        /** @var \Cartography\DataType\Geometry $dataType */
+        $dataType = $services->get('Omeka\DataTypeManager')->get($dataTypeName);
+
+        $entityValues = $entity->getValues();
+        $criteria = Criteria::create()->where(Criteria::expr()->eq('type', $dataTypeName));
+        $matchingValues = $entityValues->matching($criteria);
+        // This resource has no data values of this type.
+        if (!count($matchingValues)) {
+            return;
+        }
+
+        $entityManager = $services->get('Omeka\EntityManager');
+        $dataTypeClass = \Cartography\Entity\DataTypeGeometry::class;
+
+        // TODO Remove this persist, that is used only when a geometry is updated on the map.
+        // Persist is required for annotation, since there is no cascade persist
+        // between annotation and values.
+        $entityManager->persist($entity);
+
+        /** @var \Cartography\Entity\DataTypeGeometry[] $existingDataValues */
+        $existingDataValues = [];
+        if ($entity->getId()) {
+            $dql = sprintf('SELECT n FROM %s n WHERE n.resource = :resource', $dataTypeClass);
+            $query = $entityManager->createQuery($dql);
+            $query->setParameter('resource', $entity);
+            $existingDataValues = $query->getResult();
+        }
+
+        foreach ($matchingValues as $value) {
+            // Avoid ID churn by reusing data rows.
+            $dataValue = current($existingDataValues);
+            // No more number rows to reuse. Create a new one.
+            if ($dataValue === false) {
+                $dataValue = new $dataTypeClass;
+                $entityManager->persist($dataValue);
+            } else {
+                // Null out data values as we reuse them. Note that existing
+                // data values are already managed and will update during flush.
+                $existingDataValues[key($existingDataValues)] = null;
+                next($existingDataValues);
+            }
+            $dataValue->setResource($entity);
+            $dataValue->setProperty($value->getProperty());
+            $geometry = $dataType->getGeometryFromValue($value->getValue());
+            $dataValue->setValue($geometry);
+        }
+
+        // Remove any data values that weren't reused.
+        foreach ($existingDataValues as $existingDataValue) {
+            if ($existingDataValue !== null) {
+                $entityManager->remove($existingDataValue);
+            }
+        }
+    }
+
+    /**
+     * Get all data types added by this module.
+     *
+     * @return \Omeka\DataType\AbstractDataType[]
+     */
+    public function getGeometryDataTypes()
+    {
+        $dataTypes = $this->getConfig()['data_types']['invokables'];
+        $list = $this->getConfig()['data_types']['invokables'];
+        $geometryDataTypes = [];
+        foreach (array_keys($list) as $dataType) {
+            $geometryDataTypes[$dataType] = $dataTypes->get($dataType);
+        }
+        return $geometryDataTypes;
+    }
+
     protected function installResources()
     {
         $services = $this->getServiceLocator();
@@ -348,5 +484,46 @@ class Module extends AbstractGenericModule
             $resourceTemplate = $this->createResourceTemplate($filepath);
             $settings->set($key, [$resourceTemplate->id()]);
         }
+    }
+
+    /**
+     * Check if the Omeka database requires myIsam to support Geometry.
+     *
+     * @see readme.md.
+     *
+     * @param ServiceLocatorInterface $serviceLocator
+     * @return bool Return false by default: if a specific database is used,
+     * it is presumably geometry compliant.
+     */
+    protected function requireMyIsamToSupportGeometry(ServiceLocatorInterface $services)
+    {
+        /** @var \Doctrine\DBAL\Connection $connection */
+        $connection = $services->get('Omeka\Connection');
+
+        $sql = 'SHOW VARIABLES LIKE "version";';
+        $stmt = $connection->query($sql);
+        $version= $stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
+        $version = reset($version);
+
+        $isMySql = stripos($version, 'mysql') !== false;
+        if ($isMySql) {
+            return version_compare($version, '5.7.5', '<');
+        }
+
+        $isMariaDb = stripos($version, 'mariadb') !== false;
+        if ($isMariaDb) {
+            return version_compare($version, '10.2.2', '<');
+        }
+
+        $sql = 'SHOW VARIABLES LIKE "innodb_version";';
+        $stmt = $connection->query($sql);
+        $version= $stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
+        $version = reset($version);
+        $isInnoDb = !empty($version);
+        if ($isInnoDb) {
+            return version_compare($version, '5.7.14', '<');
+        }
+
+        return false;
     }
 }

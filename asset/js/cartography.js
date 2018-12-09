@@ -1,16 +1,207 @@
 /**
  * @Description: To extend the style-editor, put annotation dynamic data form
- * inside the side bar.
- * This part is for rendering different types of elements like select, input,
- * textarea ...links, input-select.
- * To make a new type of element available, add a new service like
- * createInputFieldService()
- */
+ *               inside the side bar.
+ *               This part is for rendering different types of elements like:
+ *               select, input, textarea ...links, input-select?
+ *               To make a new type of element available, add a new service like createInputFieldService()
+ * @Author: Tom, cancms@163.com
+ *
+ * */
 // Field services
 (function (jQuery, L) {
+
+
+    function wrapObj2Array(obj) {
+        var arr = [];
+        if (! $.isArray(obj)) {
+            if (typeof(obj) === 'object' && (!$.isEmptyObject(obj))) {
+                arr = [obj]
+            } else {
+                arr = [];
+            }
+        }
+        return arr;
+    }
+
+    function createElementDescriptiveHtmlService() {
+        var renderService = {
+            renderPlainHtml: renderPlainHtml,
+        };
+        var _renderData = {
+            leafletLayer: {},
+            propertyTplData: {},
+            tplDataService: {}
+
+        };
+        var $ = jQuery;
+
+
+
+
+        function setElementRenderData(propertyTplData, leafletLayer, tplDataService) {
+            _renderData.propertyTplData = propertyTplData;
+            _renderData.leafletLayer = leafletLayer;
+            _renderData.tplDataService = tplDataService;
+        }
+        // the index of the metadata value
+        function getValueAtIndex( metaKey = null, index = 'auto', propertyTplData = null) {
+            propertyTplData = propertyTplData || _renderData.propertyTplData;
+
+            var value = _renderData.tplDataService.getValueAtIndex(
+                _renderData.leafletLayer,
+                metaKey,
+                index,
+                propertyTplData
+            );
+
+            return value;
+        }
+
+
+        function renderPlainHtml(propertyTplData, leafletLayer, tplDataService) {
+            setElementRenderData(propertyTplData, leafletLayer, tplDataService);
+
+            var htmlRs = '';
+            switch ( propertyTplData.type ) {
+                case 'text':
+                case 'textarea':
+                case 'select':
+                    htmlRs = inputFieldRenderHtml();
+                    break;
+                case 'resource':
+                    htmlRs = resourceLinkRenderHtml();
+                    break;
+                case 'valuesuggest':
+                    htmlRs = valueSuggestRenderHtml();
+                    break;
+                default:
+                    break;
+            }
+            return htmlRs;
+        }
+
+
+        function isEmptyValue(value) {
+            var rs = true;
+            // if (value === '' || value === undefined || value === false) {
+            if ( value ) {
+                rs = false;
+            } else if (value === 0) {
+                rs = false;
+            }
+            return rs;
+        }
+
+        function inputFieldRenderHtml() {
+
+            var value = getValueAtIndex();
+            var label = _renderData.propertyTplData['o:label'];
+
+            var html = '';
+            if (!isEmptyValue(value)) {
+                html = `<div class="_annotation_property_plain_html">
+                    <span>${label}: </span> ${value}
+                </div>`;
+            }
+            return html;
+        }
+
+        function resourceLinkRenderHtmlBAK0() {
+
+            var annotationId = getValueAtIndex('o:id', null);
+            if (! annotationId) {
+                return '';
+            }
+            var linkUrl = basePath + baseUrl + '/annotation/' + annotationId;
+            var html = `<div class="_annotation_property_plain_html annotation-metadata ">
+                    <div class="annotation-caption">
+                        <a class="resource-link" href="${linkUrl}">
+                            <span class="resource-name">[#${annotationId}]</span>
+                        </a>
+                        <ul class="actions">
+                            <li>
+                                <span><a class="o-icon-external" href="${linkUrl}" 
+                                        target="_blank" 
+                                        title="${Omeka.jsTranslate('Show annotation')}" 
+                                        aria-label="${Omeka.jsTranslate('Show annotation')}" 
+                                       ></a></span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>`;
+            return html;
+        }
+        function resourceLinkRenderHtml() {
+
+            var label = _renderData.propertyTplData['o:label'];
+            var listLinks = getValueAtIndex() || {};
+            listLinks = wrapObj2Array(listLinks);
+            var html = '';
+            if (!isEmptyValue(listLinks) && $.isArray(listLinks) && listLinks.length > 0) {
+                listLinks.map(function (valueObj) {
+                    var thumbnail = '';
+                    var title = '';
+
+                    if (valueObj['display_title'] ) {
+                        title = valueObj['display_title'];
+                    } else {
+                        title = Omeka.jsTranslate('[Untitled]');
+                    }
+
+                    if (valueObj['thumbnail_url']) {
+                        thumbnail = `<img src="${valueObj['thumbnail_url']}" title="${title}" alt="${title}">`;
+                    }
+
+                    html += `<div class=" value">
+                                <p class="resource-oa-linking">
+                                    <span class="o-title ${valueObj['value_resource_name']}-no" >
+                                        ${thumbnail} 
+                                        <a href="${valueObj['url']}" title="${title}"  
+                                            style="
+                                                display: inline-block;
+                                                width: 180px;
+                                                white-space: nowrap;
+                                                overflow: hidden !important;
+                                                text-overflow: ellipsis;
+                                        ">${title}</a>
+                                    </span>  
+                                </p>
+                            </div>
+                            `;
+                });
+
+                html = `<div class="_annotation_property_plain_html annotation-body-oa-linking">
+                       <span>${label}: </span>  ${html}
+                    </div>`;
+            }
+
+            return html;
+        }
+
+        function valueSuggestRenderHtml() {
+
+            var label = _renderData.propertyTplData['o:label'];
+            var value = getValueAtIndex() || {};
+
+            var html = '';
+            if (!isEmptyValue(value.value)) {
+                html = `<div class="_annotation_property_plain_html">
+                    <span>${label}: </span> ${value.value}
+                </div>`;
+            }
+
+            return html;
+        }
+
+        return renderService;
+    }
+
+
+
+
     function createElementRenderService(styleFormOptions = {}) {
         var renderService = {
-            render: render
+            render: render,
         };
 
         var $ = jQuery;
@@ -19,6 +210,7 @@
             propertyTplData: {},
             tplDataService: {},
             styleFormOptions: styleFormOptions
+
         };
 
         initialize();
@@ -53,23 +245,22 @@
             var propertyNode = wrapper.find('._annotate_property');
             propertyData = propertyData || {};
 
-            // Fill label.
+            // fill label
             var labelNode = wrapper.find('.leaflet-styleeditor-label');
             if (labelNode) {
                 labelNode.html(propertyData['o:label'] + ': ');
             }
         }
-
-        function getType() {
+        function getType(propertyTplData = null) {
+            propertyTplData = propertyTplData || _renderData.propertyTplData;
             var rs = null;
-            var type = _renderData.propertyTplData['type'];
-            var allowTypes = ['text', 'textarea', 'select', 'resource'];
+            var type = propertyTplData['type'];
+            var allowTypes = ['text', 'textarea', 'select', 'resource', 'valuesuggest'];
             if (type && ($.inArray(type, allowTypes) > -1)) {
                 rs = type;
             }
             return rs;
         }
-
         function eventName(event) {
             return getEditorOption('styleEditorEventPrefix') + event;
         }
@@ -84,11 +275,14 @@
             return rs;
         }
 
-        function render(propertyTplData, propDataModel, tplDataService) {
+        function setElementRenderData(propertyTplData, propDataModel, tplDataService) {
             _renderData.propertyTplData = propertyTplData;
             _renderData.propDataModel = propDataModel;
             _renderData.tplDataService = tplDataService;
+        }
 
+        function render(propertyTplData, propDataModel, tplDataService) {
+            setElementRenderData(propertyTplData, propDataModel, tplDataService);
             var element = null;
             switch (getType()) {
                 case 'text':
@@ -99,9 +293,15 @@
                 case 'resource':
                     element = createResourceLinksService().createFieldElement();
                     break;
+                case 'valuesuggest':
+                    element = createValueSuggestService().createFieldElement();
+                    break;
             }
             return element;
         }
+
+
+
 
         function appendDestroyEventsFn(element, eventNames = []) {
             element.annotateElementDestroyEvents = function () {
@@ -142,7 +342,8 @@
                 });
             }
 
-            // Bind events.
+
+            // bind events
             function initElementEvents(propertyNode, propertyData) {
                 propertyNode.change(function () {
                     _data.propDataModel.doOnPropertyChange({
@@ -179,6 +380,8 @@
                 }
             }
 
+
+
             function createFieldElement() {
                 var element = '<input class="_annotate_property leaflet-styleeditor-input " />';
                 switch (getType()) {
@@ -196,13 +399,17 @@
                 return wrapperElement;
             }
 
+
+
             return service;
         }
 
+
         function createResourceLinksService () {
             var resourceLinksService = {
-                createFieldElement: createFieldElement
+                createFieldElement: createFieldElement,
             };
+
 
             var listLinks = [];
 
@@ -214,6 +421,7 @@
                 }
             };
 
+
             initialize();
             function initialize() {
                 listLinks = _renderData.propDataModel.getPropertyData(
@@ -221,12 +429,22 @@
                     _renderData.propertyTplData._jsFnGetUniqueKey()
                 ) || [];
 
+                // if (! $.isArray(listLinks)) {
+                //     if (typeof(listLinks) === 'object') {
+                //         listLinks = [listLinks]
+                //     } else {
+                //         listLinks = [];
+                //     }
+                // }
+                listLinks = wrapObj2Array(listLinks);
+
                 // While opening the right sidebar,
                 // the editor is expecting a return of the new link item
                 getEditorOption('map').on(eventName(_data.events.onAddNewResourceItem), function (newItem) {
                     doOnNewLinkItemReturn(newItem);
                 });
             }
+
 
             function removeLinkItem(resourceId) {
                 listLinks = listLinks.filter(function (item) {
@@ -246,6 +464,7 @@
                 });
             }
 
+
             function onDeleteClick(resourceId) {
                 removeLinkItem(resourceId);
                 reRenderLinkItems();
@@ -260,6 +479,8 @@
             }
 
             function createFieldElement() {
+
+
                 var linkItemsDiv = `<div class="leaflet-styleeditor-oalinking value selecting-resource _oaLinking" 
                                             ></div>`;
 
@@ -275,8 +496,10 @@
                 // mark the list div
                 _data.linkItemsDiv = wrapperElement.find('._oaLinking');
 
+
                 // list the items
                 reRenderLinkItems();
+
 
                 appendDestroyEventsFn(wrapperElement, [_data.events.onAddNewResourceItem]);
                 return wrapperElement;
@@ -291,7 +514,11 @@
 
                 var itemElements = createLinkItemElements( );
                 _data.linkItemsDiv.append(itemElements);
+
             }
+
+
+
 
             function createLinkItemElements() {
                 var itemTplFn = function (itemData) {
@@ -317,7 +544,7 @@
                            </ul>
                       </div>`;
                     var element = createJqElement(itemTpl);
-                    // Bind action.
+                    // bind action
                     element.find('.actions .remove-value').click(function () {
                         onDeleteClick(itemData.value_resource_id);
                     });
@@ -329,6 +556,9 @@
                 });
                 return itemElements;
             }
+
+
+
 
             function addLinkButton() {
                 var sideBarContentUrl = basePath + '/admin/item/sidebar-select';
@@ -343,8 +573,11 @@
                     _openOmekaSidebar ( );
                 });
 
+
                 return btnElement;
+
             }
+
 
             function _openOmekaSidebar ( ) {
                 // There may be multiple style editors in tabs, so use the map of the current tab.
@@ -358,31 +591,197 @@
                 // this.options.styleEditorOptions.util.fireEvent('changed', this.options.styleEditorOptions.util.getCurrentElement())
             }
 
+
+
+
+
+
+
+
+
             return resourceLinksService;
+
+        }
+
+        function createValueSuggestService () {
+            var elementService = {
+                createFieldElement: createFieldElement,
+            };
+
+
+            var _data = {
+                // suggestionLabelKey: 'label',
+                suggestionLabelKey: 'value',
+            };
+
+            function fillPropertyData(element) {
+                var propertyField = element.find('._annotate_property');
+                if (propertyField) {
+                    var initValue = _renderData.propDataModel.getPropertyData(
+                        _renderData.propertyTplData['o:term'],
+                        _renderData.propertyTplData._jsFnGetUniqueKey()
+                    );
+
+                    initValue = initValue || {};
+                    propertyField.val(initValue[_data.suggestionLabelKey] || '');
+                }
+
+            }
+
+
+            // bind events
+            function doOnValueChange(propertyNode, suggestion) {
+                suggestion = suggestion || {};
+                suggestion.data = suggestion.data || {};
+
+                var newValue = {};
+                newValue[_data.suggestionLabelKey] = suggestion.value || '';
+                newValue['uri'] = suggestion.data.uri || '';
+
+                _renderData.propDataModel.doOnPropertyChange({
+                    newData: {
+                        key: _renderData.propertyTplData['o:term'],
+                        value: newValue,
+                    },
+                    jqDomElement: propertyNode,
+                    propertyTplData: _renderData.propertyTplData,
+                });
+            }
+
+            function initElement(wrapper, propertyData) {
+                if (!wrapper) {
+                    return false;
+                }
+                var propertyNode = wrapper.find('._annotate_property');
+                propertyData = propertyData || {};
+
+                initElementLabel(wrapper, propertyData);
+
+                // set the value data from geometry item
+                fillPropertyData(wrapper);
+
+                // bind the change event, input, select
+                if (propertyNode) {
+                    // styleInputElement(propertyNode);
+                    configAutoComplete(propertyNode);
+                }
+            }
+
+
+
+            function configAutoComplete(propertyNode) {
+                if (! propertyNode) {
+                    return false;
+                }
+                propertyNode.autocomplete({
+                    serviceUrl: _renderData.propertyTplData.valuesuggest.service_url,
+                    params: {query: propertyNode.val()},
+                    deferRequestBy: 200,
+                    minChars: 3,
+                    // Must disable preventBadQueries or autocomplete will not fire on
+                    // queries that share a root that previously returned no results.
+                    preventBadQueries: false,
+                    // Must disable triggerSelectOnValidInput or onSelect will be
+                    // triggered whether the user wants it or not. The user must
+                    // explicitly select the suggestion.
+                    triggerSelectOnValidInput: false,
+                    onSearchStart: function() {
+                        // $(this).css('cursor', 'progress');
+                    },
+                    onSearchComplete: function(query, suggestions) {
+                        // $(this).css('cursor', 'default');
+                    },
+                    onSearchError: function (query, jqXHR, textStatus, errorThrown) {
+                        // Silently handle error.
+                        // $(this).css('cursor', 'default');
+                    },
+                    // Prepare the value when the user selects a suggestion.
+                    onSelect: function (suggestion) {
+                        // Set value as URI type
+                        propertyNode.val(suggestion.value);
+                        doOnValueChange(propertyNode, suggestion);
+                    },
+                    // Prepare the suggestions prior to rendering them.
+                    beforeRender: function(container, suggestions) {
+                        // Add title attribute to each suggestion for disambiguation.
+                        container.children().each(function(index) {
+                            $(this).attr('title', suggestions[index].data.info);
+                        });
+                    }
+                });
+            }
+
+
+
+
+
+            function createFieldElement() {
+                var element = '<input class="_annotate_property leaflet-styleeditor-input " />';
+                var wrapperElement = wrapper(element);
+                initElement(wrapperElement, _renderData.propertyTplData);
+                appendDestroyEventsFn(wrapperElement, []);
+                return wrapperElement;
+            }
+
+
+
+            return elementService;
+
         }
 
         return renderService;
     }
 
+
+
     L.StyleEditorAnnotation = L.StyleEditorAnnotation || {};
     L.StyleEditorAnnotation.createElementRenderService = createElementRenderService;
+    L.StyleEditorAnnotation.createElementDescriptiveHtmlService = createElementDescriptiveHtmlService;
+
+
+
 
 }(jQuery, L));
 
+
+
+
+
+
+
 /**
  * @Description: To extend the style-editor, put annotation dynamic data form
- * inside the side bar.
- */
-// Form services.
+ *               inside the side bar
+ * @Author: Tom, cancms@163.com
+ *
+ * Sample template source:
+ * https://sempiternelia.com/cartography2/modules/Cartography/data/resource-templates/cartography_describe_templates.json
+ * https://sempiternelia.com/cartography2/admin/cartography/81/geometries?mediaId=82
+ * https://sempiternelia.com/cartography2/modules/Cartography/data/sample_geometries.json
+ *
+ *
+ * https://sempiternelia.com/cartography2/modules/Cartography/data/resource-templates/cartography_describe_templates.json
+ * https://sempiternelia.com/cartography2/modules/Cartography/data/resource-templates/cartography_locate_templates.json
+ *
+ *
+ *
+ *
+ * */
+// Form services
 (function (jQuery, L) {
 
     function createAnnotateFormService() {
         var formService = {
-            renderView: renderView
+            renderView: renderView,
+            renderDescriptiveHtml: renderDescriptiveHtml,
+            isEmptyValue: isEmptyValue,
         };
+
 
         function createPropertyTemplateDataService(styleFormOptions = {}) {
             var service = {
+                // getLayerMetaData: getLayerMetaData,
+                getValueAtIndex: getValueAtIndex,
                 setJsonData: setJsonData,
                 getJsonData: getJsonData,
                 getTypeData: getTypeData,
@@ -407,10 +806,11 @@
             }
 
             function getJsonData() {
+
                 return _data.jsonData;
             }
 
-            // Re initialize the data.
+            // re initialize the data
             function setJsonData(templateJson) {
                 styleFormOptions.styleEditorOptions.annotationFormData = templateJson;
                 _data.jsonData = templateJson;
@@ -420,6 +820,7 @@
             function hasTypes() {
                 return (_data.jsonData.length > 0);
             }
+
 
             function getTypeData(typeId) {
                 var rs = _data.jsonData.find(function (item) {
@@ -442,22 +843,48 @@
                 return id;
             }
 
+
             function initTemplateData() {
-                _data.jsonData  = _data.jsonData || {};
+                _data.jsonData = _data.jsonData || [];
                 _data.jsonData.map(function (item) {
-                    if (! item) {
+                    if (!item) {
                         return false;
                     }
 
                     _initTemplateTypeData(item);
-
-                    item['o:resource_template_property'] = item['o:resource_template_property'] || [];
-                    _initTemplatePropertiesData( item['o:resource_template_property']);
+                    _indexSameProperties(item['o:resource_template_property']);
+                    // item['o:resource_template_property'] = item['o:resource_template_property'] || [];
+                    // _initTemplatePropertiesData( item['o:resource_template_property']);
 
                 });
             }
 
-            function _initTemplateTypeData (typeData) {
+            function _indexSameProperties(propertiesData) {
+
+                var setPropertyIndex = function (propertyItem, index) {
+                    if (!propertyItem) {
+                        return false;
+                    }
+                    // add the _jsUniqueKey
+                    propertyItem._jsFnGetUniqueKey = function () {
+                        return index;
+                    };
+                    propertyItem._jsFnIsArrayProperty = function () {
+                        return true;
+                    };
+                };
+                propertiesData = propertiesData || [];
+                groupBy(propertiesData, function (item2) {
+                    return item2['o:term'];
+                }).map(function (arrGroupedItems) {
+                    arrGroupedItems.map(function (propertyItem, index) {
+                        setPropertyIndex(propertyItem, index);
+                    });
+                });
+            }
+
+
+            function _initTemplateTypeData(typeData) {
                 typeData = typeData || {};
                 typeData['o:id'] = typeData['o:id'] || _data.sourceTypeDefaultId;
                 typeData['o:resource_template_property'] = typeData['o:resource_template_property'] || [];
@@ -465,20 +892,22 @@
                 _data.allTypeIds.push(typeData['o:id']);
             }
 
-            function _initTemplatePropertiesData (propertiesData) {
+
+            function _initTemplatePropertiesData(propertiesData) {
                 propertiesData.map(function (propertyItem, idx) {
-                    if (! propertyItem) {
+                    if (!propertyItem) {
                         return false;
                     }
-                    // Add the _jsUniqueKey.
+                    // add the _jsUniqueKey
                     propertyItem._jsFnGetUniqueKey = function (onlyIndex = true) {
-                        return  idx;
+                        return idx;
                     };
                     propertyItem._jsFnIsArrayProperty = function () {
-                        return  true;
+                        return true;
                     };
                 });
             }
+
 
             function hasTypeId(typeId) {
                 return ($.inArray(typeId, _data.allTypeIds) > -1);
@@ -494,8 +923,57 @@
                 return rs;
             }
 
+
+            function getLayerMetaData(leafletLayer, metaKey, dataIndex = 0) {
+                leafletLayer = leafletLayer || {};
+                var rs = '';
+                try {
+                    rs = leafletLayer.options.metadata[metaKey];
+                    if (dataIndex !== null && rs && $.isArray(rs)) {
+                        rs = rs[dataIndex];
+                    }
+                }catch (e) {
+                    rs = '';
+                }
+                return rs;
+            }
+
+            // the index of the metadata value
+            function getValueIndex(propertyTplData) {
+                propertyTplData = propertyTplData || {};
+                var valueIndex = 0;
+                if (propertyTplData._jsFnIsArrayProperty && propertyTplData._jsFnIsArrayProperty()
+                    && propertyTplData._jsFnGetUniqueKey
+                    && $.isFunction(propertyTplData._jsFnGetUniqueKey)
+                ) {
+                    valueIndex = propertyTplData._jsFnGetUniqueKey() || 0;
+                }
+                return valueIndex;
+            }
+            function getValueAtIndex(leafletLayer, metaKey = null, index = 'auto', propertyTplData = null) {
+                propertyTplData = propertyTplData || {};
+
+                var valueIndex = 0;
+                if (index === 'auto') {
+                    valueIndex = getValueIndex(propertyTplData);
+                } else {
+                    valueIndex = null;
+                }
+                metaKey = metaKey || propertyTplData['o:term'];
+
+                var value = getLayerMetaData(
+                    leafletLayer,
+                    metaKey,
+                    valueIndex
+                );
+
+                return value;
+            }
+
+
             return service;
         }
+
 
         function createPropertiesDataModel(styleFormOptions = {}) {
             var service = {
@@ -550,6 +1028,7 @@
                 return layer;
             }
 
+
             function unifyKeyTerm(key) {
                 // use the rdf key from template
 
@@ -560,6 +1039,7 @@
 
                 return key;
             }
+
 
             function getUnifiedLayerOptionsData() {
                 var data = {};
@@ -580,9 +1060,10 @@
                 }
 
                 return data;
+
             }
 
-            // The Leaflet Layer object.
+            // the Leaflet Layer object
             function layerOptionChange(propertyKey, newValue, propertyTplData = null) {
 
                 var layer = currentLayer();
@@ -592,9 +1073,9 @@
                         // ONLY operates on the options.metadata
                         layer.options.metadata = layer.options.metadata || {};
 
-                        if ( propertyTplData && propertyTplData._jsFnIsArrayProperty && propertyTplData._jsFnIsArrayProperty()   ) {
+                        if (propertyTplData && propertyTplData._jsFnIsArrayProperty && propertyTplData._jsFnIsArrayProperty()) {
                             var uniqueKey = propertyTplData._jsFnGetUniqueKey() || 0;
-                            layer.options.metadata[propertyKey] = layer.options.metadata[propertyKey] || {};
+                            layer.options.metadata[propertyKey] = layer.options.metadata[propertyKey] || [];
                             layer.options.metadata[propertyKey][uniqueKey] = newValue;
 
                         } else {
@@ -602,14 +1083,15 @@
                         }
 
                     }
-                    // Fire event for changed layer.
+                    // fire event for changed layer
                     getEditorOption('util').fireChangeEvent(layer)
                 }
             }
 
+
             function getPropertyData(propertyName, index = null) {
                 var rs = _data.unifiedLayerOptionsData[unifyKeyTerm(propertyName)];
-                // The property data is array stored.
+                // the property data is array stored
                 // options.metadata.first_name = ['a', 'b', 'c']
                 if (index !== null && rs) {
                     rs = rs[index] || '';
@@ -617,7 +1099,7 @@
                 return rs;
             }
 
-            function setPropertyData(key, value, propertyTplData = null,layerOptionsMetaDataChange = true) {
+            function setPropertyData(key, value, propertyTplData = null, layerOptionsMetaDataChange = true) {
                 if (key !== null) {
                     _data.unifiedLayerOptionsData[unifyKeyTerm(key)] = value;
                     if (layerOptionsMetaDataChange === true) {
@@ -628,6 +1110,7 @@
                 }
                 return service;
             }
+
 
             function getSourceTypeId() {
                 var propertyKey = _data.formTypeIdString;
@@ -641,13 +1124,16 @@
                 return service;
             }
 
+
             function doOnPropertyChange(data) {
-                // Set.
+                // set
                 var propertyKey = data.newData.key;
                 var newValue = data.newData.value;
                 var propertyTplData = data.propertyTplData;
                 setPropertyData(propertyKey, newValue, propertyTplData);
+
             }
+
 
             return service;
         }
@@ -659,19 +1145,22 @@
             var $ = jQuery;
             var _data = {
                 styleFormOptions: {},
-                // the json template data
-                tplDataService: {},
-                // the data from geoItem
-                propDataModel: {},
-                // the element render service
-                elementRenderService: {},
-                // the holder for the dynamic form
-                placeHolderDiv: null,
+
+                tplDataService: {},  // the json template data
+                propDataModel: {},  // the data from geoItem
+                elementRenderService: {},  // the element render service
+
+
+                placeHolderDiv: null, // the holder for the dynamic form
+
                 // the dynamic form wrapper div element, a jq object
                 createdFormDiv: null,
+
                 // the property element, jq object
                 createdPropertyElements: [],
+
             };
+
 
             initialize();
 
@@ -684,6 +1173,7 @@
                 _data.tplDataService = createPropertyTemplateDataService(styleFormOptions);
                 _data.elementRenderService = L.StyleEditorAnnotation.createElementRenderService(styleFormOptions);
 
+
                 // where to put the form
                 addPlaceHolderDiv();
 
@@ -693,7 +1183,7 @@
                 });
 
                 getEditorOption('map').on(eventName('afterTemplateJsonReLoaded'), function (data) {
-                    if (! (data && data.templateJsonData) ) {
+                    if (!(data && data.templateJsonData)) {
                         return false;
                     }
                     _data.tplDataService.setJsonData(data.templateJsonData);
@@ -715,11 +1205,13 @@
                 return rs;
             }
 
+
             function addPlaceHolderDiv() {
                 var div = _createJqElement('<div></div>');
                 _data.styleFormOptions.styleEditorInterior.appendChild(_jqToDomElement(div));
                 _data.placeHolderDiv = div;
             }
+
 
             function formDivTemplate() {
                 var html = `<div>
@@ -727,6 +1219,7 @@
                     <label class="leaflet-styleeditor-label">Type:</label>
                     <select class="leaflet-styleeditor-select "></select>
                 </div>
+
             <hr>
             </div>`;
                 return html;
@@ -745,6 +1238,7 @@
                 _data.placeHolderDiv.append(_data.createdFormDiv);
             }
 
+
             function populateTypeSelect() {
                 var select = _data.createdFormDiv.find('.annotation-types select');
                 if (!select) {
@@ -759,21 +1253,31 @@
                 var layerOptionTypeId = _data.propDataModel.getSourceTypeId();
                 var initTypeId = _data.tplDataService.getTypeSelectInitValue(layerOptionTypeId);
                 select.val(initTypeId);
+                // if (initTypeId > 0) {
+                //     _data.propDataModel.setSourceTypeId(initTypeId);
+                // }
+                _data.propDataModel.setSourceTypeId(initTypeId);
 
                 // on select change
                 select.change(function () {
                     var typeId = parseInt($(this).val());
+                    // if (typeId > 0) {
+                    //     _data.propDataModel.setSourceTypeId(typeId);
+                    // }
                     _data.propDataModel.setSourceTypeId(typeId);
+
                     createAnnotateProperties();
                 });
                 // default,
                 createAnnotateProperties();
+
             }
+
 
             function removeCreatedProperties() {
                 _data.createdPropertyElements.map(function (item) {
                     if (item) {
-                        if (item.annotateElementDestroyEvents && $.isFunction(item.annotateElementDestroyEvents) ) {
+                        if (item.annotateElementDestroyEvents && $.isFunction(item.annotateElementDestroyEvents)) {
                             item.annotateElementDestroyEvents();
                         }
                         item.remove();
@@ -786,7 +1290,7 @@
                 removeCreatedProperties();
                 var layerTypeId = _data.propDataModel.getSourceTypeId();
                 var typeId = layerTypeId;
-                if (! _data.tplDataService.hasTypeId(layerTypeId)) {
+                if (!_data.tplDataService.hasTypeId(layerTypeId)) {
                     typeId = _data.tplDataService.getFirstTypeId();
                 }
                 // var typeId = _data.propDataModel.getSourceTypeId() || _data.tplDataService.getFirstTypeId();
@@ -806,8 +1310,88 @@
 
             }
 
+
             return service;
         }
+
+
+
+
+
+        function renderDescriptiveHtml(layer, templateJson) {
+            templateJson = templateJson || [];
+            if ( ! (layer && (templateJson.length > 0)) ) {
+                return '';
+            }
+
+            var styleFormOptions = {
+                styleEditorOptions: {
+                    annotationFormData: templateJson
+                }
+            };
+
+            var tplDataService = createPropertyTemplateDataService(styleFormOptions);
+            var elementRenderService = L.StyleEditorAnnotation.createElementDescriptiveHtmlService();
+
+            var typeId = tplDataService.getValueAtIndex(layer, 'o:resource_template', null);
+
+            // 3. Display informations about the annotation.
+            var renderOwnerAndTime = function() {
+                var owner = tplDataService.getValueAtIndex(layer, 'o:owner', null);
+                var createdAt = tplDataService.getValueAtIndex(layer, 'o:created', null) || '';
+                var html = '';
+
+                var annotationId = tplDataService.getValueAtIndex(layer, 'o:id', null);
+                if (annotationId) {
+                    var linkUrl = basePath + baseUrl + '/annotation/' + annotationId;
+                    html += `<div class="_annotation_property_plain_html annotation-metadata ">
+                                <div class="annotation-caption">
+                                    <a class="resource-link" href="${linkUrl}">
+                                        <span class="resource-name">[#${annotationId}]</span>
+                                    </a>
+                                    <ul class="actions">
+                                        <li>
+                                            <span><a class="o-icon-external" href="${linkUrl}" 
+                                                    target="_blank" 
+                                                    title="${Omeka.jsTranslate('Show annotation')}" 
+                                                    aria-label="${Omeka.jsTranslate('Show annotation')}" 
+                                                   ></a></span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>`;
+                }
+
+                if (owner && owner.name) {
+                    html += `<div class="_annotation_property_plain_html">
+                        <div class="annotation-owner">${owner.name || ''}</div>
+                        <div class="annotation-created">${createdAt}</div>
+                    </div>`;
+                }
+                return html;
+            };
+
+            var elementsHtml = [];
+            $.each(tplDataService.getTypeResourceProperties(typeId), function (idx, propertyData) {
+                var jqPropertyHtml = elementRenderService.renderPlainHtml(
+                    propertyData,
+                    layer,
+                    tplDataService
+                );
+                if (jqPropertyHtml) {
+                    elementsHtml.push(jqPropertyHtml);
+                }
+            });
+
+            var ownerAndTimeHtml = renderOwnerAndTime();
+            if (ownerAndTimeHtml) {
+                elementsHtml.push(ownerAndTimeHtml);
+            }
+
+            return elementsHtml.join('\n');
+        }
+
+
 
         function _createJqElement(strHtml) {
             return $('<div/>').html(strHtml).contents();
@@ -820,6 +1404,33 @@
             }
             return rs;
         }
+        function isEmptyValue(value) {
+            var rs = true;
+            // if (value === '' || value === undefined || value === false) {
+            if ( value ) {
+                rs = false;
+            } else if (value === 0) {
+                rs = false;
+            }
+            return rs;
+        }
+
+        // var result = groupBy(list, function(item)
+        // {
+        //   return [item.lastname, item.age];
+        // });
+        function groupBy(array, fn) {
+            var groups = {};
+            array.forEach(function (o) {
+                var group = JSON.stringify(fn(o));
+                groups[group] = groups[group] || [];
+                groups[group].push(o);
+            });
+            return Object.keys(groups).map(function (group) {
+                return groups[group];
+            })
+        }
+
 
         return formService;
     }
@@ -827,7 +1438,14 @@
     L.StyleEditorAnnotation = L.StyleEditorAnnotation || {};
     L.StyleEditorAnnotation.createAnnotateFormService = createAnnotateFormService;
 
+
 }(jQuery, L));
+
+
+
+
+
+
 
 /*
  * Cartography annotate
@@ -953,8 +1571,10 @@ var displayGeometry = function(data) {
 
     // Prepare to set the content of the popup in all cases, not only description.
     options.onEachFeature = function(feature, layer) {
-        var popupContent = popupAnnotation(options);
-        layer.bindPopup(popupContent);
+        // var popupContent = popupAnnotation(options);
+        // layer.bindPopup(popupContent);
+
+        cartographyDataService.bindLayerPopup(layer);
 
         // To reserve the options from geoJson.
         layer.options = layer.options || {};
@@ -988,8 +1608,9 @@ var displayGeometry = function(data) {
     }
 
     // Set the content of the popup in all cases, not only description.
-    var popupContent = popupAnnotation(options);
-    layer.bindPopup(popupContent);
+    // var popupContent = popupAnnotation(options);
+    // layer.bindPopup(popupContent);
+    cartographyDataService.bindLayerPopup(layer);
 
     // Append the geometry to the map.
     addGeometry(layer, data['id'], this.drawnItems);
@@ -1092,7 +1713,6 @@ var editGeometry = function(layer) {
     } else {
         wkt = Terraformer.WKT.convert(geojson.geometry);
     }
-
     prepareSaveOptions(layer, layer.options);
 
     var url = basePath + baseUrl + '/cartography/annotate';
@@ -1172,7 +1792,7 @@ var popupAnnotation = function(options) {
     var html = '';
 
     // Set default values if missing in original data.
-    // TODO Check if to set default values is is still needed (creation).
+    // TODO Check if to set default values is still needed (creation).
     options['metadata'] = options['metadata'] || '';
     options['metadata']['o:created'] = options['metadata']['o:created'] || '';
     options['metadata']['o:modified'] = options['metadata']['o:modified'] || '';
@@ -1181,16 +1801,22 @@ var popupAnnotation = function(options) {
     options['metadata']['o:owner']['name'] = options['metadata']['o:owner']['name'] || '';
 
     var metadata = options['metadata'];
-    var content = options.popupContent || '';
-    var oaLinking = options.oaLinking || [];
     var annotationIdentifier = options.annotationIdentifier || null;
     var url = '';
 
-    oaLinking.forEach(function(valueObj, index) {
-
+    // 0. Display popup content? This is the popup content!
+    var content = options.popupContent || '';
     if (content.length) {
         html += '<div class="annotation-">' + content + '</div>';
     }
+
+    // TODO Use the resource template and/or a html file template.
+    // 1. Display property metadata.
+    // For each / if it is metadata from form template except oa:hasbody, append:
+    //  html += '<div class="annotation-cartography-uncertainty"><i>Uncertainty:</i> ' + options['cartography:uncertainty'] + '</div>';
+
+    // 2. Display resource links (oa:hasBody).
+    var oaLinking = metadata['oa:hasBody'] || [];
     if (oaLinking.length) {
         html += '<div class="annotation-body-oa-linking" >';
         // html += '<label>' + (oaLinking.length === 1 ? Omeka.jsTranslate('Related item') : Omeka.jsTranslate('Related items')) + '</label>';
@@ -1210,8 +1836,8 @@ var popupAnnotation = function(options) {
         });
         html += '</div>';
     }
-//    html += '<div class="annotation-target-cartography-uncertainty"><i>Uncertainty:</i> ' + options['cartographyUncertainty'] + '</div>';
 
+    // 3. Display informations about the annotation. 
     html += '<div class="annotation-metadata">';
     if (annotationIdentifier) {
         url = basePath + baseUrl + '/annotation/' + annotationIdentifier;
@@ -1377,30 +2003,6 @@ var setView = function() {
  */
 var annotateControl = function(map, drawnItems) {
 
-    var dynamicPropertiesUrl = basePath + '/admin/cartography/resource-templates';
-    var dynamicSection = window.location.hash.substr(1);
-    dynamicSection = dynamicSection.indexOf('?') == -1
-        ? dynamicSection
-        : dynamicSection.substr(0, dynamicSection.indexOf('?'));
-
-    // style-editor dynamic form
-    function styleEditorApplyDynamicForm() {
-        $.each({describe: 'describe-label', locate: 'locate-label'}, function (section, tabId) {
-            var tabElement = $('#' + tabId);
-            if (! tabElement) {
-                return false;
-            }
-            tabElement.click(function () {
-                $.ajax({ url: dynamicPropertiesUrl, data: {type: dynamicSection}}).done(function(data) {
-                    map.fireEvent('styleeditor:afterTemplateJsonReLoaded', {templateJsonData: data});
-                });
-            });
-        });
-        $.ajax({ url: dynamicPropertiesUrl, data: {type: dynamicSection}}).done(function(data) {
-            map.fireEvent('styleeditor:afterTemplateJsonReLoaded', {templateJsonData: data});
-        });
-    }
-
     var drawControlOptions = {
         draw: {
             polyline: true,
@@ -1443,21 +2045,17 @@ var annotateControl = function(map, drawnItems) {
     };
 
     if (userRights && userRights.edit !== false) {
-        // var styleEditor = L.control.styleEditor(styleEditorControlOptions);
-        // map.addControl(styleEditor);
 
+        cartographyDataService.setMap(map);
         // use the annotation dynamic form for style-editor
         styleEditorControlOptions = $.extend(styleEditorControlOptions, {
             useAnnotationDynamicForm: true,
             createAnnotateFormServiceFn: L.StyleEditorAnnotation.createAnnotateFormService,
-            annotationFormData: [],
+            annotationFormData: cartographyDataService.getAnnotationFormTemplateData() || [],
         });
 
         var styleEditor = L.control.styleEditor(styleEditorControlOptions);
         map.addControl(styleEditor);
-
-        styleEditorApplyDynamicForm();
-
     }
 
     // The permission control.
@@ -1705,6 +2303,179 @@ var initLocate = function() {
     }
 }
 
+/**
+ * Initialize the data for the geo-browse section.
+ */
+var initGeobrowse = function() {
+    var section = 'geobrowse';
+
+    // TODO Convert the fetch of wms layers into a callback.
+    // fetchWmsLayers(resourceId, {upper: 1, lower: 1});
+
+    var pasteControl = userRights.create;
+
+    // Initialize the map and set default view.
+    var map = L.map('annotate-' + section, {
+        pasteControl: pasteControl,
+    });
+    map.setView([20, 0], 2);
+    var mapMoved = false;
+
+    // TODO Create automatically the bounds from geometries.
+    var defaultBounds = null;
+    // defaultBounds = [southWest, northEast];
+
+    // Add layers and controls to the map.
+    if (typeof baseMaps === 'undefined') {
+        let baseMaps = {};
+    }
+    if (typeof baseMaps !== 'object' || $.isEmptyObject(baseMaps)) {
+        baseMaps = {
+            'Streets': L.tileLayer.provider('OpenStreetMap.Mapnik'),
+            'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'),
+            'Satellite': L.tileLayer.provider('Esri.WorldImagery'),
+            'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief'),
+        };
+    }
+
+    if (!wmsLayers.length) {
+        var layerControl = L.control.layers(baseMaps);
+        map.addControl(new L.Control.Layers(baseMaps));
+    } else {
+        // Adapted from mapping-block.js (module Mapping).
+        var noOverlayLayer = new L.GridLayer();
+        var groupedOverlays = {
+            'Overlays': {
+                // 'No overlay': noOverlayLayer,
+            },
+        };
+
+        // Set and prepare opacity control, if there is an overlay layer.
+        var openWmsLayer, openWmsLabel;
+        var opacityControl;
+        var handleOpacityControl = function(overlay, label) {
+            if (opacityControl) {
+                // Only one control at a time.
+                map.removeControl(opacityControl);
+                opacityControl = null;
+            }
+            if (overlay !== noOverlayLayer) {
+                // The "No overlay" overlay gets no control.
+                opacityControl =  new L.Control.Opacity(overlay, label);
+                map.addControl(opacityControl);
+            }
+        };
+
+        // Add grouped WMS overlay layers.
+        map.addLayer(noOverlayLayer);
+        wmsLayers.forEach(function(data, index) {
+            var wmsLabel = data.label.length ? data.label : (Omeka.jsTranslate('Layer') + ' ' + (index + 1));
+            // Leaflet requires the layers and the styles separated.
+            // Require a recent browser (@url https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams#Browser_compatibility#Browser_compatibility).
+            // TODO Add a check and pure js to bypass missing URL interface.
+            var url =  new URL(data.url);
+            var searchParams = url.searchParams;
+            var wmsLayers = '';
+            wmsLayers = searchParams.get('LAYERS') || searchParams.get('Layers') || searchParams.get('layers') || wmsLayers;
+            searchParams.delete('LAYERS'); searchParams.delete('Layers'); searchParams.delete('layers');
+            var wmsStyles = '';
+            wmsStyles = searchParams.get('STYLES') || searchParams.get('Styles') || searchParams.get('styles') || wmsStyles;
+            searchParams.delete('STYLES'); searchParams.delete('Styles'); searchParams.delete('styles');
+            url.search = searchParams;
+            var wmsUrl = url.toString();
+            if (wmsUrl.indexOf('?') === -1) {
+                wmsUrl += '?';
+            }
+            wmsLayer = L.tileLayer.wms(wmsUrl, {
+                layers: wmsLayers,
+                styles: wmsStyles,
+                format: 'image/png',
+                transparent: true,
+            });
+            // Open the first wms overlay by default.
+            if (index === 0) {
+                openWmsLayer = wmsLayer;
+                openWmsLabel = wmsLabel;
+            }
+            groupedOverlays['Overlays'][wmsLabel] = wmsLayer;
+        });
+        L.control.groupedLayers(baseMaps, groupedOverlays, {
+            // exclusiveGroups: ['Overlays'],
+        }).addTo(map);
+    }
+    map.addLayer(baseMaps['Satellite']);
+
+    // Geometries are displayed and edited on the drawnItems layer.
+    var drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    // TODO Fix and add the fit bound control with geometries, not markers.
+    // fetchGeometries(resourceId, {mediaId: 0}, drawnItems);
+
+    map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
+
+    var geoSearchControl = new window.GeoSearch.GeoSearchControl({
+        provider: new window.GeoSearch.OpenStreetMapProvider,
+        showMarker: false,
+        retainZoomLevel: true,
+    });
+    map.addControl(geoSearchControl);
+    map.addControl(new L.control.scale({'position': 'bottomleft', 'metric': true, 'imperial': false}));
+
+    if (userRights.create) {
+        annotateControl(map, drawnItems);
+    }
+
+
+    var drawControlOptions = {
+        draw: {
+            polyline: false,
+            polygon: false,
+            rectangle: true,
+            circle: true,
+            marker: false,
+            circlemarker: false,
+        },
+        edit: {
+            featureGroup: drawnItems,
+            edit: false,
+            remove: false,
+        }
+    };
+    var drawControl = new L.Control.Draw(drawControlOptions);
+    // Don't display the button "clear all".
+    L.EditToolbar.Delete.include({
+        removeAllLayers: false,
+    });
+    map.addControl(drawControl);
+
+
+    // Append the opacity control at the end of the toolbar for better ux.
+    if (typeof openWmsLayer !== 'undefined' && openWmsLayer) {
+        map.removeLayer(noOverlayLayer);
+        map.addLayer(openWmsLayer);
+        handleOpacityControl(openWmsLayer, openWmsLabel);
+
+        // Handle the overlay opacity control.
+        map.on('overlayadd', function(e) {
+            handleOpacityControl(e.layer, e.name);
+        });
+    }
+
+    setView();
+
+    // TODO Remove this event.
+    // Useless, only to get the media id in Describe.
+    map.on('baselayerchange', function(element){
+        currentMapElement = 'annotate-locate';
+    });
+
+    if (userRights.create) {
+        annotateGeometries(map, section, drawnItems);
+    }
+}
+
+
 /* Manage geometries. */
 
 /**
@@ -1780,11 +2551,15 @@ var annotateGeometries = function(map, section, drawnItems) {
         var dataBeforeEditor = {};
         catchEditEvents();
 
+        function styleEditorElementToMapLayer(element) {
+            return map._layers[element._leaflet_id];
+        }
         // Catch the events.
         function catchEditEvents() {
             map.on('styleeditor:changed', function(element) {
                 if (element) {
                     styleIsChanged = true;
+                    cartographyDataService.bindLayerPopup(styleEditorElementToMapLayer(element));
                 }
             });
 
@@ -1808,6 +2583,7 @@ var annotateGeometries = function(map, section, drawnItems) {
                 $.each(layers, function(id, layer) {
                     var options = layer.options || {};
                     dataBeforeEditor[id] = $.extend({}, options); // clone
+                    dataBeforeEditor[id].metadata = $.extend({}, (options.metadata  || {})); // clone
                 });
                 // console.log(dataBeforeEditor);
             });
@@ -1839,20 +2615,7 @@ var annotateGeometries = function(map, section, drawnItems) {
                     if (layer.options.annotationIdentifier === currentElementId) {
                         layer.options = $.extend(layer.options, dataBeforeEditor[id] || {});
 
-                        var popContent = context.popupAnnotation(layer.options);
-                        if (popContent) {
-                            // Set popup.
-                            if (layer.bindPopup) {
-                                // layer.bindPopup(layer.options.popupContent);
-                                layer.bindPopup(popContent);
-                            }
-                        } else {
-                            // Remove popup.
-                            if (layer.unbindPopup) {
-                                layer.unbindPopup();
-                            }
-                        }
-
+                        cartographyDataService.bindLayerPopup(layer);
                         if (layer.setStyle) {
                             layer.setStyle(layer.options);
                         }
@@ -2072,14 +2835,197 @@ var imageMediaService = createImageMediaService();
 // Disable the core resource-form.js bind for the sidebar selector.
 $(document).off('o:prepare-value');
 
+
+// data service
+var cartographyDataService = createCartographyDataService();
+
+
+
 if (cartographySections.indexOf('describe') > -1) {
-    initDescribe();
+    // initDescribe();
+    cartographyDataService.ajaxLoadDescribeLocateTemplateJson().then(function () {
+        initDescribe();
+    });
 }
 if (cartographySections.indexOf('locate') > -1) {
-    initLocate();
+    // initLocate();
+    cartographyDataService.ajaxLoadDescribeLocateTemplateJson().then(function () {
+        initLocate();
+    });
+}
+
+if (cartographySections.indexOf('geobrowse') > -1) {
+    // initLocate();
+//    cartographyDataService.ajaxLoadDescribeLocateTemplateJson().then(function () {
+        initGeobrowse();
+//    });
 }
 
 });
+
+
+
+
+// global data service, like annotation dynamic form template json
+
+
+function createCartographyDataService() {
+    var service = {
+        getAnnotationFormTemplateData: getAnnotationFormTemplateData,
+        ajaxLoadDescribeLocateTemplateJson: ajaxLoadDescribeLocateTemplateJson,
+        bindLayerPopup: bindLayerPopup,
+        setMap: setMap,
+    };
+    var _data = {
+        annotationTemplateJson: {
+            describe: [],
+            locate: [],
+        },
+        currentSection: '',
+        annotateFormService: L.StyleEditorAnnotation.createAnnotateFormService(),
+        currentTemplateData: [],
+        map: {}
+    };
+
+
+    initialize();
+
+    function initialize() {
+        setCurrentSection();
+        handleTabClick();
+    }
+
+
+    function setMap(map) {
+        _data.map = map;
+    }
+
+
+    function handleTabClick() {
+
+        $.each({describe: 'describe-label', locate: 'locate-label'}, function (section, tabId) {
+            var tabElement = $('#' + tabId);
+            if (! tabElement) {
+                return false;
+            }
+            tabElement.click(function () {
+                setCurrentSection(section);
+                setCurrentTemplateData(_data.annotationTemplateJson[section]);
+                if (_data.map && _data.map.fireEvent && $.isFunction(_data.map.fireEvent)) {
+                    _data.map.fireEvent('styleeditor:afterTemplateJsonReLoaded', {
+                        templateJsonData: _data.annotationTemplateJson[section]
+                    });
+                }
+
+            });
+        });
+    }
+
+
+    function validSection(section) {
+        var rs = true;
+        if (section !== 'describe' && section !== 'locate') {
+            rs = false;
+        }
+        return rs;
+    }
+
+    function setCurrentSection (section = null) {
+        if (section === null) {
+            section =  window.location.hash.substr(1) ;
+            section = section.indexOf('?') == -1
+                ? section
+                : section.substr(0, section.indexOf('?'));
+            if (! validSection(section)) {
+                section = 'describe';
+            }
+        }
+
+        if (validSection(section)) {
+            _data.currentSection = section;
+        }
+
+        return service;
+    }
+    function getCurrentSection (section = null) {
+        return _data.currentSection;
+    }
+
+    function getAnnotationFormTemplateData() {
+        return _data.currentTemplateData;
+    }
+    function getSectionTemplateData(section = null) {
+        section = section || getCurrentSection();
+        if (! validSection(section)) {
+            return [];
+        }
+        return _data.annotationTemplateJson[section];
+    }
+
+    function setCurrentTemplateData(jsonData) {
+        _data.currentTemplateData = jsonData;
+    }
+
+    function setAnnotationFormTemplateData(section, json) {
+        if (validSection(section) && json) {
+            _data.annotationTemplateJson[section] = json;
+        }
+        return service;
+    }
+
+
+    function ajaxLoadDescribeLocateTemplateJson() {
+        var requests = [];
+        var dynamicPropertiesUrl = basePath + '/admin/cartography/resource-templates';
+        ['describe', 'locate'].map(function (section) {
+
+            // test
+            // dynamicPropertiesUrl = `src/data/dy-form/${section}.json`;
+
+            requests.push($.ajax({ url: dynamicPropertiesUrl, data: {type: section}}).done(function(data) {
+                data = data || [];
+                setAnnotationFormTemplateData(section, data);
+            }));
+        });
+        // $.when.apply(undefined, requests).then(...)
+        // var promise1 = $.when.apply({}, requests);
+        // var rsPromise = $.when(promise1).then( function () {
+        var rsPromise = $.when.apply({}, requests).then( function () {
+            // set default current data
+            setCurrentTemplateData(getSectionTemplateData());
+        });
+        return rsPromise;
+    }
+
+
+    function bindLayerPopup(layer) {
+        if (!(layer instanceof L.Layer) ) {
+            return false;
+        }
+        var popContent = _data.annotateFormService.renderDescriptiveHtml(
+            layer, getAnnotationFormTemplateData()
+        );
+        if (popContent) {
+            // Set popup.
+            if (layer.getPopup()) {
+                layer.setPopupContent(popContent);
+            } else {
+                layer.bindPopup(popContent);
+            }
+
+        } else {
+            // Remove popup.
+            layer.unbindPopup();
+        }
+
+    }
+
+
+    return service;
+
+}
+
+
 
 /**
  * The currentMediaId is the image id used to manage multiple background.
@@ -2126,6 +3072,7 @@ function createImageMediaService() {
  * @description Handle the permission by events fired from Style-Editor and
  * Leaflet-Draw, in which new events are added to extend their abilities to
  * handle permission for each layer.
+ * @author Tom, cancms@163.com
  *
  * Handle user rights to create, edit, and delete items.
  *

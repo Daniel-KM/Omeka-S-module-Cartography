@@ -8,6 +8,7 @@ use Omeka\Stdlib\Message;
 use Zend\Http\Response;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\JsonModel;
+use Zend\View\Model\ViewModel;
 
 abstract class AbstractCartographyController extends AbstractActionController
 {
@@ -150,6 +151,31 @@ abstract class AbstractCartographyController extends AbstractActionController
         }
 
         return $resource;
+    }
+
+    public function browseAction()
+    {
+        $this->setBrowseDefaults('created');
+
+        $query = $this->params()->fromQuery();
+
+        // TODO Force wkt to simplify cartographic query.
+        // $query['property'][] = [
+        //     'property' => 'dcterms:format',
+        //     'type' => 'eq',
+        //     'text' => 'application/wkt',
+        // ];
+        // Added to filter bad formatted annotations.
+        $query['resource_class'] = 'oa:Annotation';
+
+        $response = $this->api()->search('annotations', $query);
+        $this->paginator($response->getTotalResults(), $this->params()->fromQuery('page'));
+
+        $view = new ViewModel();
+        $annotations = $response->getContent();
+        $view->setVariable('annotations', $annotations);
+        $view->setVariable('resources', $annotations);
+        return $view;
     }
 
     /**

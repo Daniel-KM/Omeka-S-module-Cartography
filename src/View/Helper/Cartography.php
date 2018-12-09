@@ -15,9 +15,11 @@ class Cartography extends AbstractHelper
      * display/annotate and public/admin. It should avoid to reload all the
      * headers in case of multiple blocks.
      *
-     * @param AbstractResourceEntityRepresentation $resource
+     * @param AbstractResourceEntityRepresentation|null $resource Null to
+     * geobrowse.
      * @param array $options Associative array of params:
-     * - type (string): string, "locate" (default) or "describe"
+     * - type (string): string, "locate" (default), "describe" or "geobrowse"
+     * (that is exclusive)
      * - annotate (bool): display the toolbar to create/edit/delete, if the user
      * has the rights (default: false).
      * Next params will be removed in a future release.
@@ -28,25 +30,42 @@ class Cartography extends AbstractHelper
      * @todo Simplify the load of headers and sections.
      * @return string The html string.
      */
-    public function __invoke(AbstractResourceEntityRepresentation $resource, array $options = [])
+    public function __invoke(AbstractResourceEntityRepresentation $resource = null, array $options = [])
     {
         $view = $this->getView();
 
-        $default = [
-            'type' => 'locate',
-            'annotate' => false,
-            'headers' => true,
-            'sections' => ['describe', 'locate'],
-        ];
-        $issetSections = isset($options['sections']);
-        $options = array_merge($default, $options);
-        if (!$issetSections) {
-            $options['sections'] = [$options['type']];
+        // Geobrowse is exclusive.
+        if (empty($resource)
+            || (isset($options['type']) && $options['type'] === 'geobrowse')
+            || (isset($options['sections']) && in_array('geobrowse' , $options['sections']))
+        ) {
+            $options = [
+                'type' => 'geobrowse',
+                'annotate' => false,
+                'headers' => true,
+                'sections' => ['geobrowse'],
+            ];
+        } else {
+            $default = [
+                'type' => 'locate',
+                'annotate' => false,
+                'headers' => true,
+                'sections' => ['describe', 'locate'],
+            ];
+            $issetSections = isset($options['sections']);
+            $options = array_merge($default, $options);
+            if (!$issetSections) {
+                $options['sections'] = [$options['type']];
+            }
         }
 
         $html = $options['headers'] ? $this->prepareHeaders($resource, $options) : '';
         unset($options['headers']);
         unset($options['sections']);
+
+        if (empty($resource)) {
+            return $options;
+        }
 
         $isPublic = (bool) $view->params()->fromRoute('__SITE__');
         $html .= $isPublic
@@ -62,7 +81,7 @@ class Cartography extends AbstractHelper
      * @param array $options
      * @return string
      */
-    protected function prepareHeaders(AbstractResourceEntityRepresentation $resource, array $options)
+    protected function prepareHeaders(AbstractResourceEntityRepresentation $resource = null, array $options)
     {
         $html = '';
 
@@ -72,6 +91,7 @@ class Cartography extends AbstractHelper
 
         // TODO Public annotation is not yet available: should manage the resource selector sidebar and rights.
         $annotate = $options['annotate'];
+        $geoBrowse = $options['type'] === 'geobrowse';
         $isPublic = (bool) $view->params()->fromRoute('__SITE__');
         $options['baseUrl'] = $isPublic
             ? '/s/' . $view->params()->fromRoute('site-slug')
@@ -90,6 +110,11 @@ class Cartography extends AbstractHelper
             // Edition via draw (used for creation, edit or delete).
             $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-draw/leaflet.draw.css', 'Cartography'));
             $headScript->appendFile($view->assetUrl('vendor/leaflet-draw/leaflet.draw.js', 'Cartography'));
+
+            // TODO Check if valuesuggest is installed.
+            $headLink->appendStylesheet($view->assetUrl('css/valuesuggest.css', 'ValueSuggest'));
+            $headScript->appendFile($view->assetUrl('js/jQuery-Autocomplete/1.2.26/jquery.autocomplete.min.js', 'ValueSuggest'));
+            $headScript->appendFile($view->assetUrl('js/valuesuggest.js', 'ValueSuggest'));
 
             if ($rights['create']) {
                 // Leaflet paste.
@@ -111,6 +136,12 @@ class Cartography extends AbstractHelper
                 // TODO Integrate the resource selector sidebar in public view (or inside the style editor, that will allow full screen linking too).
                 $html .= $view->partial('common/resource-select-sidebar');
             }
+        }
+
+        if ($geoBrowse) {
+            // Just to display a square or a circle.
+            $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-draw/leaflet.draw.css', 'Cartography'));
+            $headScript->appendFile($view->assetUrl('vendor/leaflet-draw/leaflet.draw.js', 'Cartography'));
         }
 
         // Leaflet terraformer.
@@ -162,7 +193,6 @@ class Cartography extends AbstractHelper
         }
 
         // More common headers.
-
         $headLink->appendStylesheet($view->assetUrl('css/cartography.css', 'Cartography'));
         $headScript->appendFile($view->assetUrl('js/cartography.js', 'Cartography'));
 
@@ -175,8 +205,11 @@ var Omeka = {};';
 
         $script .= 'var basePath = ' . json_encode($view->basePath(), 320) . ';
 var baseUrl = ' . json_encode($options['baseUrl'], 320) . ';
-var resourceId = ' . $resource->id() . ';
 var cartographySections = ' . json_encode($options['sections'], 320). ';';
+        if ($resource):
+            $script .= '
+var resourceId = ' . $resource->id() . ';';
+        endif;
 
         if ($annotate) {
             $customVocabs = [
@@ -199,8 +232,12 @@ var cartographySections = ' . json_encode($options['sections'], 320). ';';
             $user = $view->identity();
             $script .= '
 var userId = ' . ($user ? $user->getId() : 0) . ';
-var userRights = ' . json_encode($rights, 320) . ';
-var valuesJson =  ' . json_encode($resource->values(), 320). ';
+var userRights = ' . json_encode($rights, 320) . ';';
+            if ($resource):
+                $script .= '
+var valuesJson =  ' . json_encode($resource->values(), 320). ';';
+            endif;
+            $script .= '
 var oaMotivatedBySelect = ' . json_encode($options['oaMotivatedBySelect'], 320) . ';
 var oaHasPurposeSelect = ' . json_encode($options['oaHasPurposeSelect'], 320) . ';
 var cartographyUncertaintySelect = ' . json_encode($options['cartographyUncertaintySelect'], 320) . ';';

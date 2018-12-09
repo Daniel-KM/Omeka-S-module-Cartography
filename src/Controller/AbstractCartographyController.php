@@ -3,12 +3,56 @@ namespace Cartography\Controller;
 
 use Annotate\Api\Representation\AnnotationRepresentation;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
+use Omeka\Stdlib\Message;
 use Zend\Http\Response;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\JsonModel;
 
 abstract class AbstractCartographyController extends AbstractActionController
 {
+    /**
+     * Get the resource templates for a resource.
+     *
+     * @return JsonModel
+     */
+    public function resourceTemplatesAction()
+    {
+        $type = $this->params()->fromQuery('type');
+        if (!in_array($type, ['describe', 'locate'])) {
+            return new JsonModel([
+                'status' => 'error',
+                'message' => $this->translate('The arg "type" (describe or locate) was not found.'), // @translate
+            ]);
+        }
+
+        $templates = $type === 'describe'
+            ? $this->settings()->get('cartography_template_describe', [])
+            : $this->settings()->get('cartography_template_locate', []);
+
+        foreach ($templates as $key => $templateId) {
+            $shortTemplate = $this->shortResourceTemplate($templateId);
+            if (empty($shortTemplate)) {
+                unset($templates[$key]);
+                continue;
+            }
+            $templates[$key] = $shortTemplate;
+        }
+
+        if ($templates) {
+            $emptyOption = $type === 'describe'
+                ? $this->settings()->get('cartography_template_describe_empty')
+                : $this->settings()->get('cartography_template_locate_empty');
+            if ($emptyOption) {
+                $templates = array_merge(
+                    [['placeholder' => $this->translate('Select type below…')]], // @translate
+                    $templates
+                );
+            }
+        }
+
+        return new JsonModel($templates);
+    }
+
     /**
      * Get the images for a resource.
      *
@@ -20,7 +64,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         if (!$resource) {
             return new JsonModel([
                 'status' => 'error',
-                'message' => 'Not found.', // @translate
+                'message' => $this->translate('Not found.'), // @translate
             ]);
         }
 
@@ -45,7 +89,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         if (!$resource) {
             return new JsonModel([
                 'status' => 'error',
-                'message' => 'Not found.', // @translate
+                'message' => $this->translate('Not found.'), // @translate
             ]);
         }
 
@@ -70,7 +114,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         if (!$resource) {
             return new JsonModel([
                 'status' => 'error',
-                'message' => 'Not found.', // @translate
+                'message' => $this->translate('Not found.'), // @translate
             ]);
         }
 
@@ -607,6 +651,139 @@ abstract class AbstractCartographyController extends AbstractActionController
                 'annotation' => $annotation->getJsonLd(),
             ],
         ]);
+    }
+
+    /**
+     * Convert a standard resource template into a js manageable one.
+     *
+     * @param int $templateId
+     * @return array|null Return null if the resource template doesn't exist or
+     * in case of error.
+     */
+    protected function shortResourceTemplate($templateId)
+    {
+        try {
+            /** @var \Omeka\Api\Representation\ResourceTemplateRepresentation $template */
+            $template = $this->api()->read('resource_templates', ['id' => $templateId])->getContent();
+        } catch (\Omeka\Api\Exception\NotFoundException $e) {
+            $this->logger()->err(new Message(
+                'Resource template #%d doesn’t exist any more. Fix settings of Cartography.', // @template
+                $templateId
+            ));
+            return null;
+        }
+
+        $short = [];
+
+        // TOD OThe js cannot managed the same field with multiple type currently (issue for resource link).
+        $check = [];
+
+        $short['o:id'] = $template->id();
+        $short['o:label'] = $template->label();
+        $short['o:resource_template_property'] = [];
+        foreach ($template->resourceTemplateProperties() as $templateProperty) {
+            $input = [];
+            $input['o:id'] = $templateProperty->property()->id();
+            $input['o:term'] = $templateProperty->property()->term();
+            $input['o:label'] = $templateProperty->alternateLabel() ?: $templateProperty->property()->label();
+            $input['o:comment'] = $templateProperty->alternateComment() ?: $templateProperty->property()->comment();
+            $dataType = $templateProperty->dataType();
+            $input['o:data_type'] = $dataType;
+
+            // Manage an exception for oa:hasBody, that must be a resource and
+            // vice-versa below.
+            if ($input['o:term'] === 'oa:hasBody'
+                && !in_array($input['o:data_type'], ['resource', 'resource:item', 'resource:itemset', 'resource:media'])
+            ) {
+                $this->logger()->warn(new Message(
+                    'To follow the annotation data model and for technical reasons, "oa:hasBody" must be a resource link to be managed internally. Check your resource template "%s".', // @template
+                    $template->label()
+                ));
+                return null;
+            }
+            if ($input['o:term'] !== 'oa:hasBody'
+                && in_array($input['o:data_type'], ['resource', 'resource:item', 'resource:itemset', 'resource:media'])
+            ) {
+                $this->logger()->warn(new Message(
+                    'To follow the annotation data model and for technical reasons, the resource links must use the property "oa:hasBody" to be managed internally. Check your resource template "%s".', // @template
+                    $template->label()
+                ));
+                return null;
+            }
+
+            // Don't skip missing datatype in order to keep the same order than
+            // the original template.
+            switch ($dataType) {
+                // TODO Currently, only resource:item is managed for resource template link field.
+                case 'resource':
+                case 'resource:item':
+                    $input['type'] = 'resource';
+                    break;
+                case 'resource:itemset':
+                case 'resource:media':
+                    $this->logger()->warn(new Message(
+                        'Resource link "%s" is currently not managed: it should be a "resource" or a "resource:item".', // @template
+                        $template->label()
+                    ));
+                    return null;
+                case 'uri':
+                    $input['type'] = 'uri';
+                    break;
+                case strpos($dataType, 'customvocab:') === 0:
+                    $customVocabId = (int) substr($dataType, 12);
+                    try {
+                        /** @var \CustomVocab\Api\Representation\CustomVocabRepresentation $customVocab */
+                        $customVocab = $this->api()->read('custom_vocabs', ['id' => $customVocabId])->getContent();
+                    } catch (\Omeka\Api\Exception\NotFoundException $e) {
+                        $this->logger()->warn(new Message(
+                            'Custom vocab #%d doesn’t exist any more. Fix resource template "%s".', // @template
+                            $customVocabId, $template->label()
+                        ));
+                        $input['type'] = 'text';
+                        break;
+                    }
+                    $terms = $customVocab->terms();
+                    if ($terms && !is_array($terms)) {
+                        $terms = array_unique(array_filter(array_map('trim', explode("\n", $terms))));
+                    }
+                    if (empty($terms)) {
+                        $this->logger()->warn(new Message(
+                            'Custom vocab "%s" doesn’t have terms.', // @template
+                            $template->label()
+                        ));
+                        $input['type'] = 'text';
+                        break;
+                    }
+                    $input['type'] = 'select';
+                    $input['value_options'] = array_combine($terms, $terms);
+                    break;
+                case strpos($dataType, 'valuesuggest:') === 0:
+                    $input['type'] = 'valuesuggest';
+                    $input['valuesuggest']['service_url'] = $this->url()
+                        // TODO Only admin currently: prepare public.
+                        ->fromRoute('admin/value-suggest/proxy', [], ['query' => ['type' => $dataType]], true);
+                    break;
+                case 'literal':
+                default:
+                    $input['type'] = 'textarea';
+                    break;
+            }
+
+            // TODO Any short form should be possible (except for linking). Check if the check is still needed.
+            if (isset($check[$input['o:term']]) && $input['type'] !== $check[$input['o:term']]) {
+                $this->logger()->warn(new Message(
+                    'Short resource template doesn’t support different data types for the same property. Check resource template "%s".', // @template
+                    $template->label()
+                ));
+                return null;
+            }
+
+            $input['o:is_required'] = $templateProperty->isRequired();
+            $short['o:resource_template_property'][] = $input;
+            $check[$input['o:term']] = $input['type'];
+        }
+
+        return $short;
     }
 
     /**

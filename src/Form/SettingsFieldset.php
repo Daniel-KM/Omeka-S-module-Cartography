@@ -1,13 +1,15 @@
 <?php
 namespace Cartography\Form;
 
-use Omeka\Form\Element\CkeditorInline;
 use Cartography\Form\Element\ResourceTemplateSelect;
+use Omeka\Form\Element\CkeditorInline;
 use Zend\Form\Element;
-use Zend\Form\Form;
+use Zend\Form\Fieldset;
 
-class ConfigForm extends Form
+class SettingsFieldset extends Fieldset
 {
+    protected $label = 'Cartography (annotate images and maps)'; // @translate
+
     public function init()
     {
         $this->add([
@@ -38,21 +40,35 @@ class ConfigForm extends Form
             ],
         ]);
 
+        // The default values are automatically appended to the availalble
+        // values on submit via js.
+
         $this->add([
             'name' => 'cartography_template_describe',
             'type' => ResourceTemplateSelect::class,
             'options' => [
                 'label' => 'Templates to use for Describe', // @translate
                 'info' => 'Allow to preset different properties to simplify cartography. If none, only the style editor will be available.', // @translate
-                'empty_option' => 'Select templates to annotate…', // @translate
-                'name_as_value' => true,
+                'empty_option' => 'Select templates to describe…', // @translate
                 'term_as_value' => true,
             ],
             'attributes' => [
                 'id' => 'cartography_template_describe',
                 'class' => 'chosen-select',
                 'multiple' => true,
-                'data-placeholder' => 'Select templates to annotate…', // @translate
+                'data-placeholder' => 'Select templates to describe…', // @translate
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'cartography_template_describe_empty',
+            'type' => Element\Checkbox::class,
+            'options' => [
+                'label' => 'Empty form by default for Describe', // @translate
+                'info' => 'If checked, the user will have to choose a resource template first.', // @translate
+            ],
+            'attributes' => [
+                'id' => 'cartography_template_describe_empty',
             ],
         ]);
 
@@ -63,14 +79,25 @@ class ConfigForm extends Form
                 'label' => 'Templates to use for Locate', // @translate
                 'info' => 'Allow to preset different properties to simplify cartography. If none, only the style editor will be available.', // @translate
                 'empty_option' => 'Select templates to annotate…', // @translate
-                'name_as_value' => true,
                 'term_as_value' => true,
             ],
             'attributes' => [
                 'id' => 'cartography_template_locate',
                 'class' => 'chosen-select',
                 'multiple' => true,
-                'data-placeholder' => 'Select templates to annotate…', // @translate
+                'data-placeholder' => 'Select templates to locate…', // @translate
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'cartography_template_locate_empty',
+            'type' => Element\Checkbox::class,
+            'options' => [
+                'label' => 'Empty form by default for Locate', // @translate
+                'info' => 'If checked, the user will have to choose a resource template first.', // @translate
+            ],
+            'attributes' => [
+                'id' => 'cartography_template_locate_empty',
             ],
         ]);
 
@@ -96,12 +123,6 @@ class ConfigForm extends Form
             'attributes' => [
                 'id' => 'cartography_js_locate',
             ],
-        ]);
-
-        $inputFilter = $this->getInputFilter();
-        $inputFilter->add([
-            'name' => 'cartography_display_tab',
-            'required' => false,
         ]);
     }
 }

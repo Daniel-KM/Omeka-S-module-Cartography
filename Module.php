@@ -5,7 +5,6 @@ use Zend\EventManager\Event;
 use Zend\EventManager\SharedEventManagerInterface;
 use Zend\Mvc\MvcEvent;
 use Zend\ServiceManager\ServiceLocatorInterface;
-use Zend\View\Renderer\PhpRenderer;
 
 // TODO Remove this requirement.
 require_once 'AbstractGenericModule.php';
@@ -101,6 +100,16 @@ class Module extends AbstractGenericModule
         }
 
         $sharedEventManager->attach(
+            \Omeka\Form\SettingForm::class,
+            'form.add_elements',
+            [$this, 'handleMainSettings']
+        );
+        $sharedEventManager->attach(
+            \Omeka\Form\SettingForm::class,
+            'form.add_input_filters',
+            [$this, 'handleMainSettingsFilters']
+        );
+        $sharedEventManager->attach(
             \Omeka\Form\SiteSettingsForm::class,
             'form.add_elements',
             [$this, 'handleSiteSettings']
@@ -112,10 +121,37 @@ class Module extends AbstractGenericModule
         );
     }
 
-    public function getConfigForm(PhpRenderer $renderer)
+    public function handleMainSettings(Event $event)
     {
-        $renderer->ckEditor();
-        return parent::getConfigForm($renderer);
+        $ckEditorHelper = $this->getServiceLocator()->get('ViewHelperManager')
+            ->get('ckEditor');
+        $ckEditorHelper();
+        parent::handleMainSettings($event);
+    }
+
+    public function handleMainSettingsFilters(Event $event)
+    {
+        $inputFilter = $event->getParam('inputFilter');
+        $inputFilter->get('cartography')->add([
+            'name' => 'cartography_display_tab',
+            'required' => false,
+        ]);
+        $inputFilter->get('cartography')->add([
+            'name' => 'cartography_template_describe',
+            'required' => false,
+        ]);
+        $inputFilter->get('cartography')->add([
+            'name' => 'cartography_template_describe_empty',
+            'required' => false,
+        ]);
+        $inputFilter->get('cartography')->add([
+            'name' => 'cartography_template_locate',
+            'required' => false,
+        ]);
+        $inputFilter->get('cartography')->add([
+            'name' => 'cartography_template_describe_empty',
+            'required' => false,
+        ]);
     }
 
     public function handleSiteSettingsFilters(Event $event)
@@ -145,16 +181,16 @@ class Module extends AbstractGenericModule
             return;
         }
 
-        $displayTab = $services->get('Omeka\Settings')->get('cartography_display_tab', []);
-        if (empty($displayTab)) {
+        $displayTabs = $services->get('Omeka\Settings')->get('cartography_display_tab', []);
+        if (empty($displayTabs)) {
             return;
         }
 
         $sectionNav = $event->getParam('section_nav');
-        if (in_array('describe', $displayTab)) {
+        if (in_array('describe', $displayTabs)) {
             $sectionNav['describe'] = 'Describe'; // @translate
         }
-        if (in_array('locate', $displayTab)) {
+        if (in_array('locate', $displayTabs)) {
             $sectionNav['locate'] = 'Locate'; // @translate
         }
         $event->setParam('section_nav', $sectionNav);
@@ -170,8 +206,8 @@ class Module extends AbstractGenericModule
         $services = $this->getServiceLocator();
 
         $settings = $services->get('Omeka\Settings');
-        $displayTab = $settings->get('cartography_display_tab', []);
-        if (empty($displayTab)) {
+        $displayTabs = $settings->get('cartography_display_tab', []);
+        if (empty($displayTabs)) {
             return;
         }
 
@@ -185,8 +221,8 @@ class Module extends AbstractGenericModule
         /** @var \Zend\View\Renderer\PhpRenderer $view */
         $view = $event->getTarget();
         $resource = $view->resource;
-        $displayDescribe = in_array('describe', $displayTab);
-        $displayLocate = in_array('locate', $displayTab);
+        $displayDescribe = in_array('describe', $displayTabs);
+        $displayLocate = in_array('locate', $displayTabs);
 
         // This check avoids to load the css and js two times.
         $displayAll = $displayDescribe && $displayLocate;
@@ -217,8 +253,8 @@ class Module extends AbstractGenericModule
     public function displayPublic(Event $event)
     {
         $siteSettings = $this->getServiceLocator()->get('Omeka\Settings\Site');
-        $displayTab = $siteSettings->get('cartography_append_public');
-        if (empty($displayTab)) {
+        $displayTabs = $siteSettings->get('cartography_append_public');
+        if (empty($displayTabs)) {
             return;
         }
 
@@ -227,8 +263,8 @@ class Module extends AbstractGenericModule
         $view = $event->getTarget();
         $resource = $view->resource;
         $resourceName = $resource->resourceName();
-        $displayDescribe = in_array('describe_' . $resourceName . '_show', $displayTab);
-        $displayLocate = in_array('locate_' . $resourceName . '_show', $displayTab);
+        $displayDescribe = in_array('describe_' . $resourceName . '_show', $displayTabs);
+        $displayLocate = in_array('locate_' . $resourceName . '_show', $displayTabs);
 
         // This check avoids to load the css and js two times.
         $displayAll = $displayDescribe && $displayLocate;

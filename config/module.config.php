@@ -21,7 +21,7 @@ return [
     ],
     'form_elements' => [
         'invokables' => [
-            Form\ConfigForm::class => Form\ConfigForm::class,
+            Form\SettingsFieldset::class => Form\SettingsFieldset::class,
             Form\SiteSettingsFieldset::class => Form\SiteSettingsFieldset::class,
         ],
         'factories' => [
@@ -172,18 +172,24 @@ return [
         'Uncertainty:', // @translate
     ],
     'cartography' => [
-        'config' => [
-            'cartography_user_guide' => 'Feel free to use <strong>Cartography</strong>!', // @translate
+        'settings' => [
+            'cartography_user_guide' => 'Feel free <strong>to annotate</strong> images and <strong>to locate</strong> resources!', // @translate
             'cartography_display_tab' => [
                 'describe',
                 'locate',
             ],
+            // For easier install/upgrade, the values are the label, but they
+            // are saved as id in fact.
             'cartography_template_describe' => [
                 'Annotation describe',
             ],
+            'cartography_template_describe_empty' => false,
+            // For easier install/upgrade, the values are the label, but they
+            // are saved as id in fact.
             'cartography_template_locate' => [
                 'Annotation locate',
             ],
+            'cartography_template_locate_empty' => false,
             'cartography_js_describe' => '',
             'cartography_js_locate' => '',
         ],

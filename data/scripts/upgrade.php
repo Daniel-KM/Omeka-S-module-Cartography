@@ -16,11 +16,13 @@ $settings = $services->get('Omeka\Settings');
 $config = require dirname(dirname(__DIR__)) . '/config/module.config.php';
 $connection = $services->get('Omeka\Connection');
 $entityManager = $services->get('Omeka\EntityManager');
-$api = $services->get('Omeka\ApiManager');
+$plugins = $services->get('ControllerPluginManager');
+$api = $plugins->get('api');
+$space = strtolower(__NAMESPACE__);
 
 if (version_compare($oldVersion, '3.0.1', '<')) {
     $settings->set('cartography_user_guide',
-        $config['cartography']['config']['cartography_user_guide']);
+        $config[$space]['settings']['cartography_user_guide']);
 }
 
 if (version_compare($oldVersion, '3.0.2-alpha', '<')) {
@@ -254,7 +256,7 @@ if (version_compare($oldVersion, '3.0.5-beta2', '<')) {
     $settings->delete('cartography_append_media_show');
 }
 
-if (version_compare($oldVersion, '3.0.6-beta3', '<')) {
+if (version_compare($oldVersion, '3.0.6-beta', '<')) {
     $customVocabPaths = [
         dirname(dirname(__DIR__)) . '/data/custom-vocabs/Cartography-oa-MotivatedBy-Locate.json',
     ];
@@ -270,4 +272,22 @@ if (version_compare($oldVersion, '3.0.6-beta3', '<')) {
         $resourceTemplate = $this->createResourceTemplate($services, $filepath);
         $settings->set($key, [$resourceTemplate->id()]);
     }
+}
+
+if (version_compare($oldVersion, '3.0.7-beta', '<')) {
+    foreach (['cartography_template_describe', 'cartography_template_locate'] as $list) {
+        $ids = [];
+        $labels = $config[$space]['settings'][$list];
+        foreach ($labels as &$label) {
+            $resourceTemplate = $api->searchOne('resource_templates', ['label' => $label])->getContent();
+            if ($resourceTemplate) {
+                $ids[] = $resourceTemplate->id();
+            }
+        }
+        $settings->set('cartography_template_describe', $ids);
+    }
+    $settings->set('cartography_template_describe_empty',
+        $config[$space]['settings']['cartography_template_describe_empty']);
+    $settings->set('cartography_template_locate_empty',
+        $config[$space]['settings']['cartography_template_locate_empty']);
 }

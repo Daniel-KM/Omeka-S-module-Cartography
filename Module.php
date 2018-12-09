@@ -53,12 +53,23 @@ class Module extends AbstractGenericModule
     public function install(ServiceLocatorInterface $serviceLocator)
     {
         // Copy of the parent process in order to check the database version.
-        $useMyIsam = $this->requireMyIsamToSupportGeometry($serviceLocator);
+        $this->setServiceLocator($serviceLocator);
+
+        if (!$this->supportSpatialSearch()) {
+            $messenger = new \Omeka\Mvc\Controller\Plugin\Messenger();
+            $messenger->addWarning(sprintf('Your database does not support advanced spatial search. See the minimum requirements in readme.')); // @translate
+        }
+
+        $useMyIsam = $this->requireMyIsamToSupportGeometry();
+        if ($useMyIsam) {
+            $messenger = new \Omeka\Mvc\Controller\Plugin\Messenger();
+            $messenger->addWarning(sprintf('Your database does not support modern spatial indexing. See the minimum requirements in readme.')); // @translate
+        }
+
         $filepath = $useMyIsam
             ? $this->modulePath() . '/data/install/schema-myisam.sql'
             :  $this->modulePath() . '/data/install/schema.sql';
 
-        $this->setServiceLocator($serviceLocator);
         $this->checkDependency();
         $this->checkDependencies();
         $this->execSqlFromFile($filepath);
@@ -593,18 +604,65 @@ class Module extends AbstractGenericModule
     }
 
     /**
+     * Check if Omeka database has minimum requirements to search geometries.
+     *
+     * @see readme.md.
+     *
+     * @return bool
+     */
+    protected function supportSpatialSearch()
+    {
+        $db = $this->databaseVersion();
+        if (empty($db)) {
+            return true;
+        }
+        switch ($db['db']) {
+            case 'mysql':
+                return version_compare($db['version'], '5.6.1', '>=');
+            case 'mariadb':
+                return version_compare($db['version'], '5.3.3', '>=');
+            default:
+                return true;
+        }
+    }
+
+    /**
      * Check if the Omeka database requires myIsam to support Geometry.
      *
      * @see readme.md.
      *
-     * @param ServiceLocatorInterface $serviceLocator
      * @return bool Return false by default: if a specific database is used,
      * it is presumably geometry compliant.
      */
-    protected function requireMyIsamToSupportGeometry(ServiceLocatorInterface $services)
+    protected function requireMyIsamToSupportGeometry()
     {
+        $db = $this->databaseVersion();
+        if (empty($db)) {
+            return false;
+        }
+        switch ($db['db']) {
+            case 'mysql':
+                return version_compare($db['version'], '5.7.5', '<');
+            case 'mariadb':
+                return version_compare($db['version'], '10.2.2', '<');
+            case 'innodb':
+                return version_compare($db['version'], '5.7.14', '<');
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Get  the version of the database.
+     *
+     * @return array
+     */
+    protected function databaseVersion()
+    {
+        $result = [];
+
         /** @var \Doctrine\DBAL\Connection $connection */
-        $connection = $services->get('Omeka\Connection');
+        $connection = $this->getServiceLocator()->get('Omeka\Connection');
 
         $sql = 'SHOW VARIABLES LIKE "version";';
         $stmt = $connection->query($sql);
@@ -612,13 +670,16 @@ class Module extends AbstractGenericModule
         $version = reset($version);
 
         $isMySql = stripos($version, 'mysql') !== false;
+        $result['version'] = $version;
         if ($isMySql) {
-            return version_compare($version, '5.7.5', '<');
+            $result['db'] = 'mysql';
+            return $result;
         }
 
         $isMariaDb = stripos($version, 'mariadb') !== false;
         if ($isMariaDb) {
-            return version_compare($version, '10.2.2', '<');
+            $result['db'] = 'mariadb';
+            return $result;
         }
 
         $sql = 'SHOW VARIABLES LIKE "innodb_version";';
@@ -627,9 +688,9 @@ class Module extends AbstractGenericModule
         $version = reset($version);
         $isInnoDb = !empty($version);
         if ($isInnoDb) {
-            return version_compare($version, '5.7.14', '<');
+            $result['db'] = 'innodb';
+            $result['version'] = $version;
+            return $result;
         }
-
-        return false;
     }
 }

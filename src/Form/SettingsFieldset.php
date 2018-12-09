@@ -49,8 +49,11 @@ class SettingsFieldset extends Fieldset
             'options' => [
                 'label' => 'Templates to use for Describe', // @translate
                 'info' => 'Allow to preset different properties to simplify cartography. If none, only the style editor will be available.', // @translate
-                'empty_option' => 'Select templates to describe…', // @translate
                 'term_as_value' => true,
+                'empty_option' => '',
+                'query' => [
+                    'resource_class' => 'oa:Annotation',
+                ],
             ],
             'attributes' => [
                 'id' => 'cartography_template_describe',
@@ -78,8 +81,11 @@ class SettingsFieldset extends Fieldset
             'options' => [
                 'label' => 'Templates to use for Locate', // @translate
                 'info' => 'Allow to preset different properties to simplify cartography. If none, only the style editor will be available.', // @translate
-                'empty_option' => 'Select templates to annotate…', // @translate
                 'term_as_value' => true,
+                'empty_option' => '',
+                'query' => [
+                    'resource_class' => 'oa:Annotation',
+                ],
             ],
             'attributes' => [
                 'id' => 'cartography_template_locate',

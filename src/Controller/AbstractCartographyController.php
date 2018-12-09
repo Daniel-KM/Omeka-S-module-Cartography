@@ -46,7 +46,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 : $this->settings()->get('cartography_template_locate_empty');
             if ($emptyOption) {
                 $templates = array_merge(
-                    [['placeholder' => $this->translate('Select type below…')]], // @translate
+                    [['placeholder' => $this->translate('Select type…')]], // @translate
                     $templates
                 );
             }
@@ -368,7 +368,9 @@ abstract class AbstractCartographyController extends AbstractActionController
         // TODO Only one target is managed currently.
         $target = $annotation->primaryTarget();
         $resource = $target->sources()[0];
-        $mediaValue = $target->value('rdf:value', ['type' => 'resource']);
+
+        // The media is saved as selector of the main item (a page in a book).
+        $mediaValue = $target->value('oa:hasSelector', ['type' => 'resource']);
         $media = $mediaValue && $mediaValue->valueResource()->resourceName() === 'media'
             ? $mediaValue->valueResource()
             : null;
@@ -423,17 +425,21 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         // Check if the template is managed.
         $isDescribe = !empty($media);
-        $template = empty($metadata['o:resource_template']) ? null : (int) $metadata['o:resource_template'];
-        $templates = $isDescribe
-            ? $this->settings()->get('cartography_template_describe', [])
-            : $this->settings()->get('cartography_template_locate', []);
-        if ($template && !in_array($template, $templates)) {
-            $template = null;
+
+        // A template is required for an update (or when there are metadata).
+        // Check of the metadata is done below.
+        $hasMetadata = $this->hasMetadata($metadata);
+        $templateId = $this->forceTemplate($metadata, $hasMetadata, $isDescribe);
+        if (empty($templateId) && $hasMetadata) {
+            $message = new Message(
+                'A template is required when there are metadata in an annotation.' // @template
+            );
+            return $message;
         }
 
         // Normally, there is no resource template during creation, since it is
         // set in style editor.
-        $data['o:resource_template'] = $template ? ['o:id' => $template] : null;
+        $data['o:resource_template'] = $templateId ? ['o:id' => $templateId] : null;
         $data['oa:motivatedBy'] = $this->forceMotivation($metadata);
 
         $data['oa:hasBody'] = [];
@@ -441,7 +447,7 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         // Body.
         // No template means that only the data of the style editor are available.
-        $result = $this->fillDataForTemplate($resource, $metadata, $template, $data, $annotation);
+        $result = $this->fillDataForTemplate($resource, $metadata, $templateId, $data, $annotation);
         if (!is_array($result)) {
             return $result;
         }
@@ -458,7 +464,79 @@ abstract class AbstractCartographyController extends AbstractActionController
                 '@value' => json_encode(['leaflet-interactive' => $styles], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             ]];
         }
+
         return $data;
+    }
+
+    /**
+     * A template is required when there are metadata to define the annotation
+     * part of each property (except the non-ubiquitous standard ones).
+     *
+     * @param array $metadata
+     * @param bool $hasMetadata
+     * @param bool $isDescribe
+     * @return int|null
+     */
+    protected function forceTemplate(array $metadata, $hasMetadata, $isDescribe)
+    {
+        $templateId = empty($metadata['o:resource_template']) ? null : (int) $metadata['o:resource_template'];
+        $templates = $isDescribe
+            ? $this->settings()->get('cartography_template_describe', [])
+            : $this->settings()->get('cartography_template_locate', []);
+        if ($templateId && !in_array($templateId, $templates)) {
+            $templateId = null;
+        }
+        if ($templateId) {
+            return $templateId;
+        }
+
+        // A template is required only when there are metadata.
+        if (!$hasMetadata) {
+            return null;
+        }
+
+        if (empty($templates)) {
+            return null;
+        }
+
+        if (count($templates) === 1) {
+            return reset($templates);
+        }
+
+        $emptyDefault = $isDescribe
+            ? $this->settings()->get('cartography_template_describe_empty')
+            : $this->settings()->get('cartography_template_locate_empty');
+
+        if ($emptyDefault) {
+            return null;
+        }
+
+        return reset($templates);
+    }
+
+    /**
+     * Check if a metadata received from form has metadata.
+     *
+     * @todo Improve the check of the existence of metadata according to the template.
+     *
+     * @param array $metadata
+     * @return bool
+     */
+    protected function hasMetadata(array $metadata)
+    {
+        return (bool) array_filter($metadata, function($v, $k) {
+            return
+                // Remove generic keys and empty values.
+                substr($k, 0, 2) === 'o:'
+                || in_array($k, ['csrf', 'oa:selector', 'oa:hasTarget', 'oa:hasSource', 'oa:styledBy', 'oa:styleClass'])
+                || !is_array($v)
+                || count($v) === 0
+                // Remove true empty values (0 character or empty array).
+                || !array_filter($v, function($w) {
+                    return is_array($w) ? empty($w) : strlen(trim($w)) === 0;
+                })
+            ;
+        }, ARRAY_FILTER_USE_BOTH);
     }
 
     /**
@@ -467,7 +545,7 @@ abstract class AbstractCartographyController extends AbstractActionController
      * @param array $metadata Form metadata
      * @return array Array of property values.
      */
-    protected function forceMotivation($metadata)
+    protected function forceMotivation(array $metadata)
     {
         // Default motivation for the module Cartography is "highlighting" and a
         // motivation is required.
@@ -518,7 +596,8 @@ abstract class AbstractCartographyController extends AbstractActionController
         array $data,
         AnnotationRepresentation $annotation = null
     ) {
-        // Note: there is no resource template when created.
+        // Note: there is no resource template when created, but it's an error
+        // for update (except when there are no metadata, though).
         if (empty($templateId)) {
             return $data;
         }
@@ -531,6 +610,12 @@ abstract class AbstractCartographyController extends AbstractActionController
             return $message;
         }
         $shortProperties = $short['o:resource_template_property'];
+
+        // List the property terms one time (they are not available in the full
+        // template, neither as keys).
+        $terms = array_map(function($v) {
+            return $v['o:term'];
+        }, $shortProperties);
 
         /** @var \Omeka\Api\Representation\ResourceTemplateRepresentation $template */
         $template = $this->api()->read('resource_templates', ['id' => $templateId])->getContent();
@@ -553,13 +638,18 @@ abstract class AbstractCartographyController extends AbstractActionController
                 continue;
             }
 
-            // All data are filled first, then exception are managed.
-            foreach ($properties as $shortKey => $value) {
-                // Security check and data should be in the resource template.
-                if (!isset($shortProperties[$shortKey]) || !isset($templateProperties[$shortKey])) {
-                    continue;
-                }
+            // Security check: data should be in the resource template.
+            // Anyway, don’t process metadata that are not inside the template.
+            if (!in_array($term, $terms)) {
+                continue;
+            }
 
+            // Note: the short key is not working in the front end, so use the
+            // one of the short template.
+            $shortKey = array_search($term, $terms);
+
+            // All data are filled first, then exception are managed.
+            foreach ($properties as $value) {
                 $lang = empty($templateProperties[$shortKey]['o:lang'])
                     ? null
                     : $templateProperties[$shortKey]['o:lang'];
@@ -623,6 +713,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 }
             }
 
+            // Manage exceptions.
             if ($term === 'oa:motivatedBy') {
                 $data['oa:motivatedBy'] = $data['oa:hasBody'][0][$term];
                 unset($data['oa:hasBody'][0][$term]);
@@ -766,19 +857,27 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         $short = [];
 
-        // TOD OThe js cannot managed the same field with multiple type currently (issue for resource link).
+        // TODO The js cannot managed the same field with multiple types currently (issue for resource link).
         $check = [];
 
         $short['o:id'] = $template->id();
         $short['o:label'] = $template->label();
         $short['o:resource_template_property'] = [];
         foreach ($template->resourceTemplateProperties() as $templateProperty) {
+            // The data type may have been removed (custom vocab, etc.).
+            $dataType = $templateProperty->dataType();
+            if (empty($dataType)) {
+                $this->logger()->warn(new Message(
+                    'A data type is missing for the property "%s" of resource template "%s".', // @template
+                    $templateProperty->property()->term(), $template->label()
+                ));
+                continue;
+            }
             $input = [];
             $input['o:id'] = $templateProperty->property()->id();
             $input['o:term'] = $templateProperty->property()->term();
             $input['o:label'] = $templateProperty->alternateLabel() ?: $templateProperty->property()->label();
             $input['o:comment'] = $templateProperty->alternateComment() ?: $templateProperty->property()->comment();
-            $dataType = $templateProperty->dataType();
             $input['o:data_type'] = $dataType;
 
             // Manage an exception for oa:hasBody, that must be a resource and
@@ -820,7 +919,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 case 'uri':
                     $input['type'] = 'uri';
                     break;
-                case strpos($dataType, 'customvocab:') === 0:
+                case strlen($dataType) && strpos($dataType, 'customvocab:') === 0:
                     $customVocabId = (int) substr($dataType, 12);
                     try {
                         /** @var \CustomVocab\Api\Representation\CustomVocabRepresentation $customVocab */
@@ -848,7 +947,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                     $input['type'] = 'select';
                     $input['value_options'] = array_combine($terms, $terms);
                     break;
-                case strpos($dataType, 'valuesuggest:') === 0:
+                case strlen($dataType) && strpos($dataType, 'valuesuggest:') === 0:
                     $input['type'] = 'valuesuggest';
                     $input['valuesuggest']['service_url'] = $this->url()
                         // TODO Only admin currently: prepare public.
@@ -1161,6 +1260,8 @@ abstract class AbstractCartographyController extends AbstractActionController
                     'dcterms:format' => true,
                     'rdf:value' => false,
                     'oa:styleClass' => true,
+                    // Forbid it only for locate.
+                    // 'oa:hasSelector' => true,
                 ];
                 /** @var \Annotate\Api\Representation\AnnotationTargetRepresentation $annotationBody */
                 foreach ($metadata['oa:hasTarget'] as $annotationTarget) {

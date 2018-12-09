@@ -3,6 +3,7 @@ namespace Cartography\Controller;
 
 use Annotate\Api\Representation\AnnotationRepresentation;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
+use Omeka\Api\Representation\MediaRepresentation;
 use Omeka\Stdlib\Message;
 use Zend\Http\Response;
 use Zend\Mvc\Controller\AbstractActionController;
@@ -104,7 +105,9 @@ abstract class AbstractCartographyController extends AbstractActionController
     }
 
     /**
-     * Get the geometries for a resource.
+     * Get the geometries for a resource, with partial metadata.
+     *
+     * Note: Metadata are simplified for the display and use in leaflet.
      *
      * @return JsonModel
      */
@@ -143,7 +146,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         try {
             $resource = $this->api()->read('resources', $id)->getContent();
         } catch (\Omeka\Api\Exception\NotFoundException $e) {
-            return;
+            return null;
         }
 
         return $resource;
@@ -191,19 +194,11 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         $api = $this->viewHelpers()->get('api');
 
-        // Options contains styles and description.
+        // Options contains styles and metadata.
         $options = isset($data['options']) ? $data['options'] : [];
-
-        // Default motivation for the module Cartography is "highlighting" and a
-        // motivation is required.
-        if (empty($data['options']['oaMotivatedBy'])) {
-            $options['oaMotivatedBy'] = 'highlighting';
-        }
-        // Clean the motivation when it is linking without link.
-        elseif ($data['options']['oaMotivatedBy'] === 'linking' && empty($data['options']['oaLinking'])) {
-            $options['oaMotivatedBy'] = 'highlighting';
-        }
-        // Multiple motivations are managed in actions.
+        $metadata = isset($options['metadata']) ? $options['metadata'] : [];
+        $styles = $options;
+        unset($styles['metadata']);
 
         if (empty($data['id'])) {
             if (empty($data['resourceId'])) {
@@ -218,17 +213,18 @@ abstract class AbstractCartographyController extends AbstractActionController
             }
 
             // Save media id too to manage multiple media by image, else wms.
-            $options['mediaId'] = empty($data['mediaId']) ? null : $data['mediaId'];
-            if ($options['mediaId']) {
+            $mediaId = empty($data['mediaId']) ? null : $data['mediaId'];
+            if ($mediaId) {
                 $media = $api
-                    ->searchOne('media', ['id' => $options['mediaId']])
+                    ->searchOne('media', ['id' => $mediaId])
                     ->getContent();
                 if (!$media) {
-                    return $this->jsonError('Media not found.', Response::STATUS_CODE_404); // @translate
+                    return $this->jsonError(new Message('Media #%d not found.', $mediaId), Response::STATUS_CODE_404); // @translate
                 }
+            } else {
+                $media = null;
             }
-
-            return $this->createAnnotation($resource, $geometry, $options);
+            return $this->createAnnotation($resource, $geometry, $metadata, $styles, $media);
         }
 
         $annotation = $api
@@ -238,10 +234,7 @@ abstract class AbstractCartographyController extends AbstractActionController
             return $this->jsonError('Annotation not found.', Response::STATUS_CODE_404); // @translate
         }
 
-        // Save media id too to manage multiple media by image, else wms.
-        $options['mediaId'] = empty($data['mediaId']) ? null : $data['mediaId'];
-
-        return $this->updateAnnotation($annotation, $geometry, $options);
+        return $this->updateAnnotation($annotation, $geometry, $metadata, $styles);
     }
 
     /**
@@ -296,158 +289,24 @@ abstract class AbstractCartographyController extends AbstractActionController
      *
      * @param AbstractResourceEntityRepresentation $resource
      * @param string $geometry
-     * @param array $options
+     * @param array $metadata
+     * @param array $styles
+     * @param MediaRepresentation|null $media
      * @return \Zend\View\Model\JsonModel
      */
-    protected function createAnnotation(AbstractResourceEntityRepresentation $resource, $geometry, array $options)
-    {
+    protected function createAnnotation(
+        AbstractResourceEntityRepresentation $resource,
+        $geometry,
+        array $metadata,
+        array $styles,
+        MediaRepresentation $media = null
+    ) {
+        $data = $this->prepareAnnotation($resource, $geometry, $metadata, $styles, $media, null);
+        if (!is_array($data)) {
+            return $this->jsonError($data, Response::STATUS_CODE_500);
+        }
+
         $api = $this->api();
-        $data = [
-            'o:is_public' => 1,
-            'o:resource_template' => ['o:id' => $api->searchOne('resource_templates', ['label' => 'Annotation'])->getContent()->id()],
-            'o:resource_class' => ['o:id' => $api->searchOne('resource_classes', ['term' => 'oa:Annotation'])->getContent()->id()],
-            'o-module-annotate:body' => [],
-            'o-module-annotate:target' => [
-                [
-                    'oa:hasSource' => [
-                        [
-                            'property_id' => $this->propertyId('oa:hasSource'),
-                            'type' => 'resource',
-                            'value_resource_id' => $resource->id(),
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
-        // The media id should be added, if any. It is added first only for ux.
-        $hasMediaId = !empty($options['mediaId']);
-        if ($hasMediaId) {
-            $data['o-module-annotate:target'][0]['rdf:value'][] = [
-                'property_id' => $this->propertyId('rdf:value'),
-                'type' => 'resource',
-                'value_resource_id' => $options['mediaId'],
-            ];
-            unset($options['mediaId']);
-        }
-
-        $data['o-module-annotate:target'][0] += [
-            // Currently, selectors are managed as a type internally.
-            'rdf:type' => [
-                [
-                    'property_id' => $this->propertyId('rdf:type'),
-                    'type' => 'customvocab:' . $this->customVocabId('Annotation Target rdf:type'),
-                    // TODO Or oa:WKT, that doesn't exist? oa:Selector or Selector?
-                    '@value' => 'oa:Selector',
-                ],
-            ],
-            'dcterms:format' => [
-                [
-                    'property_id' => $this->propertyId('dcterms:format'),
-                    'type' => 'customvocab:' . $this->customVocabId('Annotation Target dcterms:format'),
-                    '@value' => 'application/wkt',
-                ]
-            ],
-        ];
-
-        $data['o-module-annotate:target'][0]['rdf:value'][] = [
-            'property_id' => $this->propertyId('rdf:value'),
-            'type' => 'literal',
-            '@value' => $geometry,
-        ];
-
-        if ($options) {
-            if (!empty($options['oaMotivatedBy'])) {
-                $data['oa:motivatedBy'][] = [
-                    'property_id' => $this->propertyId('oa:motivatedBy'),
-                    'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
-                    '@value' => $options['oaMotivatedBy'],
-                ];
-            }
-
-            if (isset($options['popupContent']) && strlen(trim($options['popupContent']))) {
-                $data['o-module-annotate:body'][0]['rdf:value'][] = [
-                    'property_id' => $this->propertyId('rdf:value'),
-                    'type' => 'literal',
-                    '@value' => $options['popupContent'],
-                ];
-
-                $data['o-module-annotate:body'][0]['oa:hasPurpose'] = [];
-                if (!empty($options['oaHasPurpose'])) {
-                    $data['o-module-annotate:body'][0]['oa:hasPurpose'][] = [
-                        'property_id' => $this->propertyId('oa:hasPurpose'),
-                        'type' => 'customvocab:' . $this->customVocabId('Annotation Body oa:hasPurpose'),
-                        '@value' => $options['oaHasPurpose'],
-                    ];
-                }
-            }
-
-            if (!empty($options['oaLinking'])) {
-                // A link is motivated by linking. Remove the other motivation
-                // if there is no description.
-                if (!empty($data['oa:motivatedBy'][0]) && empty($data['o-module-annotate:body'][0]['rdf:value'])) {
-                    unset($data['oa:motivatedBy'][0]);
-                    unset($data['o-module-annotate:body'][0]['oa:hasPurpose']);
-                }
-
-                $data['oa:motivatedBy'][] = [
-                    'property_id' => $this->propertyId('oa:motivatedBy'),
-                    'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
-                    '@value' => 'linking',
-                ];
-                // Each link is a separate body. Deduplicate ids too.
-                $ids = [];
-                foreach ($options['oaLinking'] as $valueResource) {
-                    $id = $valueResource['value_resource_id'];
-                    if (in_array($id, $ids)) {
-                        continue;
-                    }
-                    $ids[] = $id;
-                    $oaLinkingValues = [];
-                    // The annotation id is unknown.
-                    // $oaLinkingValues['o-module-annotate:annotation']['o:id'] = $annotation->id();
-                    $oaLinkingValues['rdf:value'][] = [
-                        'property_id' => $this->propertyId('rdf:value'),
-                        'type' => 'resource',
-                        'value_resource_id' => $id,
-                    ];
-                    $data['o-module-annotate:body'][] = $oaLinkingValues;
-                }
-            }
-
-            $data['o-module-annotate:target'][0]['cartography:uncertainty'] = [];
-            if (!empty($options['cartographyUncertainty'])) {
-                $data['o-module-annotate:target'][0]['cartography:uncertainty'][] = [
-                    'property_id' => $this->propertyId('cartography:uncertainty'),
-                    'type' => 'customvocab:' . $this->customVocabId('Cartography cartography:uncertainty'),
-                    '@value' => $options['cartographyUncertainty'],
-                ];
-            }
-
-            unset($options['annotationIdentifier']);
-            unset($options['oaMotivatedBy']);
-            unset($options['popupContent']);
-            unset($options['oaHasPurpose']);
-            unset($options['oaLinking']);
-            unset($options['cartographyUncertainty']);
-            unset($options['owner']);
-            unset($options['date']);
-            unset($options['right']);
-
-            if (!empty($options)) {
-                $data['oa:styledBy'][] = [
-                    'property_id' => $this->propertyId('oa:styledBy'),
-                    'type' => 'literal',
-                    '@value' => json_encode(['leaflet-interactive' => $options], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-                ];
-                $data['o-module-annotate:target'][0]['oa:styleClass'][] = [
-                    'property_id' => $this->propertyId('oa:styleClass'),
-                    'type' => 'literal',
-                    '@value' => 'leaflet-interactive',
-                ];
-            }
-        }
-
         $response = $api->create('annotations', $data);
         if (!$response) {
             return $this->jsonError('An internal error occurred.', Response::STATUS_CODE_500); // @translate
@@ -468,177 +327,34 @@ abstract class AbstractCartographyController extends AbstractActionController
     /**
      * Update a cartographic annotation with geometry.
      *
-     * @todo Factorize createAnnotation() and updateAnnotation().
-     *
      * @param AnnotationRepresentation $annotation
      * @param string $geometry
-     * @param array $options
+     * @param array $metadata
+     * @param array $styles
      * @return \Zend\View\Model\JsonModel
      */
-    protected function updateAnnotation(AnnotationRepresentation $annotation, $geometry, array $options)
-    {
-        $api = $this->api();
-
-        // Multiple bodies are managed because of multiple links can be created.
-        $bodies = $annotation->bodies();
-        // TODO One target is managed currently.
+    protected function updateAnnotation(
+        AnnotationRepresentation $annotation,
+        $geometry,
+        array $metadata,
+        array $styles
+    ) {
+        // TODO Only one target is managed currently.
         $target = $annotation->primaryTarget();
+        $resource = $target->sources()[0];
+        $mediaValue = $target->value('rdf:value', ['type' => 'resource']);
+        $media = $mediaValue && $mediaValue->valueResource()->resourceName() === 'media'
+            ? $mediaValue->valueResource()
+            : null;
 
-        $data = [];
-        $data['o-module-annotate:body'] = [];
-        $data['o-module-annotate:target'] = [];
-
-        // TODO The media id is not updatable, but is needed for partial update.
-        $hasMediaId = !empty($options['mediaId']);
-        if ($hasMediaId) {
-            $data['o-module-annotate:target'][0]['rdf:value'][] = [
-                'property_id' => $this->propertyId('rdf:value'),
-                'type' => 'resource',
-                'value_resource_id' => $options['mediaId'],
-            ];
-            unset($options['mediaId']);
+        // For simplicity, the annotation is fully rewritten.
+        $data = $this->prepareAnnotation($resource, $geometry, $metadata, $styles, $media, $annotation);
+        if (!is_array($data)) {
+            return $this->jsonError($data, Response::STATUS_CODE_500);
         }
 
-        // The selector type and format are kept from the target, but the
-        // geometry can be updated.
-
-        $data['o-module-annotate:target'][0]['rdf:value'][] = [
-            'property_id' => $this->propertyId('rdf:value'),
-            'type' => 'literal',
-            '@value' => $geometry,
-        ];
-
-        // With leafllet, there are always options.
-        if ($options) {
-            if (!empty($options['oaMotivatedBy'])) {
-                $data['oa:motivatedBy'][] = [
-                    'property_id' => $this->propertyId('oa:motivatedBy'),
-                    'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
-                    '@value' => $options['oaMotivatedBy'],
-                ];
-            }
-
-            if (isset($options['popupContent']) && strlen(trim($options['popupContent']))) {
-                $data['o-module-annotate:body'][0]['o-module-annotate:annotation']['o:id'] = $annotation->id();
-                $data['o-module-annotate:body'][0]['rdf:value'][] = [
-                    'property_id' => $this->propertyId('rdf:value'),
-                    'type' => 'literal',
-                    '@value' => $options['popupContent'],
-                ];
-
-                $data['o-module-annotate:body'][0]['oa:hasPurpose'] = [];
-                if (!empty($options['oaHasPurpose'])) {
-                    $data['o-module-annotate:body'][0]['oa:hasPurpose'][] = [
-                        'property_id' => $this->propertyId('oa:hasPurpose'),
-                        'type' => 'customvocab:' . $this->customVocabId('Annotation Body oa:hasPurpose'),
-                        '@value' => $options['oaHasPurpose'],
-                    ];
-                }
-            }
-
-            if (!empty($options['oaLinking'])) {
-                // A link is motivated by linking. Remove the other motivation
-                // if there is no description.
-                if (!empty($data['oa:motivatedBy'][0]) && empty($data['o-module-annotate:body'][0]['rdf:value'])) {
-                    unset($data['oa:motivatedBy'][0]);
-                    unset($data['o-module-annotate:body'][0]['oa:hasPurpose']);
-                }
-                $data['oa:motivatedBy'][] = [
-                    'property_id' => $this->propertyId('oa:motivatedBy'),
-                    'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
-                    '@value' => 'linking',
-                ];
-                // Each link is a separate body. Deduplicate ids too.
-                $ids = [];
-                foreach ($options['oaLinking'] as $valueResource) {
-                    $id = $valueResource['value_resource_id'];
-                    if (in_array($id, $ids)) {
-                        continue;
-                    }
-                    $ids[] = $id;
-                    $oaLinkingValues = [];
-                    $oaLinkingValues['o-module-annotate:annotation']['o:id'] = $annotation->id();
-                    $oaLinkingValues['rdf:value'][] = [
-                        'property_id' => $this->propertyId('rdf:value'),
-                        'type' => 'resource',
-                        'value_resource_id' => $id,
-                    ];
-                    $data['o-module-annotate:body'][] = $oaLinkingValues;
-                }
-            }
-
-            $data['o-module-annotate:target'][0]['cartography:uncertainty'] = [];
-            if (!empty($options['cartographyUncertainty'])) {
-                $data['o-module-annotate:target'][0]['cartography:uncertainty'][] = [
-                    'property_id' => $this->propertyId('cartography:uncertainty'),
-                    'type' => 'customvocab:' . $this->customVocabId('Cartography cartography:uncertainty'),
-                    '@value' => $options['cartographyUncertainty'],
-                ];
-            }
-
-            // TODO Check if original and editing are the same to avoid update or to create a useless style.
-            unset($options['original']);
-            unset($options['editing']);
-            unset($options['annotationIdentifier']);
-            unset($options['oaMotivatedBy']);
-            unset($options['popupContent']);
-            unset($options['oaHasPurpose']);
-            unset($options['oaLinking']);
-            unset($options['cartographyUncertainty']);
-            unset($options['owner']);
-            unset($options['date']);
-            unset($options['right']);
-
-            // TODO Don't update style if it is not updated (so it can be kept empty). And reset it eventually. And use class style.
-            if (!empty($options)) {
-                $data['oa:styledBy'][] = [
-                    'property_id' => $this->propertyId('oa:styledBy'),
-                    'type' => 'literal',
-                    '@value' => json_encode(['leaflet-interactive' => $options], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-                ];
-                $data['o-module-annotate:target'][0]['oa:styleClass'][] = [
-                    'property_id' => $this->propertyId('oa:styleClass'),
-                    'type' => 'literal',
-                    '@value' => 'leaflet-interactive',
-                ];
-            }
-        }
-
-        // Partial update is complex, so reload the full annotation.
-        // $response = $api->update('annotations', $annotation->id(), $data, [], ['isPartial' => true]);
-
-        // Update main annotation first.
-        if ($options) {
-            $values = $this->arrayValues($annotation);
-            if (!empty($data['oa:styledBy'])) {
-                $values['oa:styledBy'] = $data['oa:styledBy'];
-            }
-            if (!empty($data['oa:motivatedBy'])) {
-                $values['oa:motivatedBy'] = $data['oa:motivatedBy'];
-            }
-            $response = $api->update('annotations', $annotation->id(), $values, [], ['isPartial' => true]);
-        }
-
-        // Save the bodies separately, if any.
-        // This is possible because the annotation was updated partially.
-        // Because deduplication between existing and new values is complex,
-        // simply delete existing bodies and create new ones.
-        foreach ($bodies as &$body) {
-            $body = $body->id();
-        }
-        unset($body);
-        $response = $api->batchDelete('annotation_bodies', $bodies);
-        $response = $api->batchCreate('annotation_bodies', $data['o-module-annotate:body']);
-
-        // There is always one target at least, and only one is managed.
-        $values = $this->arrayValues($target);
-        $values['rdf:value'] = $data['o-module-annotate:target'][0]['rdf:value'];
-        if ($options) {
-            $values['oa:styleClass'] = $data['o-module-annotate:target'][0]['oa:styleClass'];
-            $values['cartography:uncertainty'] = $data['o-module-annotate:target'][0]['cartography:uncertainty'];
-        }
-        $response = $api->update('annotation_targets', $target->id(), $values, [], ['isPartial' => true]);
-
+        $api = $this->api();
+        $response = $api->update('annotations', $annotation->id(), $data);
         if (!$response) {
             return $this->jsonError('An internal error occurred.', Response::STATUS_CODE_500); // @translate
         }
@@ -647,10 +363,366 @@ abstract class AbstractCartographyController extends AbstractActionController
             'status' => 'success',
             'result' => [
                 'id' => $annotation->id(),
-                // 'resourceId' => $resource->id(),
-                'annotation' => $annotation->getJsonLd(),
+                'resourceId' => $resource->id(),
+                'annotation' => $response->getContent()->getJsonLd(),
             ],
         ]);
+    }
+
+    /**
+     * Prepare the base annotation data from a form.
+     *
+     * @param AbstractResourceEntityRepresentation $resource
+     * @param string $geometry
+     * @param array $metadata
+     * @param array $styles
+     * @param MediaRepresentation|null $media
+     * @param AnnotationRepresentation|null $annotation
+     * @return array|string Data or a message of error.
+     */
+    protected function prepareAnnotation(
+        AbstractResourceEntityRepresentation $resource,
+        $geometry,
+        array $metadata,
+        array $styles,
+        MediaRepresentation $media = null,
+        AnnotationRepresentation $annotation = null
+    ) {
+        $api = $this->api();
+
+        // TODO Remove old keys in leaflet options.
+        unset($styles['annotationIdentifier']);
+        unset($styles['oaMotivatedBy']);
+        unset($styles['popupContent']);
+        unset($styles['oaHasPurpose']);
+        unset($styles['oaLinking']);
+        unset($styles['cartographyUncertainty']);
+        unset($styles['owner']);
+        unset($styles['date']);
+        unset($styles['right']);
+
+        // Base annotation (force Annotation resource class).
+        $data = [];
+        $data['o:is_public'] = !empty($metadata['o:is_public']);
+        $data['o:resource_class'] = ['o:id' => $api->searchOne('resource_classes', ['term' => 'oa:Annotation'])->getContent()->id()];
+
+        // Check if the template is managed.
+        $isDescribe = !empty($media);
+        $template = empty($metadata['o:resource_template']) ? null : (int) $metadata['o:resource_template'];
+        $templates = $isDescribe
+            ? $this->settings()->get('cartography_template_describe', [])
+            : $this->settings()->get('cartography_template_locate', []);
+        if ($template && !in_array($template, $templates)) {
+            $template = null;
+        }
+
+        // Normally, there is no resource template during creation, since it is
+        // set in style editor.
+        $data['o:resource_template'] = $template ? ['o:id' => $template] : null;
+        $data['oa:motivatedBy'] = $this->forceMotivation($metadata);
+
+        $data['o-module-annotate:body'] = [];
+        $data['o-module-annotate:target'] = [];
+
+        // Body.
+        // No template means that only the data of the style editor are available.
+        $result = $this->fillDataForTemplate($resource, $metadata, $template, $data, $annotation);
+        if (!is_array($result)) {
+            return $result;
+        }
+        $data = $result;
+
+        // Target.
+        $target = $this->fillTarget($resource, $geometry, $styles, $media);
+        $target['o-module-annotate:annotation'] = $annotation ? ['o:id' => $annotation->id()] : null;
+        $data['o-module-annotate:target'][] = $target;
+        if (!empty($data['o-module-annotate:target'][0]['oa:styleClass'])) {
+            $data['oa:styledBy'][] = [
+                'property_id' => $this->propertyId('oa:styledBy'),
+                'type' => 'literal',
+                '@value' => json_encode(['leaflet-interactive' => $styles], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            ];
+        }
+        return $data;
+    }
+
+    /**
+     * Force default motivation if not set.
+     *
+     * @param array $metadata Form metadata
+     * @return array Array of property values.
+     */
+    protected function forceMotivation($metadata)
+    {
+        // Default motivation for the module Cartography is "highlighting" and a
+        // motivation is required.
+        $motivatedByBase = [
+            'property_id' => $this->propertyId('oa:motivatedBy'),
+            'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
+        ];
+        if (empty($metadata['oa:motivatedBy'])) {
+            return [$motivatedByBase + ['@value' => 'highlighting']];
+        }
+
+        // TODO Check if this fix should be kept.
+        // TODO Manage multiple motivations.
+        // Clean the motivation when it is linking without link.
+        if (in_array('linking', $metadata['oa:motivatedBy'])
+            && empty($metadata['resource'])
+        ) {
+            return [$motivatedByBase + ['@value' => 'highlighting']];
+        }
+
+        $motivatedBys = [];
+        foreach ($metadata['oa:motivatedBy'] as $motivatedBy) {
+            $motivatedBys[] = $motivatedByBase + ['@value' => $motivatedBy];
+        }
+        return $motivatedBys;
+    }
+
+    /**
+     * Complete resource data with simplified metadata from a form and template.
+     *
+     * Practically, it creates one or more annotation bodies, with a possible
+     * exception for annotation motivation.
+     *
+     * @param AbstractResourceEntityRepresentation $resource
+     * @param array $metadata The simplified metadata
+     * @param int|null $templateId
+     * @param array $data The normalized metadata
+     * @return array|string Data or a message of error.
+     */
+    protected function fillDataForTemplate(
+        AbstractResourceEntityRepresentation $resource,
+        array $metadata,
+        $templateId,
+        array $data,
+        AnnotationRepresentation $annotation = null
+    ) {
+        // Note: there is no resource template when created.
+        if (empty($templateId)) {
+            return $data;
+        }
+        $short = $this->shortResourceTemplate($templateId);
+        if (empty($short)) {
+            $message = new Message(
+                'Resource template #%d has an issue. Fix settings of Cartography.', // @template
+                $templateId
+            );
+            return $message;
+        }
+        $shortProperties = $short['o:resource_template_property'];
+
+        /** @var \Omeka\Api\Representation\ResourceTemplateRepresentation $template */
+        $template = $this->api()->read('resource_templates', ['id' => $templateId])->getContent();
+        $template = json_decode(json_encode($template), 320);
+        $templateProperties = $template['o:resource_template_property'];
+
+        // Fill the annotation body with the annotation id if any.
+        $data['o-module-annotate:body'] = [[
+            'o-module-annotate:annotation' => $annotation ? ['o:id' => $annotation->id()] : null,
+        ]];
+
+        // Manage the special case for linking (one body for each link), and
+        // term must be "oa:hasBody".
+        $oaLinking = [];
+
+        // Properties are managed as body in most of the cases.
+        foreach ($metadata as $term => $properties) {
+            // Skip Omeka data if any.
+            if (strpos($term, 'o:') === 0 || !is_array($properties)) {
+                continue;
+            }
+
+            // All data are filled first, then exception are managed.
+            foreach ($properties as $shortKey => $value) {
+                // Security check and data should be in the resource template.
+                if (!isset($shortProperties[$shortKey]) || !isset($templateProperties[$shortKey])) {
+                    continue;
+                }
+
+                $lang = empty($templateProperties[$shortKey]['o:lang'])
+                    ? null
+                    : $templateProperties[$shortKey]['o:lang'];
+                $dataType = $templateProperties[$shortKey]['o:data_type'];
+                switch ($dataType) {
+                    // TODO Currently, only item is managed for resource template link field.
+                    // The short resource template for it to "oa:hasBody".
+                    case 'resource':
+                    case 'resource:item':
+                    case 'resource:itemset':
+                    case 'resource:media':
+                        // Currently, the resource is managed differently: it
+                        // can manage the multiple values...
+                        foreach ($value as $v) {
+                            $oaLinking[] = [
+                                'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
+                                'type' => $dataType,
+                                'value_resource_id' => $v['value_resource_id'],
+                                '@value' => null,
+                                '@lang' => null,
+                            ];
+                        }
+                        break;
+                    case 'uri':
+                        $data['o-module-annotate:body'][0][$term][] = [
+                            'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
+                            'type' => $dataType,
+                            '@id' => $value,
+                            'o:label' => null,
+                            '@value' => null,
+                            '@lang' => null,
+                        ];
+                        break;
+                    case strpos($dataType, 'valuesuggest:') === 0:
+                        $data['o-module-annotate:body'][0][$term][] = [
+                            'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
+                            'type' => $dataType,
+                            '@id' => $value,
+                            'o:label' => null,
+                            '@value' => null,
+                            '@lang' => null,
+                        ];
+                        break;
+                    case strpos($dataType, 'customvocab:') === 0:
+                        $data['o-module-annotate:body'][0][$term][] = [
+                            'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
+                            'type' => $dataType,
+                            '@value' => $value,
+                            '@lang' => null,
+                        ];
+                        break;
+                    case 'literal':
+                    default:
+                        $data['o-module-annotate:body'][0][$term][] = [
+                            'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
+                            'type' => $dataType,
+                            '@value' => $value,
+                            '@lang' => $lang,
+                        ];
+                        break;
+                }
+            }
+
+            if ($term === 'oa:motivatedBy') {
+                $data['oa:motivatedBy'] = $data['o-module-annotate:body'][0][$term];
+                unset($data['o-module-annotate:body'][0][$term]);
+            }
+        }
+
+        // TODO Move exception inside adapter. Or force resource template?
+        // Manage exceptions to follow the Annotation data model.
+
+        // Remove the purpose if there is no text description.
+        if (empty($data['o-module-annotate:body'][0]['rdf:value'])
+            && !empty($data['o-module-annotate:body'][0]['oa:hasPurpose'])
+        ) {
+            unset($data['o-module-annotate:body'][0]['oa:hasPurpose']);
+        }
+
+        // Manage the special case for annotation resource link.
+        if ($oaLinking) {
+            // A link is motivated by linking.
+            // Remove the other motivation if there is no description.
+            // This removing is done only here, because there may be no
+            // description when only a geometry is drawn.
+            if (!empty($data['oa:motivatedBy'][0]) && empty($data['o-module-annotate:body'][0]['rdf:value'])) {
+                unset($data['oa:motivatedBy'][0]);
+                unset($data['o-module-annotate:body'][0]['oa:hasPurpose']);
+            }
+            $data['oa:motivatedBy'][] = [
+                'property_id' => $this->propertyId('oa:motivatedBy'),
+                'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
+                '@value' => 'linking',
+            ];
+
+            // Each link is a separate body. Deduplicate ids too.
+            $ids = [];
+            $annotationId = $annotation ? ['o:id' => $annotation->id()] : null;
+            foreach ($oaLinking as $valueResource) {
+                $id = $valueResource['value_resource_id'];
+                // Skip duplicates.
+                if (in_array($id, $ids)) {
+                    continue;
+                }
+                // TODO Replace rdf:value by oa:hasBody but allow associated metadata for links.
+                $ids[] = $id;
+                $oaLinkingValues = [];
+                $oaLinkingValues['o-module-annotate:annotation'] = $annotationId;
+                $oaLinkingValues['rdf:value'][] = [
+                    'property_id' => $this->propertyId('rdf:value'),
+                    'type' => 'resource',
+                    'value_resource_id' => $id,
+                ];
+                $data['o-module-annotate:body'][] = $oaLinkingValues;
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Create a target with simplified metadata from the form.
+     *
+     * Only one target is managed. Five default values are set.
+     *
+     * @param AbstractResourceEntityRepresentation $resource
+     * @param string $geometry The wkt.
+     * @param array $styles The styles of the annotation.
+     * @param MediaRepresentation $media
+     * @return array
+     */
+    protected function fillTarget(
+        AbstractResourceEntityRepresentation $resource,
+        $geometry,
+        array $styles = [],
+        MediaRepresentation $media = null
+    ) {
+        $target = [];
+        $target['oa:hasSource'][] = [
+            'property_id' => $this->propertyId('oa:hasSource'),
+            'type' => 'resource',
+            'value_resource_id' => $resource->id(),
+        ];
+        // Currently, selectors are managed as a type internally.
+        $target['rdf:type'] = [[
+            'property_id' => $this->propertyId('rdf:type'),
+            'type' => 'customvocab:' . $this->customVocabId('Annotation Target rdf:type'),
+            // TODO Or oa:WKT, that doesn't exist? oa:Selector or Selector?
+            '@value' => 'oa:Selector',
+        ]];
+        $target['dcterms:format'] = [[
+            'property_id' => $this->propertyId('dcterms:format'),
+            'type' => 'customvocab:' . $this->customVocabId('Annotation Target dcterms:format'),
+            '@value' => 'application/wkt',
+        ]];
+        // The media id should be added, if any. It is added first only for ux.
+        if ($media) {
+            $target['rdf:value'][] = [
+                'property_id' => $this->propertyId('rdf:value'),
+                'type' => 'resource',
+                'value_resource_id' => $media->id(),
+            ];
+        }
+        $target['rdf:value'][] = [
+            'property_id' => $this->propertyId('rdf:value'),
+            'type' => 'literal',
+            '@value' => $geometry,
+        ];
+        // There is no style during creation.
+        $target['oa:styleClass'] = [];
+        if (array_key_exists('_isRectangle', $styles) && !$styles['_isRectangle']) {
+            unset($styles['_isRectangle']);
+        }
+        if (count($styles)) {
+            $target['oa:styleClass'][] = [
+                'property_id' => $this->propertyId('oa:styleClass'),
+                'type' => 'literal',
+                '@value' => 'leaflet-interactive',
+            ];
+        }
+
+        return $target;
     }
 
     /**
@@ -1010,57 +1082,79 @@ abstract class AbstractCartographyController extends AbstractActionController
                 }
             }
 
-            // Only two motivations are managed together currently: a default
-            // one and "linking". Because linking is automatically set, only the
-            // other motivation is needed.
-            $geometry['options']['oaMotivatedBy'] = '';
-            $values = $annotation->value('oa:motivatedBy', ['all' => true, 'default' => []]);
-            foreach ($values as $value) {
-                $geometry['options']['oaMotivatedBy'] = $value->value();
-                if ($geometry['options']['oaMotivatedBy'] !== 'linking') {
-                    break;
-                }
-            }
+            // TODO Don't use jsonSerialize, but the properties directly.
+            $metadata = $annotation->jsonSerialize();
 
-            // Default values.
-            $geometry['options']['popupContent'] = '';
-            $geometry['options']['oaHasPurpose'] = '';
-            $geometry['options']['oaLinking'] = [];
-
-            $bodies = $annotation->bodies();
-            foreach ($bodies as $body) {
-                // Only one description is managed by geometry, except motivated
-                // by linking, in which case the value is an Omeka resource or
-                // an uri.
-                // There is only one value by body.
-                $value = $body->value('rdf:value');
-                if (!$value) {
-                    continue;
-                }
-                if ($value->type() === 'resource') {
-                    /** @var \Omeka\Api\Representation\ItemRepresentation $valueResource */
-                    $valueResource = $value->valueResource();
-                    // The url of the value representation is empty, but the @id
-                    // contains the url for api. No issue for admin and public.
-                    $geometry['options']['oaLinking'][] = $valueResource->valueRepresentation();
-                } else {
-                    // TODO Manage body values as uris too (here, the popup content may be converted into a pure value).
-                    $geometry['options']['popupContent'] = $value->type() === 'uri' ? $value->uri() : $value->value();
-                    $value = $body->value('oa:hasPurpose');
-                    $geometry['options']['oaHasPurpose'] = $value ? $value->value() : '';
-                }
-            }
-
-            $value = $target->value('cartography:uncertainty');
-            $geometry['options']['cartographyUncertainty'] = $value ? $value->value() : '';
-
-            // Get the author and the date to fill the popup.
+            // Simplify the metadata.
+            // TODO Create a simplified serialization for annotations.
+            unset($metadata['@context']);
+            unset($metadata['@id']);
+            unset($metadata['@type']);
             $owner = $annotation->owner();
-            $geometry['options']['owner'] = [
+            $metadata['o:owner'] = [
                 'id' => $owner->id(),
                 'name' => $owner->name(),
             ];
-            $geometry['options']['date'] = $annotation->created()->format('Y-m-d H:i:s');
+            unset($metadata['o:resource_class']);
+            $metadata['o:resource_template'] = empty($metadata['o:resource_template'])
+                ? null
+                : $metadata['o:resource_template']->id();
+            $metadata['o:created'] = $annotation->created()->format('Y-m-d H:i:s');
+            $metadata['o:modified'] = $annotation->modified()->format('Y-m-d H:i:s');
+            unset($metadata['motivation']);
+            unset($metadata['stylesheet']);
+$metadata['z_body_ex'] = $metadata['body'];
+$metadata['z_target_ex'] = $metadata['target'];
+
+            // All properties are mixed, they will be separated automatically
+            // according to the value. If unknown, it will be a body property.
+            // TODO Use a sub array for body and target (as the json representation)? Or a third prefix (body:rdf:value) just for the form?
+
+            // Properties of the annotation.
+            $skipProperties = [
+                'oa:styledBy'
+            ];
+            /** @var \Annotate\Api\Representation\AnnotationRepresentation $annotation */
+            $metadata = $this->appendProperties($annotation, $metadata, $skipProperties);
+
+            // Properties of bodies.
+            $skipProperties = [];
+            // In json-ld, when there is only one value, the array may be removed.
+            if (empty($metadata['body'])) {
+                $metadata['body'] = [];
+            } elseif (!is_array($metadata['body'])) {
+                $metadata['body'] = [$metadata['body']];
+            }
+            /** @var \Annotate\Api\Representation\AnnotationBodyRepresentation $annotationBody */
+            foreach ($metadata['body'] as $annotationBody) {
+                $metadata = $this->appendProperties($annotationBody, $metadata, $skipProperties);
+            }
+            unset($metadata['body']);
+
+            // Properties of targets.
+            // TODO Only one target is managed in Cartography.
+            // In json-ld, when there is only one value, the array may be removed.
+            if (empty($metadata['target'])) {
+                $metadata['target'] = [];
+            } elseif (!is_array($metadata['target'])) {
+                $metadata['target'] = [$metadata['target']];
+            }
+            $skipProperties = [
+                'oa:hasSource',
+                'rdf:type',
+                'dcterms:format',
+                'rdf:value',
+                'oa:styleClass',
+            ];
+            /** @var \Annotate\Api\Representation\AnnotationTargetRepresentation $annotationTarget */
+            foreach ($metadata['target'] as $annotationTarget) {
+                $metadata = $this->appendProperties($annotationTarget, $metadata, $skipProperties);
+                // TODO Only one target is managed in Cartography.
+                break;
+            }
+           unset($metadata['target']);
+
+            $geometry['options']['metadata'] = $metadata;
 
             $geometry['options']['right'] = [
                 'edit' => $annotation->userIsAllowed('update'),
@@ -1071,6 +1165,49 @@ abstract class AbstractCartographyController extends AbstractActionController
         }
 
         return $geometries;
+    }
+
+    /**
+     * Simpiify properties of a resource.
+     *
+     * @param AbstractResourceEntityRepresentation $annotation
+     * @param array $metadata
+     * @param array $skipProperties
+     * @return array
+     */
+    protected function appendProperties(
+        AbstractResourceEntityRepresentation $resource,
+        array $metadata,
+        array $skipProperties = []
+    ) {
+        foreach ($resource->values() as $term => $property) {
+            if (in_array($term, $skipProperties)) {
+                continue;
+            }
+            /** @var Omeka\Api\Representation\ValueRepresentation $value */
+            foreach ($property['values'] as $value) {
+                $dataType = $value->type();
+                switch ($dataType) {
+                    case 'resource':
+                        $metadata[$term][] = $value->valueResource()->valueRepresentation();
+                        break;
+                    case 'uri':
+                        $metadata[$term][] = ['label' => $value->value(), 'uri' => $value->uri()];
+                        break;
+                    case strpos($dataType, 'valuesuggest:') === 0:
+                        $metadata[$term][] = ['label' => $value->value(), 'uri' => $value->uri()];
+                        break;
+                    case strpos($dataType, 'customvocab:') === 0:
+                        $metadata[$term][] = $value->value();
+                        break;
+                    case 'literal':
+                    default:
+                        $metadata[$term][] = $value->value();
+                        break;
+                }
+            }
+        }
+        return $metadata;
     }
 
     protected function propertyId($term)

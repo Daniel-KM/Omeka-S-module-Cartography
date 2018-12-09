@@ -289,27 +289,6 @@ class Module extends AbstractGenericModule
     protected function installResources()
     {
         $services = $this->getServiceLocator();
-        $vocabulary = [
-            'vocabulary' => [
-                'o:namespace_uri' => 'http://localhost/ns/cartography/',
-                'o:prefix' => 'cartography',
-                'o:label' => 'Cartography', // @translate
-                'o:comment' => 'Specific metadata for cartography (to be removed).', // @translate
-            ],
-            'strategy' => 'file',
-            'file' => 'cartography.ttl',
-            'format' => 'turtle',
-        ];
-        $this->createVocabulary($vocabulary);
-
-        // Add specific custom vocabularies.
-        $customVocabPaths = [
-            __DIR__ . '/data/custom-vocabs/Cartography-cartography-uncertainty.json',
-            __DIR__ . '/data/custom-vocabs/Cartography-oa-MotivatedBy-Locate.json',
-        ];
-        foreach ($customVocabPaths as $filepath) {
-            $this->createCustomVocab($filepath);
-        }
 
         // Complete the annotation custom vocabularies.
         $customVocabPaths = [

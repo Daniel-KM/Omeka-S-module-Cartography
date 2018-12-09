@@ -83,11 +83,6 @@ kept as they are, because they are used internally.
 
 The annotations uses the [web annotation vocabulary].
 
-The class `ogc:WKTLiteral` and the property `geo:asWKT` of the ontologies of the
-[Open Geospatial consortium] are used. They may be converted into the [geovocab]
-vocabulary (`ngeo:Geometry`) if needed.
-
-
 #### Locate georeferenced images
 
 The base maps of the tab "Locate" can be customized. Just set it as js in the
@@ -219,8 +214,6 @@ Copyright
 [Annotate]: https://github.com/Daniel-KM/Omeka-S-module-Annotate
 [Installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
 [`Cartography.zip`]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/releases
-[Open Geospatial consortium]: http://www.opengeospatial.org/
-[geovocab]: http://geovocab.org/
 [IGN map service]: https://geoservices.ign.fr
 [free ign key]: https://geoservices.ign.fr/blog/2018/09/06/acces_geoportail_sans_compte.html
 [module issues]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/issues

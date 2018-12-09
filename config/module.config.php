@@ -2,6 +2,22 @@
 namespace Cartography;
 
 return [
+    'entity_manager' => [
+        'resource_discriminator_map' => [
+//             Entity\Geometry::class => Entity\Geometry::class,
+        ],
+        'mapping_classes_paths' => [
+//             dirname(__DIR__) . '/src/Entity',
+        ],
+        'proxy_paths' => [
+//             dirname(__DIR__) . '/data/doctrine-proxies',
+        ],
+    ],
+    'data_types' => [
+        'invokables' => [
+            'geometry' => DataType\Geometry::class,
+        ],
+    ],
     'view_manager' => [
         'template_path_stack' => [
             dirname(__DIR__) . '/view',

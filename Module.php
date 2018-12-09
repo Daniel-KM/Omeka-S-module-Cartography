@@ -98,6 +98,26 @@ class Module extends AbstractGenericModule
             );
         }
 
+        // Manage the geometry data type.
+        $controllers = [
+            'Omeka\Controller\Admin\Item',
+            'Omeka\Controller\Admin\ItemSet',
+            'Omeka\Controller\Admin\Media',
+            \Annotate\Controller\Admin\AnnotationController::class,
+        ];
+        foreach ($controllers as $controller) {
+            $sharedEventManager->attach(
+                $controller,
+                'view.add.after',
+                [$this, 'prepareResourceForm']
+            );
+            $sharedEventManager->attach(
+                $controller,
+                'view.edit.after',
+                [$this, 'prepareResourceForm']
+            );
+        }
+
         $sharedEventManager->attach(
             \Omeka\Form\SettingForm::class,
             'form.add_elements',
@@ -284,6 +304,25 @@ class Module extends AbstractGenericModule
                 'sections' => $displayAll ? ['describe', 'locate'] : ['locate'],
             ]);
         }
+    }
+
+    /**
+     * Prepare resource forms for geometry data type.
+     *
+     * @param Event $event
+     */
+    public function prepareResourceForm(Event $event)
+    {
+        $view = $event->getTarget();
+        $view->headLink()->appendStylesheet($view->assetUrl('css/cartography.css', 'Cartography'));
+        $headScript = $view->headScript();
+        // $settings = $this->getServiceLocator()->get('Omeka\Settings');
+        // $datatypes = $settings->get('cartography_datatypes', []);
+        $datatypes = ['geometry'];
+        $headScript->appendScript('var geometryDatatypes = ' . json_encode($datatypes, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . ';');
+        $headScript->appendFile($view->assetUrl('vendor/terraformer/terraformer.min.js', 'Cartography'));
+        $headScript->appendFile($view->assetUrl('vendor/terraformer-wkt-parser/terraformer-wkt-parser.min.js', 'Cartography'));
+        $headScript->appendFile($view->assetUrl('js/cartography-geometry-datatype.js', 'Cartography'));
     }
 
     protected function installResources()

@@ -53,11 +53,10 @@ if (version_compare($oldVersion, '3.0.2-alpha', '<')) {
     $settings->set('cartography_display_tab', $newTabs);
 
     // Replace "highlighting" by "locating".
-    $properties = $api->search('properties', [
+    $property = $api->searchOne('properties', [
         'term' => 'oa:motivatedBy',
     ])->getContent();
-    $propertyId = reset($properties);
-    $propertyId = $propertyId->id();
+    $propertyId = $property->id();
     $sql = <<<SQL
 UPDATE value
 SET value = 'locating'
@@ -66,11 +65,10 @@ SQL;
     $connection->exec($sql);
 
     // Replace "certitude" by "uncertainty".
-    $properties = $api->search('properties', [
+    $property = $api->searchOne('properties', [
         'term' => 'cartography:certitude',
     ])->getContent();
-    $propertyId = reset($properties);
-    $propertyId = $propertyId->id();
+    $propertyId = $property->id();
     $sql = <<<SQL
 UPDATE `property`
 SET `local_name` = 'uncertainty', `label` = 'Uncertainty', `comment` = 'Level of uncertainty of a data.'
@@ -219,11 +217,10 @@ if (version_compare($oldVersion, '3.0.5-alpha', '<')) {
     }
 
     // Replace "locating"  by "highlighting".
-    $properties = $api->search('properties', [
+    $property = $api->searchOne('properties', [
         'term' => 'oa:motivatedBy',
     ])->getContent();
-    $propertyId = reset($properties);
-    $propertyId = $propertyId->id();
+    $propertyId = $property->id();
     $sql = <<<SQL
 UPDATE value
 SET value = 'highlighting'
@@ -320,4 +317,23 @@ if (version_compare($oldVersion, '3.0.8-beta', '<')) {
     }
 
     $settings->set('annotate_resource_template_data', $data);
+}
+
+if (version_compare($oldVersion, '3.0.9-beta', '<')) {
+    // Replace "literal" by "geometry" for rdf:value of targets.
+    $property = $api->searchOne('properties', [
+        'term' => 'rdf:value',
+    ])->getContent();
+    $propertyId = $property->id();
+    $sql = <<<SQL
+UPDATE value
+INNER JOIN annotation_target ON annotation_target.id = value.resource_id
+SET type = "geometry", lang = NULL, value_resource_id = NULL, uri = NULL
+WHERE value.property_id = $propertyId
+AND value.type = "literal"
+AND (value.value_resource_id IS NULL)
+AND (value.lang = "" OR value.lang IS NULL)
+AND (value.uri = "" OR value.uri IS NULL);
+SQL;
+    $connection->exec($sql);
 }

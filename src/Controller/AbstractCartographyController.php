@@ -843,8 +843,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         ]];
         $target['rdf:value'] = [[
             'property_id' => $this->propertyId('rdf:value'),
-            // TODO Create a wkt data type.
-            'type' => 'literal',
+            'type' => 'geometry',
             '@value' => $geometry,
         ]];
         // There is no style during creation.
@@ -1191,8 +1190,7 @@ abstract class AbstractCartographyController extends AbstractActionController
             $geometry = [];
             $geometry['id'] = $annotation->id();
 
-            // TODO Use a data type for wkt.
-            $values = $target->value('rdf:value', ['all' => true, 'type' => 'literal', 'default' => []]);
+            $values = $target->value('rdf:value', ['all' => true, 'type' => 'geometry', 'default' => []]);
             foreach ($values as $value) {
                 $geometry['wkt'] = $value->value();
                 break;

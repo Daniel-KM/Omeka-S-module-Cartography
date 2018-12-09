@@ -1,7 +1,7 @@
 <?php
 namespace Cartography\Form;
 
-use Cartography\Form\Element\ResourceTemplateSelect;
+use Annotate\Form\Element\ResourceTemplateSelect;
 use Omeka\Form\Element\CkeditorInline;
 use Zend\Form\Element;
 use Zend\Form\Fieldset;

@@ -18,19 +18,11 @@ return [
         'invokables' => [
             'cartography' => View\Helper\Cartography::class,
         ],
-        'factories' => [
-            // For compatibility with Omeka < 1.2.1.
-            'resourceTemplateSelect' => Service\ViewHelper\ResourceTemplateSelectFactory::class,
-        ],
     ],
     'form_elements' => [
         'invokables' => [
             Form\SettingsFieldset::class => Form\SettingsFieldset::class,
             Form\SiteSettingsFieldset::class => Form\SiteSettingsFieldset::class,
-        ],
-        'factories' => [
-            // For compatibility with Omeka < 1.2.1.
-            Form\Element\ResourceTemplateSelect::class => Service\Form\Element\ResourceTemplateSelectFactory::class,
         ],
     ],
     'controllers' => [

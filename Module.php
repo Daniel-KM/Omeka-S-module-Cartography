@@ -10,7 +10,6 @@ use Annotate\Module\ModuleResourcesTrait;
 use Doctrine\Common\Collections\Criteria;
 use Zend\EventManager\Event;
 use Zend\EventManager\SharedEventManagerInterface;
-use Zend\ModuleManager\ModuleManager;
 use Zend\Mvc\MvcEvent;
 use Zend\ServiceManager\ServiceLocatorInterface;
 
@@ -28,18 +27,6 @@ class Module extends AbstractGenericModule
 
     protected $dependency = 'Annotate';
 
-    public function init(ModuleManager $moduleManager)
-    {
-        // Load composer dependencies.
-        require_once __DIR__ . '/vendor/autoload.php';
-
-        // TODO It is possible to register each geometry separately (line, point…). Is it useful? Or a Omeka type is enough (geometry:point…)? Or a column in the table (no)?
-        \Doctrine\DBAL\Types\Type::addType(
-            'geometry',
-            \CrEOF\Spatial\DBAL\Types\GeometryType::class
-        );
-    }
-
     public function onBootstrap(MvcEvent $event)
     {
         parent::onBootstrap($event);
@@ -47,6 +34,15 @@ class Module extends AbstractGenericModule
             $this->disableModule(__NAMESPACE__);
             return;
         }
+
+        // Load composer dependencies. No need to use init().
+        require_once __DIR__ . '/vendor/autoload.php';
+
+        // TODO It is possible to register each geometry separately (line, point…). Is it useful? Or a Omeka type is enough (geometry:point…)? Or a column in the table (no)?
+        \Doctrine\DBAL\Types\Type::addType(
+            'geometry',
+            \CrEOF\Spatial\DBAL\Types\GeometryType::class
+        );
 
         $this->addAclRules();
     }

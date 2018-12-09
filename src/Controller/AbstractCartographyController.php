@@ -122,7 +122,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         }
 
         $query = $this->params()->fromQuery();
-        $geometries = $this->fetchGeometries($resource, $query);
+        $geometries = $this->fetchSimpleGeometries($resource, $query);
 
         return new JsonModel([
             'status' => 'success',
@@ -390,17 +390,6 @@ abstract class AbstractCartographyController extends AbstractActionController
     ) {
         $api = $this->api();
 
-        // TODO Remove old keys in leaflet options.
-        unset($styles['annotationIdentifier']);
-        unset($styles['oaMotivatedBy']);
-        unset($styles['popupContent']);
-        unset($styles['oaHasPurpose']);
-        unset($styles['oaLinking']);
-        unset($styles['cartographyUncertainty']);
-        unset($styles['owner']);
-        unset($styles['date']);
-        unset($styles['right']);
-
         // Base annotation (force Annotation resource class).
         $data = [];
         $data['o:is_public'] = !empty($metadata['o:is_public']);
@@ -421,8 +410,8 @@ abstract class AbstractCartographyController extends AbstractActionController
         $data['o:resource_template'] = $template ? ['o:id' => $template] : null;
         $data['oa:motivatedBy'] = $this->forceMotivation($metadata);
 
-        $data['o-module-annotate:body'] = [];
-        $data['o-module-annotate:target'] = [];
+        $data['oa:hasBody'] = [];
+        $data['oa:hasTarget'] = [];
 
         // Body.
         // No template means that only the data of the style editor are available.
@@ -434,14 +423,14 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         // Target.
         $target = $this->fillTarget($resource, $geometry, $styles, $media);
-        $target['o-module-annotate:annotation'] = $annotation ? ['o:id' => $annotation->id()] : null;
-        $data['o-module-annotate:target'][] = $target;
-        if (!empty($data['o-module-annotate:target'][0]['oa:styleClass'])) {
-            $data['oa:styledBy'][] = [
+        $target['oa:Annotation'] = $annotation ? ['o:id' => $annotation->id()] : null;
+        $data['oa:hasTarget'][] = $target;
+        if (!empty($data['oa:hasTarget'][0]['oa:styleClass'])) {
+            $data['oa:styledBy'] = [[
                 'property_id' => $this->propertyId('oa:styledBy'),
                 'type' => 'literal',
                 '@value' => json_encode(['leaflet-interactive' => $styles], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-            ];
+            ]];
         }
         return $data;
     }
@@ -461,7 +450,9 @@ abstract class AbstractCartographyController extends AbstractActionController
             'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
         ];
         if (empty($metadata['oa:motivatedBy'])) {
-            return [$motivatedByBase + ['@value' => 'highlighting']];
+            return [
+                [$motivatedByBase + ['@value' => 'highlighting']]
+            ];
         }
 
         // TODO Check if this fix should be kept.
@@ -470,7 +461,9 @@ abstract class AbstractCartographyController extends AbstractActionController
         if (in_array('linking', $metadata['oa:motivatedBy'])
             && empty($metadata['resource'])
         ) {
-            return [$motivatedByBase + ['@value' => 'highlighting']];
+            return [
+                [$motivatedByBase + ['@value' => 'highlighting']]
+            ];
         }
 
         $motivatedBys = [];
@@ -519,8 +512,8 @@ abstract class AbstractCartographyController extends AbstractActionController
         $templateProperties = $template['o:resource_template_property'];
 
         // Fill the annotation body with the annotation id if any.
-        $data['o-module-annotate:body'] = [[
-            'o-module-annotate:annotation' => $annotation ? ['o:id' => $annotation->id()] : null,
+        $data['oa:hasBody'] = [[
+            'oa:Annotation' => $annotation ? ['o:id' => $annotation->id()] : null,
         ]];
 
         // Manage the special case for linking (one body for each link), and
@@ -565,7 +558,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                         }
                         break;
                     case 'uri':
-                        $data['o-module-annotate:body'][0][$term][] = [
+                        $data['oa:hasBody'][0][$term][] = [
                             'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
                             'type' => $dataType,
                             '@id' => $value,
@@ -575,7 +568,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                         ];
                         break;
                     case strpos($dataType, 'valuesuggest:') === 0:
-                        $data['o-module-annotate:body'][0][$term][] = [
+                        $data['oa:hasBody'][0][$term][] = [
                             'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
                             'type' => $dataType,
                             '@id' => $value,
@@ -585,7 +578,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                         ];
                         break;
                     case strpos($dataType, 'customvocab:') === 0:
-                        $data['o-module-annotate:body'][0][$term][] = [
+                        $data['oa:hasBody'][0][$term][] = [
                             'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
                             'type' => $dataType,
                             '@value' => $value,
@@ -594,7 +587,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                         break;
                     case 'literal':
                     default:
-                        $data['o-module-annotate:body'][0][$term][] = [
+                        $data['oa:hasBody'][0][$term][] = [
                             'property_id' => $templateProperties[$shortKey]['o:property']['o:id'],
                             'type' => $dataType,
                             '@value' => $value,
@@ -605,8 +598,8 @@ abstract class AbstractCartographyController extends AbstractActionController
             }
 
             if ($term === 'oa:motivatedBy') {
-                $data['oa:motivatedBy'] = $data['o-module-annotate:body'][0][$term];
-                unset($data['o-module-annotate:body'][0][$term]);
+                $data['oa:motivatedBy'] = $data['oa:hasBody'][0][$term];
+                unset($data['oa:hasBody'][0][$term]);
             }
         }
 
@@ -614,10 +607,10 @@ abstract class AbstractCartographyController extends AbstractActionController
         // Manage exceptions to follow the Annotation data model.
 
         // Remove the purpose if there is no text description.
-        if (empty($data['o-module-annotate:body'][0]['rdf:value'])
-            && !empty($data['o-module-annotate:body'][0]['oa:hasPurpose'])
+        if (empty($data['oa:hasBody'][0]['rdf:value'])
+            && !empty($data['oa:hasBody'][0]['oa:hasPurpose'])
         ) {
-            unset($data['o-module-annotate:body'][0]['oa:hasPurpose']);
+            unset($data['oa:hasBody'][0]['oa:hasPurpose']);
         }
 
         // Manage the special case for annotation resource link.
@@ -626,9 +619,9 @@ abstract class AbstractCartographyController extends AbstractActionController
             // Remove the other motivation if there is no description.
             // This removing is done only here, because there may be no
             // description when only a geometry is drawn.
-            if (!empty($data['oa:motivatedBy'][0]) && empty($data['o-module-annotate:body'][0]['rdf:value'])) {
+            if (!empty($data['oa:motivatedBy'][0]) && empty($data['oa:hasBody'][0]['rdf:value'])) {
                 unset($data['oa:motivatedBy'][0]);
-                unset($data['o-module-annotate:body'][0]['oa:hasPurpose']);
+                unset($data['oa:hasBody'][0]['oa:hasPurpose']);
             }
             $data['oa:motivatedBy'][] = [
                 'property_id' => $this->propertyId('oa:motivatedBy'),
@@ -648,13 +641,13 @@ abstract class AbstractCartographyController extends AbstractActionController
                 // TODO Replace rdf:value by oa:hasBody but allow associated metadata for links.
                 $ids[] = $id;
                 $oaLinkingValues = [];
-                $oaLinkingValues['o-module-annotate:annotation'] = $annotationId;
+                $oaLinkingValues['oa:Annotation'] = $annotationId;
                 $oaLinkingValues['rdf:value'][] = [
                     'property_id' => $this->propertyId('rdf:value'),
                     'type' => 'resource',
                     'value_resource_id' => $id,
                 ];
-                $data['o-module-annotate:body'][] = $oaLinkingValues;
+                $data['oa:hasBody'][] = $oaLinkingValues;
             }
         }
 
@@ -679,16 +672,23 @@ abstract class AbstractCartographyController extends AbstractActionController
         MediaRepresentation $media = null
     ) {
         $target = [];
-        $target['oa:hasSource'][] = [
+        $target['oa:hasSource'] = [[
             'property_id' => $this->propertyId('oa:hasSource'),
             'type' => 'resource',
             'value_resource_id' => $resource->id(),
-        ];
+        ]];
+        if ($media) {
+            $target['oa:hasSelector'] = [[
+                'property_id' => $this->propertyId('oa:hasSelector'),
+                'type' => 'resource',
+                'value_resource_id' => $media->id(),
+            ]];
+        }
         // Currently, selectors are managed as a type internally.
         $target['rdf:type'] = [[
             'property_id' => $this->propertyId('rdf:type'),
             'type' => 'customvocab:' . $this->customVocabId('Annotation Target rdf:type'),
-            // TODO Or oa:WKT, that doesn't exist? oa:Selector or Selector?
+            // TODO Or oa:WKTSelector when it will be extended? oa:Selector or Selector?
             '@value' => 'oa:Selector',
         ]];
         $target['dcterms:format'] = [[
@@ -696,30 +696,23 @@ abstract class AbstractCartographyController extends AbstractActionController
             'type' => 'customvocab:' . $this->customVocabId('Annotation Target dcterms:format'),
             '@value' => 'application/wkt',
         ]];
-        // The media id should be added, if any. It is added first only for ux.
-        if ($media) {
-            $target['rdf:value'][] = [
-                'property_id' => $this->propertyId('rdf:value'),
-                'type' => 'resource',
-                'value_resource_id' => $media->id(),
-            ];
-        }
-        $target['rdf:value'][] = [
+        $target['rdf:value'] = [[
             'property_id' => $this->propertyId('rdf:value'),
+            // TODO Create a wkt data type.
             'type' => 'literal',
             '@value' => $geometry,
-        ];
+        ]];
         // There is no style during creation.
         $target['oa:styleClass'] = [];
         if (array_key_exists('_isRectangle', $styles) && !$styles['_isRectangle']) {
             unset($styles['_isRectangle']);
         }
         if (count($styles)) {
-            $target['oa:styleClass'][] = [
+            $target['oa:styleClass'] = [[
                 'property_id' => $this->propertyId('oa:styleClass'),
                 'type' => 'literal',
                 '@value' => 'leaflet-interactive',
-            ];
+            ]];
         }
 
         return $target;
@@ -1011,7 +1004,7 @@ abstract class AbstractCartographyController extends AbstractActionController
      * returned.
      * @return array Array of geometries.
      */
-    protected function fetchGeometries(AbstractResourceEntityRepresentation $resource, array $query = [])
+    protected function fetchSimpleGeometries(AbstractResourceEntityRepresentation $resource, array $query = [])
     {
         $geometries = [];
 
@@ -1045,18 +1038,20 @@ abstract class AbstractCartographyController extends AbstractActionController
             $geometry = [];
             $geometry['id'] = $annotation->id();
 
-            $values = $target->value('rdf:value', ['all' => true, 'default' => []]);
+            // TODO Use a data type for wkt.
+            $values = $target->value('rdf:value', ['all' => true, 'type' => 'literal', 'default' => []]);
             foreach ($values as $value) {
-                if ($value->type() === 'resource') {
-                    $geometry['mediaId'] = $value->valueResource()->id();
-                } else {
-                    // TODO Only one target is managed currently.
-                    $geometry['wkt'] = $value->value();
-                }
+                $geometry['wkt'] = $value->value();
+                break;
             }
 
             if (empty($geometry['wkt'])) {
                 continue;
+            }
+
+            $hasSelector = $target->value('oa:hasSelector', ['type' => 'resource']);
+            if ($hasSelector) {
+                $geometry['mediaId'] = $hasSelector->valueResource()->id();
             }
 
             if ($mediaId === 0 && !empty($geometry['mediaId'])) {
@@ -1082,6 +1077,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 }
             }
 
+            // TODO The process to simplify geometries is not clean.
             // TODO Don't use jsonSerialize, but the properties directly.
             $metadata = $annotation->jsonSerialize();
 
@@ -1091,68 +1087,72 @@ abstract class AbstractCartographyController extends AbstractActionController
             unset($metadata['@id']);
             unset($metadata['@type']);
             $owner = $annotation->owner();
-            $metadata['o:owner'] = [
-                'id' => $owner->id(),
-                'name' => $owner->name(),
-            ];
+            $metadata['o:owner'] = [];
+            $metadata['o:owner']['id'] = $owner->id();
+            $metadata['o:owner']['name'] = $owner->name();
             unset($metadata['o:resource_class']);
             $metadata['o:resource_template'] = empty($metadata['o:resource_template'])
                 ? null
                 : $metadata['o:resource_template']->id();
             $metadata['o:created'] = $annotation->created()->format('Y-m-d H:i:s');
             $metadata['o:modified'] = $annotation->modified()->format('Y-m-d H:i:s');
-            unset($metadata['motivation']);
-            unset($metadata['stylesheet']);
-$metadata['z_body_ex'] = $metadata['body'];
-$metadata['z_target_ex'] = $metadata['target'];
 
             // All properties are mixed, they will be separated automatically
-            // according to the value. If unknown, it will be a body property.
-            // TODO Use a sub array for body and target (as the json representation)? Or a third prefix (body:rdf:value) just for the form?
+            // according to value. It will be an annotation property if unknown.
+            // TODO Use a sub array for body and target (as the json representation)? Or a third prefix (body:rdf:value) just for the form? The form is annotation based or just for body?
 
             // Properties of the annotation.
             $skipProperties = [
-                'oa:styledBy'
+                'oa:styledBy' => true,
             ];
             /** @var \Annotate\Api\Representation\AnnotationRepresentation $annotation */
             $metadata = $this->appendProperties($annotation, $metadata, $skipProperties);
 
             // Properties of bodies.
-            $skipProperties = [];
             // In json-ld, when there is only one value, the array may be removed.
-            if (empty($metadata['body'])) {
-                $metadata['body'] = [];
-            } elseif (!is_array($metadata['body'])) {
-                $metadata['body'] = [$metadata['body']];
+            if (!empty($metadata['oa:hasBody'])) {
+                if (!is_array($metadata['oa:hasBody'])) {
+                    $metadata['oa:hasBody'] = [$metadata['oa:hasBody']];
+                }
+                $skipProperties = [];
+                /** @var \Annotate\Api\Representation\AnnotationBodyRepresentation $annotationBody */
+                foreach ($metadata['oa:hasBody'] as $annotationBody) {
+                    $metadata = $this->appendProperties($annotationBody, $metadata, $skipProperties);
+                }
             }
-            /** @var \Annotate\Api\Representation\AnnotationBodyRepresentation $annotationBody */
-            foreach ($metadata['body'] as $annotationBody) {
-                $metadata = $this->appendProperties($annotationBody, $metadata, $skipProperties);
-            }
-            unset($metadata['body']);
 
             // Properties of targets.
-            // TODO Only one target is managed in Cartography.
+            // Generally, nothing is needed in target: it is the geometry itself
+            // (source, wkt, style class…) but there may be optional properties.
             // In json-ld, when there is only one value, the array may be removed.
-            if (empty($metadata['target'])) {
-                $metadata['target'] = [];
-            } elseif (!is_array($metadata['target'])) {
-                $metadata['target'] = [$metadata['target']];
+            if (!empty($metadata['oa:hasTarget'])) {
+                if (!is_array($metadata['oa:hasTarget'])) {
+                    $metadata['oa:hasTarget'] = [$metadata['oa:hasTarget']];
+                }
+                $skipProperties = [
+                    'oa:hasSource' => true,
+                    'rdf:type' => true,
+                    'dcterms:format' => true,
+                    'rdf:value' => false,
+                    'oa:styleClass' => true,
+                ];
+                /** @var \Annotate\Api\Representation\AnnotationTargetRepresentation $annotationBody */
+                foreach ($metadata['oa:hasTarget'] as $annotationTarget) {
+                    $metadata = $this->appendProperties($annotationTarget, $metadata, $skipProperties);
+                }
             }
-            $skipProperties = [
-                'oa:hasSource',
-                'rdf:type',
-                'dcterms:format',
-                'rdf:value',
-                'oa:styleClass',
-            ];
-            /** @var \Annotate\Api\Representation\AnnotationTargetRepresentation $annotationTarget */
-            foreach ($metadata['target'] as $annotationTarget) {
-                $metadata = $this->appendProperties($annotationTarget, $metadata, $skipProperties);
-                // TODO Only one target is managed in Cartography.
-                break;
+
+            // Remove all unsimplified metadata.
+            foreach ($metadata as $key => &$val) {
+                if (strpos($key, 'o:') === false && is_array($val)) {
+                    foreach ($val as $k => &$v) {
+                        if (is_object($v)) {
+                           unset($val[$k]);
+                        }
+                    }
+                    $val = array_values($val);
+                }
             }
-           unset($metadata['target']);
 
             $geometry['options']['metadata'] = $metadata;
 
@@ -1168,7 +1168,7 @@ $metadata['z_target_ex'] = $metadata['target'];
     }
 
     /**
-     * Simpiify properties of a resource.
+     * Simplify properties of a resource.
      *
      * @param AbstractResourceEntityRepresentation $annotation
      * @param array $metadata
@@ -1178,33 +1178,35 @@ $metadata['z_target_ex'] = $metadata['target'];
     protected function appendProperties(
         AbstractResourceEntityRepresentation $resource,
         array $metadata,
-        array $skipProperties = []
+        array $skipProperties = [],
+        $valueResource = null
     ) {
+        // TODO Metadata are already available: don't use values().
         foreach ($resource->values() as $term => $property) {
-            if (in_array($term, $skipProperties)) {
+            if (isset($skipProperties[$term])) {
+                if ($skipProperties[$term]) {
+                    unset($metadata[$term]);
+                }
                 continue;
             }
             /** @var Omeka\Api\Representation\ValueRepresentation $value */
-            foreach ($property['values'] as $value) {
-                $dataType = $value->type();
-                switch ($dataType) {
-                    case 'resource':
-                        $metadata[$term][] = $value->valueResource()->valueRepresentation();
-                        break;
-                    case 'uri':
-                        $metadata[$term][] = ['label' => $value->value(), 'uri' => $value->uri()];
-                        break;
-                    case strpos($dataType, 'valuesuggest:') === 0:
-                        $metadata[$term][] = ['label' => $value->value(), 'uri' => $value->uri()];
-                        break;
-                    case strpos($dataType, 'customvocab:') === 0:
-                        $metadata[$term][] = $value->value();
-                        break;
-                    case 'literal':
-                    default:
-                        $metadata[$term][] = $value->value();
-                        break;
-                }
+            foreach ($property['values'] as $value) switch ($value->type()) {
+                case 'resource':
+                    $metadata[$term][] = $value->valueResource()->valueRepresentation();
+                    break;
+                case 'uri':
+                    $metadata[$term][] = ['value' => $value->value(), 'uri' => $value->uri()];
+                    break;
+                case strpos($value->type(), 'valuesuggest:') === 0:
+                    $metadata[$term][] = ['value' => $value->value(), 'uri' => $value->uri()];
+                    break;
+                case strpos($value->type(), 'customvocab:') === 0:
+                    $metadata[$term][] = $value->value();
+                    break;
+                case 'literal':
+                default:
+                    $metadata[$term][] = $value->value();
+                    break;
             }
         }
         return $metadata;
@@ -1222,49 +1224,6 @@ $metadata['z_target_ex'] = $metadata['target'];
         $api = $this->viewHelpers()->get('api');
         $result = $api->read('custom_vocabs', ['label' => $label])->getContent();
         return $result ? $result->id() : null;
-    }
-
-    /**
-     * Convert the values of a resource into an array.
-     *
-     * @todo Manage the specific data.
-     *
-     * @param AbstractResourceEntityRepresentation $resource
-     * @return array
-     */
-    protected function arrayValues(AbstractResourceEntityRepresentation $resource = null)
-    {
-        if (empty($resource)) {
-            return [];
-        }
-
-        $result = [];
-        foreach ($resource->values() as $term => $values) {
-            $termId = $values['property']->id();
-            /** @var \Omeka\Api\Representation\ValueRepresentation $value */
-            foreach ($values['values'] as $value) {
-                $arrayValue = [
-                    'property_id' => $termId,
-                    'type' => $value->type(),
-                ];
-                switch ($value->type()) {
-                    case 'uri':
-                        $arrayValue['@id'] = $value->uri();
-                        $arrayValue['o:label'] = $value->value() ?: null;
-                        break;
-                    case 'resource':
-                        $arrayValue['value_resource_id'] = $value->valueResource()->id();
-                        break;
-                    case 'literal':
-                    default:
-                        $arrayValue['language'] = $value->lang() ?: null;
-                        $arrayValue['@value'] = $value->value();
-                        break;
-                }
-                $result[$term][] = $arrayValue;
-            }
-        }
-        return $result;
     }
 
     /**

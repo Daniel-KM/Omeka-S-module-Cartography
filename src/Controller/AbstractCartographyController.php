@@ -413,6 +413,8 @@ abstract class AbstractCartographyController extends AbstractActionController
     /**
      * Prepare the base annotation data from a form.
      *
+     * @todo Move most of this checks inside module Annotate.
+     *
      * @param AbstractResourceEntityRepresentation $resource
      * @param string $geometry
      * @param array $metadata
@@ -458,8 +460,6 @@ abstract class AbstractCartographyController extends AbstractActionController
         // Normally, there is no resource template during creation, since it is
         // set in style editor.
         $data['o:resource_template'] = $templateId ? ['o:id' => $templateId] : null;
-        $data['oa:motivatedBy'] = $this->forceMotivation($metadata);
-
         $data['oa:hasBody'] = [];
         $data['oa:hasTarget'] = [];
 
@@ -484,20 +484,9 @@ abstract class AbstractCartographyController extends AbstractActionController
         if (!is_array($result)) {
             return $result;
         }
+
+        // Return result anyway.
         $data = $result;
-
-        // Remove duplicated motivations.
-        $list = [];
-        foreach ($data['oa:motivatedBy'] as $key => $oaMotivatedBy) {
-            $oaMotivatedBy = array_filter($oaMotivatedBy);
-            ksort($oaMotivatedBy);
-            if (in_array($oaMotivatedBy, $list, true)) {
-                unset($data['oa:motivatedBy'][$key]);
-            } else {
-                $list[] = $oaMotivatedBy;
-            }
-        }
-
         return $data;
     }
 
@@ -573,55 +562,9 @@ abstract class AbstractCartographyController extends AbstractActionController
     }
 
     /**
-     * Force default motivation if not set.
-     *
-     * @param array $metadata Form metadata
-     * @return array Array of property values.
-     */
-    protected function forceMotivation(array $metadata)
-    {
-        // Default motivation for the module Cartography is "highlighting" and a
-        // motivation is required.
-        $motivatedByBase = [
-            'property_id' => $this->propertyId('oa:motivatedBy'),
-            'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
-        ];
-        if (empty($metadata['oa:motivatedBy'])) {
-            return [
-                [$motivatedByBase + ['@value' => 'highlighting']]
-            ];
-        }
-
-        // TODO Check if this fix should be kept.
-        // TODO Manage multiple motivations.
-        // Clean the motivation when it is linking without link.
-        if (in_array('linking', $metadata['oa:motivatedBy'])
-            && empty($metadata['resource'])
-        ) {
-            return [
-                [$motivatedByBase + ['@value' => 'highlighting']]
-            ];
-        }
-
-        // List all single motivations.
-        $motivatedBys = [];
-        $list = [];
-        foreach ($metadata['oa:motivatedBy'] as $motivatedBy) {
-            if (in_array($motivatedBy, $list)) {
-                continue;
-            }
-            $list[] = $motivatedBy;
-            $motivatedBy = $motivatedByBase + ['@value' => $motivatedBy];
-            $motivatedBys[] = $motivatedBy;
-        }
-        return $motivatedBys;
-    }
-
-    /**
      * Complete resource data with simplified metadata from a form and template.
      *
-     * Practically, it creates one or more annotation bodies, with a possible
-     * exception for annotation motivation.
+     * Practically, it creates one or more annotation bodies.
      *
      * @param AbstractResourceEntityRepresentation $resource
      * @param array $metadata The simplified metadata
@@ -768,16 +711,25 @@ abstract class AbstractCartographyController extends AbstractActionController
             unset($data['oa:hasBody'][0]['oa:hasPurpose']);
         }
 
+        // Check and add a default motivation if none.
+        if (!empty($data['oa:motivatedBy'][0]) && empty($data['oa:hasBody'][0]['rdf:value'])) {
+            unset($data['oa:motivatedBy'][0]);
+            unset($data['oa:hasBody'][0]['oa:hasPurpose']);
+            if (!$oaLinking) {
+                $data['oa:motivatedBy'][] = [
+                    'property_id' => $this->propertyId('oa:motivatedBy'),
+                    'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
+                    '@value' => 'highlighting',
+                ];
+            }
+        }
+
         // Manage the special case for annotation resource link.
         if ($oaLinking) {
             // A link is motivated by linking.
             // Remove the other motivation if there is no description.
             // This removing is done only here, because there may be no
             // description when only a geometry is drawn.
-            if (!empty($data['oa:motivatedBy'][0]) && empty($data['oa:hasBody'][0]['rdf:value'])) {
-                unset($data['oa:motivatedBy'][0]);
-                unset($data['oa:hasBody'][0]['oa:hasPurpose']);
-            }
             $data['oa:motivatedBy'][] = [
                 'property_id' => $this->propertyId('oa:motivatedBy'),
                 'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),

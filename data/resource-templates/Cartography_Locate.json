@@ -7,7 +7,7 @@
             "o:is_required": false,
             "o:is_private": false,
             "data_type_name": "customvocab:1",
-            "data_type_label": "Annotation Cartography oa:motivatedBy (Locating)",
+            "data_type_label": "Annotation oa:motivatedBy",
             "vocabulary_namespace_uri": "http:\/\/www.w3.org\/ns\/oa#",
             "vocabulary_label": "Web Annotation Ontology",
             "local_name": "motivatedBy",

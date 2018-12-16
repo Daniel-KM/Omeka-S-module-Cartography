@@ -501,3 +501,112 @@ if (version_compare($oldVersion, '3.0.12-beta', '<')) {
             'Cartography requires module DataTypeGeometry version 3.0.1 or higher.'); // @translate
     }
 }
+
+if (version_compare($oldVersion, '3.1.0', '<')) {
+    // Add the default templates to the existing geometries.
+
+    $templateLocate = $settings->get('cartography_template_locate', []);
+    if (empty($templateLocate)) {
+        throw new \Omeka\Module\Exception\ModuleCannotInstallException(
+            'Upgrade cannot be done: select a default template for Locate first.'); // @translate
+    }
+    $templateLocate = reset($templateLocate);
+
+    $templateDescribe = $settings->get('cartography_template_describe', []);
+    if (empty($templateDescribe)) {
+        throw new \Omeka\Module\Exception\ModuleCannotInstallException(
+            'Upgrade cannot be done: select a default template for Describe first.'); // @translate
+    }
+    $templateDescribe = reset($templateDescribe);
+
+    $property = 'rdf:value';
+    $rdfValue = $api->searchOne('properties', ['term' => $property])->getContent()->id();
+
+    $resourceClass  = 'oa:Annotation';
+    $resourceClass = $api->searchOne('resource_classes', [
+        'vocabulary_prefix' => 'oa',
+        'local_name' => 'Annotation',
+    ])->getContent()->id();
+
+    // Set the locate template to all annotations with a geometry.
+
+    // First, set it to all targets with a geometry.
+    $sql = <<<SQL
+UPDATE resource
+INNER JOIN annotation_part ON annotation_part.id = resource.id
+SET resource_class_id = $resourceClass, resource_template_id = $templateLocate, is_public = 1
+WHERE resource.id IN (
+  SELECT resource_id FROM (
+    SELECT DISTINCT value.resource_id
+    FROM value
+    INNER JOIN annotation_target ON annotation_target.id = value.resource_id
+    WHERE value.property_id = $rdfValue
+    AND value.type IN ("geometry:geometry", "geometry:geography")
+    AND value.value_resource_id IS NULL
+  ) AS w
+);
+SQL;
+    $connection->exec($sql);
+
+    $property = 'oa:hasSelector';
+    $oaHasSelector = $api->searchOne('properties', ['term' => $property])->getContent()->id();
+
+    // Second, set the describe template to all describe targets (with a media).
+    $sql = <<<SQL
+UPDATE resource
+INNER JOIN annotation_target ON annotation_target.id = resource.id
+SET resource_class_id = $resourceClass, resource_template_id = $templateDescribe, is_public = 1
+WHERE resource.id IN (
+  SELECT resource_id FROM (
+    SELECT DISTINCT value.resource_id
+    FROM value
+    INNER JOIN annotation_target ON annotation_target.id = value.resource_id
+    INNER JOIN resource ON resource.id = value.value_resource_id
+        AND resource.resource_type = "Omeka\\\\Entity\\\\Media"
+    WHERE value.property_id = $oaHasSelector
+    AND value.value_resource_id IS NOT NULL
+  ) AS w
+);
+SQL;
+    $connection->exec($sql);
+
+    // Finally, set the template to root annotations, then to the bodies.
+
+    foreach ([$templateLocate, $templateDescribe] as $template) {
+        // Copy all targets with the specified template to the root annotation.
+        $sql = <<<SQL
+UPDATE resource
+INNER JOIN annotation ON annotation.id = resource.id
+INNER JOIN annotation_part ON annotation_part.annotation_id = resource.id
+SET resource_class_id = $resourceClass, resource_template_id = $template, is_public = 1
+WHERE annotation_part.id IN (
+  SELECT id FROM (
+    SELECT DISTINCT resource.id
+    FROM resource
+    WHERE resource.resource_template_id = $template
+  ) AS w
+);
+SQL;
+        $connection->exec($sql);
+
+        // Copy all annotations with the specified template to the body annotations.
+        $sql = <<<SQL
+UPDATE resource
+INNER JOIN annotation_part ON annotation_part.id = resource.id
+SET resource_class_id = $resourceClass, resource_template_id = $template, is_public = 1
+WHERE annotation_part.annotation_id IN (
+  SELECT id FROM (
+    SELECT DISTINCT resource.id
+    FROM resource
+    WHERE resource.resource_template_id = $template
+  ) AS w
+);
+SQL;
+        $connection->exec($sql);
+    }
+
+    $messenger = new \Omeka\Mvc\Controller\Plugin\Messenger();
+    $messenger->addWarning(
+        'All geometries have the default templates (describe and locate).' // @translate
+    );
+}

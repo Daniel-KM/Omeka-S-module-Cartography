@@ -1,9 +1,5 @@
 /* Cartography */
 
-.o-icon-geometry:before {
-    content: "\f3c5";
-}
-
 /* Leaflet layers */
 .leaflet-control-layers input[name="leaflet-base-layers"] {
     font-size: 16px;

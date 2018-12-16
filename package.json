@@ -16,11 +16,7 @@
     "leaflet-providers": "^1.5.0",
     "leaflet-styleeditor": "^0.1.10-beta",
     "leaflet-tilelayer-wmts": "^1.0.0",
-    "leaflet.markercluster": "^1.4.1",
-    "terraformer": "^1.0.9",
-    "terraformer-arcgis-parser": "^1.1.0",
-    "terraformer-wkt-parser": "^1.2.0",
-    "webui-popover": "^1.2.18"
+    "leaflet.markercluster": "^1.4.1"
   },
   "devDependencies": {
     "del": "^3.0.0",

@@ -1,5 +1,5 @@
-Annotate images and maps (module for Omeka S)
-=============================================
+Cartography: Annotate images and maps (module for Omeka S)
+==========================================================
 
 [Cartography] is a module for [Omeka S] that allows to annotate (to draw points,
 lines, polylines, polygons, etc.) an image or a map with the [web annotation vocabulary]
@@ -8,15 +8,11 @@ and the [web annotation data model].
 Maps can be georeferenced ([wms]) or ungeoreferenced images, so it is possible
 to annotate any images, even non-cartographic ones.
 
-**This is a work in progress (ALPHA release).**
-
 
 Installation
 ------------
 
-This module requires the modules [Annotate].
-
-### Libraries
+This module requires the modules [Annotate] and [Data Type Geometry].
 
 The module uses external libraries, so use the release zip to install it, or use
 and init the source.
@@ -36,36 +32,9 @@ the module to `Cartography`, go to the root of the module, and run:
 
 ```
     npm install
+    composer install
     gulp
 ```
-
-### Omeka database or external database
-
-The geometries can be saved in Omeka database or in an external one. It’s useful
-to share them with other GIS systems. It allows to do advanced search and to
-browse quicker too.
-
-So the database must support spatial indexing. It must be equal or greater than
-[MariaDB 10.2.2] (2016-09-27) or [mySql 5.7.5] (2014-09-25), for the engine
-InnoDB. Prior database releases can support spatial index too, but only with the
-engine MyIsam (that does not support referential integrity and is not used by
-Omeka). The choice between InnoDB and MyIsam is done automatically.
-
-To support searches of geometres, (distance around a point, geometries contained
-inside another geometry), the version of should be minimum [mySql 5.6.1] (2011-02)
-or [mariaDB 5.3.3] (2011-12-21). Note that the minimum Omeka version is [mySql 5.5.3]
-(2010-03-24, equivalent to [MariaDB 5.5.20] (2012-02-25)), so some releases of
-mySql are below the minimum requirement of this module. For a precise support of
-geometry, see the [spatial support matrix].
-
-You may prefer to use an external database. To config it, set the parameters in
-the file `config/database-cartography.ini`, beside your main `config/database.ini`.
-See the file `config/database-cartography.ini.dist` for more information. The
-table is named [`data_type_geometry`]. Furthermore, if PostgreSql is used, the
-`config/local.config.php``should indicate it in `[entity_manager][functions][numeric]`,
-by overriding keys of the mysql functions.
-
-The support for MariaDB, mySql and PostgreSql is provided though [doctrine2-spatial].
 
 
 Quick start
@@ -179,24 +148,22 @@ the module currently.
 ### Geometries
 
 The geometries are saved as standard Omeka values and indexed in a specific
-table with a spatial index for quick search.
+table with a spatial index for quick search via the module [Data Type Geometry].
 
 **Warning**: The geometry "Circle" is not managed by WKT or by GeoJSON, but only
 by the viewer. It is saved as a `POINT` in the database, without radius.
-
-Only common sql spatial functions are enabled. Other ones can be enabled in the
-config of the module (via `local.config.php`).
 
 ### JSON-LD and GeoJSON
 
 According to the [discussion] on the working group of JSON-LD and GeoJSON, the
 GeoJson cannot be used in all cases inside a JSON-LD. So the representation uses
-the deprecated, but largely used, datatype [`geo:asWKT`]:
+the data type `http://www.opengis.net/ont/geosparql#wktLiteral` of the [OGC standard].
+The deprecated datatype `http://geovocab.org/geometry#asWKT` is no more used.
 
 ```json
 {
-    '@value' => 'POINT (2.294497 48.858252)',
-    '@type' => 'http://geovocab.org/geometry#asWKT'
+    "@value": "POINT (2.294497 48.858252)",
+    "@type": "http://www.opengis.net/ont/geosparql#wktLiteral"
 }
 ```
 
@@ -207,10 +174,6 @@ TODO
 - Add a configurable list of styles in the style editor (or replace the fields
   used to edit styles).
 - Add the specific config of the wmts at the site level.
-- Remove doctrine:lexer from composer vendor.
-- Use the sub-types of geometries and use them eventually in a specific table
-  (the database engine can manage the generic geometry or each particular type).
-- Add a js to convert wkt into svg icon (via geojson/d3 or directly).
 
 
 Warning
@@ -280,6 +243,7 @@ sociales [EHESS].
 [web annotation vocabulary]: https://www.w3.org/TR/annotation-vocab/
 [wms]: https://en.wikipedia.org/wiki/Web_Map_Service
 [Annotate]: https://github.com/Daniel-KM/Omeka-S-module-Annotate
+[Data Type Geometry]: https://github.com/Daniel-KM/Omeka-S-module-DataTypeGeometry
 [Installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
 [MariaDB 10.2.2]: https://mariadb.com/kb/en/library/spatial-index/
 [mySql 5.7.5]: https://dev.mysql.com/doc/relnotes/mysql/5.7/en/news-5-7-5.html#mysqld-5-7-5-innodb

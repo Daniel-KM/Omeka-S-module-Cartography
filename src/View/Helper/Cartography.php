@@ -154,9 +154,9 @@ class Cartography extends AbstractHelper
 
         // Leaflet terraformer.
         // TODO See if terraformer can replace leaflet paste.
-        $headScript->appendFile($view->assetUrl('vendor/terraformer/terraformer.min.js', 'Cartography'));
-        $headScript->appendFile($view->assetUrl('vendor/terraformer-arcgis-parser/terraformer-arcgis-parser.min.js', 'Cartography'));
-        $headScript->appendFile($view->assetUrl('vendor/terraformer-wkt-parser/terraformer-wkt-parser.min.js', 'Cartography'));
+        $headScript->appendFile($view->assetUrl('vendor/terraformer/terraformer.min.js', 'DataTypeGeometry'));
+        $headScript->appendFile($view->assetUrl('vendor/terraformer-arcgis-parser/terraformer-arcgis-parser.min.js', 'DataTypeGeometry'));
+        $headScript->appendFile($view->assetUrl('vendor/terraformer-wkt-parser/terraformer-wkt-parser.min.js', 'DataTypeGeometry'));
 
         // Leaflet full screen (full view).
         $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-fullscreen/leaflet.fullscreen.css', 'Cartography'));

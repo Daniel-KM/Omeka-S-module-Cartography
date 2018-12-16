@@ -813,7 +813,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         ]];
         $target['rdf:value'] = [[
             'property_id' => $this->propertyId('rdf:value'),
-            'type' => 'geometry',
+            'type' => empty($media) ? 'geometry:geography' : 'geometry:geometry',
             '@value' => $geometry,
         ]];
         // There is no style during creation.
@@ -1127,6 +1127,13 @@ abstract class AbstractCartographyController extends AbstractActionController
         $mediaId = array_key_exists('mediaId', $query)
             ? (int) $query['mediaId']
             : null;
+        if ($mediaId) {
+            $geometryTypes = ['geometry:geometry'];
+        } elseif ($mediaId === 0) {
+            $geometryTypes = ['geometry:geography'];
+        } else {
+            $geometryTypes = ['geometry:geometry', 'geometry:geography'];
+        }
 
         // The search is done via the annotation adapter, not the resource one.
         if (!empty($query['annotation_id'])) {
@@ -1150,12 +1157,19 @@ abstract class AbstractCartographyController extends AbstractActionController
             $geometry = [];
             $geometry['id'] = $annotation->id();
 
-            $values = $target->value('rdf:value', ['all' => true, 'type' => 'geometry', 'default' => []]);
-            foreach ($values as $value) {
-                $geometry['wkt'] = $value->value();
-                break;
+            // An annotation has only one wkt, that can be a geometry or a
+            // geography.
+            foreach ($geometryTypes as $geometryType) {
+                $value = $target->value('rdf:value', ['all' => false, 'type' => $geometryType, 'default' => []]);
+                if ($value) {
+                    // Remove the srid if any.
+                    $value = $value->value();
+                    $geometry['wkt'] = stripos($value, 'srid') !== false
+                        ? trim(substr($value, strpos($value, ';') + 1))
+                        : $value;
+                    break;
+                }
             }
-
             if (empty($geometry['wkt'])) {
                 continue;
             }

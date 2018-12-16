@@ -1,10 +1,4 @@
 {
-    "require": {
-        "creof/doctrine2-spatial": "^1.2"
-    },
-    "replace": {
-        "doctrine/orm": "self.version"
-    },
     "require-dev": {
         "biblibre/omeka-s-test-helper": "dev-master"
     },

@@ -481,3 +481,23 @@ AND value LIKE "%_isRectangle%"
 SQL;
     $connection->exec($sql);
 }
+
+if (version_compare($oldVersion, '3.0.12-beta', '<')) {
+    $this->checkDependencies();
+
+    /** @var \Omeka\Module\Manager $moduleManager */
+    $moduleManager = $services->get('Omeka\ModuleManager');
+    $module = $moduleManager->getModule('Annotate');
+    $version = $module->getDb('version');
+    if (version_compare($version, '3.1.0', '<')) {
+        throw new \Omeka\Module\Exception\ModuleCannotInstallException(
+            'Cartography requires module Annotate version 3.1.0 or higher.'); // @translate
+    }
+
+    $module = $moduleManager->getModule('DataTypeGeometry');
+    $version = $module->getDb('version');
+    if (version_compare($version, '3.0.1', '<')) {
+        throw new \Omeka\Module\Exception\ModuleCannotInstallException(
+            'Cartography requires module DataTypeGeometry version 3.0.1 or higher.'); // @translate
+    }
+}

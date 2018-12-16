@@ -58,26 +58,6 @@ const bundle = [
     //     'source': 'node_modules/leaflet-tilelayer-wmts/dist/**',
     //     'dest': 'asset/vendor/leaflet-tilelayer-wmts',
     // },
-    {
-        'source': 'node_modules/terraformer/terraformer.js',
-        'dest': 'asset/vendor/terraformer',
-        'rename': true,
-        'uglify': true,
-    },
-    {
-        'source': 'node_modules/terraformer-arcgis-parser/terraformer-arcgis-parser.js',
-        'dest': 'asset/vendor/terraformer-arcgis-parser',
-        'rename': true,
-        'uglify': true,
-    },
-    {
-        'source': 'node_modules/terraformer-wkt-parser/terraformer-wkt-parser.min.js',
-        'dest': 'asset/vendor/terraformer-wkt-parser',
-    },
-    {
-        'source': 'node_modules/webui-popover/dist/**',
-        'dest': 'asset/vendor/webui-popover',
-    },
 ];
 
 const hack_leaflet_draw = function (done) {

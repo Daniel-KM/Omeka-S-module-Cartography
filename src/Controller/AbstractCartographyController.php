@@ -439,9 +439,11 @@ abstract class AbstractCartographyController extends AbstractActionController
         $data['o:is_public'] = isset($metadata['o:is_public']) && !is_null($metadata['o:is_public'])
             ? $metadata['o:is_public']
             : true;
-        $data['o:resource_class'] = ['o:id' => $api
+        $data['o:resource_class'] = [
+            'o:id' => $api
                 ->searchOne('resource_classes', ['term' => 'oa:Annotation'])
-                ->getContent()->id()];
+                ->getContent()->id(),
+        ];
 
         // Check if the template is managed.
         $isDescribe = !empty($media);
@@ -546,7 +548,7 @@ abstract class AbstractCartographyController extends AbstractActionController
      */
     protected function hasMetadata(array $metadata)
     {
-        return (bool) array_filter($metadata, function($v, $k) {
+        return (bool) array_filter($metadata, function ($v, $k) {
             return
                 // Remove generic keys and empty values.
                 substr($k, 0, 2) !== 'o:'
@@ -554,7 +556,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 && is_array($v)
                 && count($v) !== 0
                 // Remove true empty values (0 character or empty array).
-                && array_filter($v, function($w) {
+                && array_filter($v, function ($w) {
                     return is_array($w) ? !empty($w) : strlen(trim($w)) !== 0;
                 })
             ;
@@ -596,7 +598,7 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         // List the property terms one time (they are not available in the full
         // template, neither as keys).
-        $terms = array_map(function($v) {
+        $terms = array_map(function ($v) {
             return $v['o:term'];
         }, $shortProperties);
 

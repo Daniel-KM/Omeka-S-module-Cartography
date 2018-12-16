@@ -522,7 +522,7 @@ if (version_compare($oldVersion, '3.1.0', '<')) {
     $property = 'rdf:value';
     $rdfValue = $api->searchOne('properties', ['term' => $property])->getContent()->id();
 
-    $resourceClass  = 'oa:Annotation';
+    $resourceClass = 'oa:Annotation';
     $resourceClass = $api->searchOne('resource_classes', [
         'vocabulary_prefix' => 'oa',
         'local_name' => 'Annotation',

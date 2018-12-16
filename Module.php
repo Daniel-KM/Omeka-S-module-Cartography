@@ -328,7 +328,7 @@ class Module extends AbstractGenericModule
                 'rdf:value' => 'oa:hasBody',
                 'oa:hasPurpose' => 'oa:hasBody',
                 'oa:hasBody' => 'oa:Annotation',
-            ]
+            ],
         ];
         $resourceTemplateData = $settings->get('annotate_resource_template_data', []);
         foreach ($resourceTemplatePaths as $key => $filepath) {

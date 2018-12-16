@@ -37,7 +37,7 @@ class Cartography extends AbstractHelper
         // Geobrowse is exclusive.
         if (empty($resource)
             || (isset($options['type']) && $options['type'] === 'geobrowse')
-            || (isset($options['sections']) && in_array('geobrowse' , $options['sections']))
+            || (isset($options['sections']) && in_array('geobrowse', $options['sections']))
         ) {
             $options = [
                 'type' => 'geobrowse',

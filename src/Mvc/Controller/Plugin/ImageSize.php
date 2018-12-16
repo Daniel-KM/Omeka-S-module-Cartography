@@ -3,7 +3,6 @@ namespace Cartography\Mvc\Controller\Plugin;
 
 use Omeka\Api\Representation\MediaRepresentation;
 use Omeka\File\TempFileFactory;
-use Omeka\Mvc\Exception\RuntimeException;
 use Omeka\Stdlib\Message;
 use Zend\Mvc\Controller\Plugin\AbstractPlugin;
 
@@ -36,7 +35,6 @@ class ImageSize extends AbstractPlugin
      *
      * @param MediaRepresentation $media
      * @param string $imageType
-     * @throws RuntimeException
      * @return array|null Associative array of width and height of the image
      * file, else null.
      */
@@ -56,8 +54,11 @@ class ImageSize extends AbstractPlugin
 
         // This is an image, but failed to get the resolution.
         if (empty($result)) {
-            throw new RuntimeException(new Message('Failed to get image resolution: %s', // @translate
-                $storagePath));
+            $this->logger->err(new Message(
+                'Failed to get image resolution of media #%d (%s). Check your files.', // @translate
+                $media->id(), $storagePath
+            ));
+            return null;
         }
 
         return $result;

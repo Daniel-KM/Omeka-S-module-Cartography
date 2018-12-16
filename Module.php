@@ -81,7 +81,14 @@ class Module extends AbstractGenericModule
         $this->installResources();
     }
 
-    // TODO Cartography vocabulary is not removed.
+    public function uninstall(ServiceLocatorInterface $serviceLocator)
+    {
+        $this->setServiceLocator($serviceLocator);
+        foreach (['Cartography Describe', 'Cartography Locate'] as $resourceTemplate) {
+            $this->removeResourceTemplate($resourceTemplate);
+        }
+        parent::uninstall($serviceLocator);
+    }
 
     /**
      * Add ACL rules for this module.
@@ -597,10 +604,29 @@ class Module extends AbstractGenericModule
             'cartography_template_describe' => __DIR__ . '/data/resource-templates/Cartography_Describe.json',
             'cartography_template_locate' => __DIR__ . '/data/resource-templates/Cartography_Locate.json',
         ];
+        $resourceTemplateSettings = [
+            'cartography_template_describe' => [
+                'oa:motivatedBy' => 'oa:Annotation',
+                'rdf:value' => 'oa:hasBody',
+                'oa:hasPurpose' => 'oa:hasBody',
+                'oa:hasBody' => 'oa:Annotation',
+            ],
+            'cartography_template_locate' => [
+                'oa:motivatedBy' => 'oa:Annotation',
+                'rdf:value' => 'oa:hasBody',
+                'oa:hasPurpose' => 'oa:hasBody',
+                'oa:hasBody' => 'oa:Annotation',
+            ]
+        ];
+        $resourceTemplateData = $settings->get('annotate_resource_template_data', []);
         foreach ($resourceTemplatePaths as $key => $filepath) {
             $resourceTemplate = $this->createResourceTemplate($filepath);
+            // Add the special resource template settings.
+            $resourceTemplateData[$resourceTemplate->id()] = $resourceTemplateSettings[$key];
+            // Set the template as default template.
             $settings->set($key, [$resourceTemplate->id()]);
         }
+        $settings->set('annotate_resource_template_data', $resourceTemplateData);
     }
 
     /**

@@ -106,7 +106,7 @@ abstract class AbstractCartographyController extends AbstractActionController
     }
 
     /**
-     * Get the geometries for a resource, with partial metadata.
+     * Get the geometries for a resource, with simplified and partial metadata.
      *
      * Note: Metadata are simplified for the display and use in leaflet.
      *
@@ -123,6 +123,13 @@ abstract class AbstractCartographyController extends AbstractActionController
         }
 
         $query = $this->params()->fromQuery();
+
+        // TODO Fix js to use "annotation_id" and not "annotationId".
+        if (isset($query['annotationId']) && !isset($query['annotation_id'])) {
+            $query['annotation_id'] = $query['annotationId'];
+            unset($query['annotationId']);
+        }
+
         $geometries = $this->fetchSimpleGeometries($resource, $query);
 
         return new JsonModel([
@@ -340,8 +347,7 @@ abstract class AbstractCartographyController extends AbstractActionController
             return $this->jsonError($data, Response::STATUS_CODE_500);
         }
 
-        $api = $this->api();
-        $response = $api->create('annotations', $data);
+        $response = $this->api()->create('annotations', $data);
         if (!$response) {
             return $this->jsonError('An internal error occurred.', Response::STATUS_CODE_500); // @translate
         }
@@ -389,8 +395,7 @@ abstract class AbstractCartographyController extends AbstractActionController
             return $this->jsonError($data, Response::STATUS_CODE_500);
         }
 
-        $api = $this->api();
-        $response = $api->update('annotations', $annotation->id(), $data);
+        $response = $this->api()->update('annotations', $annotation->id(), $data);
         if (!$response) {
             return $this->jsonError('An internal error occurred.', Response::STATUS_CODE_500); // @translate
         }
@@ -1159,7 +1164,7 @@ abstract class AbstractCartographyController extends AbstractActionController
      * for that media; if equal to 0, get only geometries without media id; if
      * equal to -1, get all geometries with a media id; if not set, get all
      * geometries, whatever they have a media id or not.
-     * - annotationId" to specify an annotation, else all annotations are
+     * - annotation_id: to specify an annotation, else all annotations are
      * returned.
      * @return array Array of geometries.
      */
@@ -1171,18 +1176,14 @@ abstract class AbstractCartographyController extends AbstractActionController
             ? (int) $query['mediaId']
             : null;
 
-        $annotationId = array_key_exists('annotationId', $query)
-            ? (int) $query['annotationId']
-            : null;
+        // The search is done via the annotation adapter, not the resource one.
+        if (!empty($query['annotation_id'])) {
+            $query['id'] = $query['annotation_id'];
+        }
 
         /** @var \Annotate\Api\Representation\AnnotationRepresentation[] $annotations */
         $annotations = $this->resourceAnnotations($resource, $query);
         foreach ($annotations as $annotation) {
-            // Filter annotation if annotation id is set.
-            if ($annotationId && $annotationId !== $annotation->id()) {
-                continue;
-            }
-
             // Currently, only one target by annotation.
             $target = $annotation->primaryTarget();
             if (!$target) {
@@ -1235,88 +1236,55 @@ abstract class AbstractCartographyController extends AbstractActionController
                 }
             }
 
-            // TODO The process to simplify geometries is not clean.
-            // TODO Don't use jsonSerialize, but the properties directly.
-            $metadata = $annotation->jsonSerialize();
-
             // Simplify the metadata.
-            // TODO Create a simplified serialization for annotations.
-            unset($metadata['@context']);
-            unset($metadata['@id']);
-            unset($metadata['@type']);
+            // All properties are mixed, they will be separated automatically
+            // according to the resource template or via the annotation process.
+            $metadata = [];
+            $metadata['o:id'] = $annotation->id();
+            $metadata['o:is_public'] = $annotation->isPublic();
             $owner = $annotation->owner();
             $metadata['o:owner'] = [];
             $metadata['o:owner']['id'] = $owner->id();
             $metadata['o:owner']['name'] = $owner->name();
-            unset($metadata['o:resource_class']);
-            $metadata['o:resource_template'] = empty($metadata['o:resource_template'])
-                ? null
-                : $metadata['o:resource_template']->id();
             $metadata['o:created'] = $annotation->created()->format('Y-m-d H:i:s');
             $metadata['o:modified'] = $annotation->modified()->format('Y-m-d H:i:s');
-
-            // All properties are mixed, they will be separated automatically
-            // according to value. It will be an annotation property if unknown.
-            // TODO Use a sub array for body and target (as the json representation)? Or a third prefix (body:rdf:value) just for the form? The form is annotation based or just for body?
+            // TODO Possibly return only the metadata of the template.
+            $resourceTemplate = $annotation->resourceTemplate();
+            $metadata['o:resource_template'] = $resourceTemplate ? $resourceTemplate->id() : null;
 
             // Properties of the annotation.
             $specialProperties = [
                 'oa:styledBy' => true,
+                'oa:hasBody' => true,
+                'oa:hasTarget' => true,
             ];
-            /** @var \Annotate\Api\Representation\AnnotationRepresentation $annotation */
             $metadata = $this->appendProperties($annotation, $metadata, $specialProperties);
 
             // Properties of bodies.
-            // In json-ld, when there is only one value, the array may be removed.
-            if (!empty($metadata['oa:hasBody'])) {
-                if (!is_array($metadata['oa:hasBody'])) {
-                    $metadata['oa:hasBody'] = [$metadata['oa:hasBody']];
-                }
-                $specialProperties = [
-                    // Manage the special case of the body resources: they are
-                    // managed as rdf:value resource internally, but oa:hasBody
-                    // in the front-end.
-                    'rdf:value' => ['resource' => 'oa:hasBody'],
-                ];
-                /** @var \Annotate\Api\Representation\AnnotationBodyRepresentation $annotationBody */
-                foreach ($metadata['oa:hasBody'] as $annotationBody) {
-                    $metadata = $this->appendProperties($annotationBody, $metadata, $specialProperties);
-                }
+            $specialProperties = [
+                // Manage the special case of the body resources: they are
+                // managed as rdf:value resource internally, but oa:hasBody
+                // in the front-end.
+                'rdf:value' => ['resource' => 'oa:hasBody'],
+            ];
+            foreach ($annotation->bodies() as $annotationBody) {
+                $metadata = $this->appendProperties($annotationBody, $metadata, $specialProperties);
             }
 
             // Properties of targets.
             // Generally, nothing is needed in target: it is the geometry itself
             // (source, wkt, style class…) but there may be optional properties.
-            // In json-ld, when there is only one value, the array may be removed.
-            if (!empty($metadata['oa:hasTarget'])) {
-                if (!is_array($metadata['oa:hasTarget'])) {
-                    $metadata['oa:hasTarget'] = [$metadata['oa:hasTarget']];
-                }
-                $specialProperties = [
-                    'oa:hasSource' => true,
-                    'rdf:type' => true,
-                    'dcterms:format' => true,
-                    'rdf:value' => false,
-                    'oa:styleClass' => true,
-                    // Forbid it only for locate.
-                    // 'oa:hasSelector' => true,
-                ];
-                /** @var \Annotate\Api\Representation\AnnotationTargetRepresentation $annotationBody */
-                foreach ($metadata['oa:hasTarget'] as $annotationTarget) {
-                    $metadata = $this->appendProperties($annotationTarget, $metadata, $specialProperties);
-                }
-            }
-
-            // Remove all unsimplified metadata.
-            foreach ($metadata as $key => &$val) {
-                if (strpos($key, 'o:') === false && is_array($val)) {
-                    foreach ($val as $k => &$v) {
-                        if (is_object($v)) {
-                           unset($val[$k]);
-                        }
-                    }
-                    $val = array_values($val);
-                }
+            $specialProperties = [
+                'oa:hasSource' => true,
+                'rdf:type' => true,
+                'dcterms:format' => true,
+                'rdf:value' => true,
+                'oa:styleClass' => true,
+                // Forbid it only for locate.
+                // 'oa:hasSelector' => true,
+            ];
+            foreach ($annotation->targets() as $annotationTarget) {
+                $metadata = $this->appendProperties($annotationTarget, $metadata, $specialProperties);
             }
 
             $geometry['options']['metadata'] = $metadata;
@@ -1343,17 +1311,12 @@ abstract class AbstractCartographyController extends AbstractActionController
     protected function appendProperties(
         AbstractResourceEntityRepresentation $resource,
         array $metadata,
-        array $specialProperties = [],
-        $valueResource = null
+        array $specialProperties = []
     ) {
-        // TODO Metadata are already available: don't use values().
         foreach ($resource->values() as $term => $property) {
             if (isset($specialProperties[$term])
                 && is_bool($specialProperties[$term])
             ) {
-                if ($specialProperties[$term]) {
-                    unset($metadata[$term]);
-                }
                 continue;
             }
             /** @var Omeka\Api\Representation\ValueRepresentation $value */

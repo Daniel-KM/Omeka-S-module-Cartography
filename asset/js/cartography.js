@@ -1,3 +1,4 @@
+
 /**
  * @Description: To extend the style-editor, put annotation dynamic data form
  *               inside the side bar.
@@ -19,6 +20,8 @@
             } else {
                 arr = [];
             }
+        } else {
+            arr = obj;
         }
         return arr;
     }
@@ -106,35 +109,10 @@
             return html;
         }
 
-        function resourceLinkRenderHtmlBAK0() {
-
-            var annotationId = getValueAtIndex('o:id', null);
-            if (! annotationId) {
-                return '';
-            }
-            var linkUrl = basePath + baseUrl + '/annotation/' + annotationId;
-            var html = `<div class="_annotation_property_plain_html annotation-metadata ">
-                    <div class="annotation-caption">
-                        <a class="resource-link" href="${linkUrl}">
-                            <span class="resource-name">[#${annotationId}]</span>
-                        </a>
-                        <ul class="actions">
-                            <li>
-                                <span><a class="o-icon-external" href="${linkUrl}" 
-                                        target="_blank" 
-                                        title="${Omeka.jsTranslate('Show annotation')}" 
-                                        aria-label="${Omeka.jsTranslate('Show annotation')}" 
-                                       ></a></span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>`;
-            return html;
-        }
         function resourceLinkRenderHtml() {
 
             var label = _renderData.propertyTplData['o:label'];
-            var listLinks = getValueAtIndex() || {};
+            var listLinks = getValueAtIndex(null, null) || [];
             listLinks = wrapObj2Array(listLinks);
             var html = '';
             if (!isEmptyValue(listLinks) && $.isArray(listLinks) && listLinks.length > 0) {
@@ -418,30 +396,30 @@
                 sourcePropertyKey: _renderData.propertyTplData['o:term'],
                 events: {
                     onAddNewResourceItem: 'onAddNewResourceItem'
-                }
+                },
+                resourcePropertyTplData: {} // clone
             };
 
 
             initialize();
             function initialize() {
+
+                // deep copy
+                _data.resourcePropertyTplData = $.extend(true, {}, _renderData.propertyTplData);
+
+
                 listLinks = _renderData.propDataModel.getPropertyData(
                     _data.sourcePropertyKey,
-                    _renderData.propertyTplData._jsFnGetUniqueKey()
+                    _data.resourcePropertyTplData._jsFnGetUniqueKey()
+                    // null
                 ) || [];
 
-                // if (! $.isArray(listLinks)) {
-                //     if (typeof(listLinks) === 'object') {
-                //         listLinks = [listLinks]
-                //     } else {
-                //         listLinks = [];
-                //     }
-                // }
                 listLinks = wrapObj2Array(listLinks);
 
                 // While opening the right sidebar,
                 // the editor is expecting a return of the new link item
-                getEditorOption('map').on(eventName(_data.events.onAddNewResourceItem), function (newItem) {
-                    doOnNewLinkItemReturn(newItem);
+                getEditorOption('map').on(eventName(_data.events.onAddNewResourceItem), function (data) {
+                    doOnNewLinkItemReturn(data);
                 });
             }
 
@@ -452,7 +430,7 @@
                 });
                 _renderData.propDataModel.doOnPropertyChange({
                     newData: {key: _data.sourcePropertyKey, value: listLinks},
-                    propertyTplData: _renderData.propertyTplData
+                    propertyTplData: _data.resourcePropertyTplData
                 });
             }
 
@@ -460,7 +438,7 @@
                 listLinks.push(linkItem);
                 _renderData.propDataModel.doOnPropertyChange({
                     newData: {key: _data.sourcePropertyKey, value: listLinks},
-                    propertyTplData: _renderData.propertyTplData
+                    propertyTplData: _data.resourcePropertyTplData
                 });
             }
 
@@ -471,10 +449,17 @@
             }
 
             function doOnNewLinkItemReturn(data) {
+                data = data || {};
                 var linkItem = data.newChoseItem;
                 if (linkItem) {
                     addLinkItem(linkItem);
                     reRenderLinkItems();
+                }
+
+                if (data.afterFinishAddItemCallback && $.isFunction (data.afterFinishAddItemCallback)) {
+                    data.afterFinishAddItemCallback({
+                        layer: _renderData.propDataModel.currentLayer()
+                    });
                 }
             }
 
@@ -749,6 +734,8 @@
 
 
 
+
+
 /**
  * @Description: To extend the style-editor, put annotation dynamic data form
  *               inside the side bar
@@ -860,6 +847,14 @@
             }
 
             function _indexSameProperties(propertiesData) {
+                var isMultipleTypeOfProperty = function (propertyItem) {
+                    propertyItem = propertyItem || {};
+                    var rs = true;
+                    if (propertyItem.type === 'resource') {
+                        rs = false;
+                    }
+                    return rs;
+                };
 
                 var setPropertyIndex = function (propertyItem, index) {
                     if (!propertyItem) {
@@ -867,10 +862,18 @@
                     }
                     // add the _jsUniqueKey
                     propertyItem._jsFnGetUniqueKey = function () {
-                        return index;
+                        var rs = index;
+                        if (! isMultipleTypeOfProperty(propertyItem)) {
+                            rs = null;
+                        }
+                        return rs;
                     };
                     propertyItem._jsFnIsArrayProperty = function () {
-                        return true;
+                        var rs = true;
+                        if (! isMultipleTypeOfProperty(propertyItem)) {
+                            rs = false;
+                        }
+                        return rs;
                     };
                 };
                 propertiesData = propertiesData || [];
@@ -981,6 +984,7 @@
                 setSourceTypeId: setSourceTypeId,
                 doOnPropertyChange: doOnPropertyChange,
                 getPropertyData: getPropertyData,
+                currentLayer: currentLayer,
             };
             var $ = jQuery;
             var _data = {
@@ -1447,6 +1451,8 @@
 
 
 
+
+
 /*
  * Cartography annotate
  */
@@ -1574,12 +1580,14 @@ var displayGeometry = function(data) {
         // var popupContent = popupAnnotation(options);
         // layer.bindPopup(popupContent);
 
-        cartographyDataService.bindLayerPopup(layer);
 
         // To reserve the options from geoJson.
         layer.options = layer.options || {};
         // To prepare for style editor form-element initial value.
         layer.options = $.extend(options, layer.options);
+
+
+        cartographyDataService.bindLayerPopup(layer);
     }
 
     // Keep the styling.
@@ -1591,10 +1599,12 @@ var displayGeometry = function(data) {
     if (geojson.type === 'Point' && typeof options.radius !== 'undefined') {
         // Warning: the coordinates are inversed on an image.
         layer = L.circle([geojson.coordinates[1], geojson.coordinates[0]], options);
-
         layer.setStyle(options);
+
+        cartographyDataService.bindLayerPopup(layer);
+
     } else {
-        layer = L.geoJson(geojson, options);
+        layer = L.geoJson(geojson, options); // popup is binded from options
 
         // Use rectangle if possible, not Polygon.
         // Keep the moving handle when editing with leaflet.draw.
@@ -1604,13 +1614,15 @@ var displayGeometry = function(data) {
             if (options.annotationIdentifier) {
                 rectangleIds[options.annotationIdentifier] = true;
             }
+
+            cartographyDataService.bindLayerPopup(layer);
         }
     }
 
     // Set the content of the popup in all cases, not only description.
     // var popupContent = popupAnnotation(options);
     // layer.bindPopup(popupContent);
-    cartographyDataService.bindLayerPopup(layer);
+
 
     // Append the geometry to the map.
     addGeometry(layer, data['id'], this.drawnItems);
@@ -2046,7 +2058,7 @@ var annotateControl = function(map, drawnItems) {
 
     if (userRights && userRights.edit !== false) {
 
-        cartographyDataService.setMap(map);
+        // cartographyDataService.setMap(map);
         // use the annotation dynamic form for style-editor
         styleEditorControlOptions = $.extend(styleEditorControlOptions, {
             useAnnotationDynamicForm: true,
@@ -2092,6 +2104,8 @@ var initDescribe = function() {
     });
     map.setView([0, 0], 0);
     var mapMoved = false;
+
+    cartographyDataService.setMap(map, section);
 
     // Geometries are displayed and edited on the drawnItems layer.
     var drawnItems = new L.FeatureGroup();
@@ -2172,6 +2186,8 @@ var initLocate = function() {
     });
     map.setView([20, 0], 2);
     var mapMoved = false;
+
+    cartographyDataService.setMap(map, section);
 
     // TODO Create automatically the bounds from geometries.
     var defaultBounds = null;
@@ -2884,7 +2900,7 @@ function createCartographyDataService() {
         currentSection: '',
         annotateFormService: L.StyleEditorAnnotation.createAnnotateFormService(),
         currentTemplateData: [],
-        map: {}
+        maps: {}
     };
 
 
@@ -2896,8 +2912,8 @@ function createCartographyDataService() {
     }
 
 
-    function setMap(map) {
-        _data.map = map;
+    function setMap(map, section) {
+        _data.maps[section] = map;
     }
 
 
@@ -2911,8 +2927,10 @@ function createCartographyDataService() {
             tabElement.click(function () {
                 setCurrentSection(section);
                 setCurrentTemplateData(_data.annotationTemplateJson[section]);
-                if (_data.map && _data.map.fireEvent && $.isFunction(_data.map.fireEvent)) {
-                    _data.map.fireEvent('styleeditor:afterTemplateJsonReLoaded', {
+
+                var map = _data.maps[section];
+                if (map && map.fireEvent && $.isFunction(map.fireEvent)) {
+                    map.fireEvent('styleeditor:afterTemplateJsonReLoaded', {
                         templateJsonData: _data.annotationTemplateJson[section]
                     });
                 }

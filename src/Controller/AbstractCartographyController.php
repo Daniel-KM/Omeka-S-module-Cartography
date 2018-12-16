@@ -428,8 +428,13 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         // Base annotation (force Annotation resource class).
         $data = [];
-        $data['o:is_public'] = !empty($metadata['o:is_public']);
-        $data['o:resource_class'] = ['o:id' => $api->searchOne('resource_classes', ['term' => 'oa:Annotation'])->getContent()->id()];
+        // Force annotation to be public by default, like all resources.
+        $data['o:is_public'] = isset($metadata['o:is_public']) && !is_null($metadata['o:is_public'])
+            ? $metadata['o:is_public']
+            : true;
+        $data['o:resource_class'] = ['o:id' => $api
+                ->searchOne('resource_classes', ['term' => 'oa:Annotation'])
+                ->getContent()->id()];
 
         // Check if the template is managed.
         $isDescribe = !empty($media);

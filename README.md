@@ -6,7 +6,7 @@ lines, polylines, polygons, etc.) an image or a map with the [web annotation voc
 and the [web annotation data model].
 
 Maps can be georeferenced ([wms]) or ungeoreferenced images, so it is possible
-to annotate any images, even not cartagraphic ones.
+to annotate any images, even non-cartographic ones.
 
 **This is a work in progress (ALPHA release).**
 
@@ -15,6 +15,8 @@ Installation
 ------------
 
 This module requires the modules [Annotate].
+
+### Libraries
 
 The module uses external libraries, so use the release zip to install it, or use
 and init the source.
@@ -36,6 +38,34 @@ the module to `Cartography`, go to the root of the module, and run:
     npm install
     gulp
 ```
+
+### Omeka database or external database
+
+The geometries can be saved in Omeka database or in an external one. It’s useful
+to share them with other GIS systems. It allows to do advanced search and to
+browse quicker too.
+
+So the database must support spatial indexing. It must be equal or greater than
+[MariaDB 10.2.2] (2016-09-27) or [mySql 5.7.5] (2014-09-25), for the engine
+InnoDB. Prior database releases can support spatial index too, but only with the
+engine MyIsam (that does not support referential integrity and is not used by
+Omeka). The choice between InnoDB and MyIsam is done automatically.
+
+To support searches of geometres, (distance around a point, geometries contained
+inside another geometry), the version of should be minimum [mySql 5.6.1] (2011-02)
+or [mariaDB 5.3.3] (2011-12-21). Note that the minimum Omeka version is [mySql 5.5.3]
+(2010-03-24, equivalent to [MariaDB 5.5.20] (2012-02-25)), so some releases of
+mySql are below the minimum requirement of this module. For a precise support of
+geometry, see the [spatial support matrix].
+
+You may prefer to use an external database. To config it, set the parameters in
+the file `config/database-cartography.ini`, beside your main `config/database.ini`.
+See the file `config/database-cartography.ini.dist` for more information. The
+table is named [`data_type_geometry`]. Furthermore, if PostgreSql is used, the
+`config/local.config.php``should indicate it in `[entity_manager][functions][numeric]`,
+by overriding keys of the mysql functions.
+
+The support for MariaDB, mySql and PostgreSql is provided though [doctrine2-spatial].
 
 
 Quick start
@@ -72,12 +102,31 @@ Notes
 Configuration
 -------------
 
-### List of terms
+### Forms
 
-The list of terms for the motivation, the purpose and the uncertainty can be
-changed via the module `Custom vocab`. The title of the vocabularies must be
-kept as they are, because they are used internally.
+The images and  the maps can be described with any metadata. These metadata are
+listed in a standard Òmeka resource template, but it must have the class
+`oa:Annotation`.
 
+The images and  the maps can be described with any metadata. Nevertheless, it is
+recommended to use standard annotations ones, in particular `rdf:value` for the
+body (equivalent to `dcterms:description` for the resources) and `oa:motivatedBy`
+for annotation itself (to simplify the search). The relations with other
+resources (for example identification of an object on an image is an image of
+another item) should use the element `oa:hasBody`.
+
+Note that according to the Open Annotation data model, an annotation is divided
+in three part: the annoation itself, one or more target (only one with this
+module) and zero or more bodies (a description, a link, etc.). So the properties
+of the annoations should be attached to one of this part via the resource
+template, so they will be saved regularly. It's particularly important for the
+non-standard metadata (the default one are automapped according to the data
+model, when possible). The default automapping is set in a [config file] of the
+module [Annotate] and can be updated.
+
+There may be one or multiple forms for each tab (Describe and Locate), for
+example one to describe object, another one to identify people, and another one
+to describe place. They are selected in the main settings of Omeka S.
 
 ### Ontologies
 
@@ -127,14 +176,41 @@ purpose only. In production, you must register to get a [free ign key].
 A similar js can be added for images to describe, but is not managed directly by
 the module currently.
 
+### Geometries
+
+The geometries are saved as standard Omeka values and indexed in a specific
+table with a spatial index for quick search.
+
+**Warning**: The geometry "Circle" is not managed by WKT or by GeoJSON, but only
+by the viewer. It is saved as a `POINT` in the database, without radius.
+
+Only common sql spatial functions are enabled. Other ones can be enabled in the
+config of the module (via `local.config.php`).
+
+### JSON-LD and GeoJSON
+
+According to the [discussion] on the working group of JSON-LD and GeoJSON, the
+GeoJson cannot be used in all cases inside a JSON-LD. So the representation uses
+the deprecated, but largely used, datatype [`geo:asWKT`]:
+
+```json
+{
+    '@value' => 'POINT (2.294497 48.858252)',
+    '@type' => 'http://geovocab.org/geometry#asWKT'
+}
+```
+
 
 TODO
 ----
 
-- Make the list of the fields of the style editor configurable.
 - Add a configurable list of styles in the style editor (or replace the fields
   used to edit styles).
 - Add the specific config of the wmts at the site level.
+- Remove doctrine:lexer from composer vendor.
+- Use the sub-types of geometries and use them eventually in a specific table
+  (the database engine can manage the generic geometry or each particular type).
+- Add a js to convert wkt into svg icon (via geojson/d3 or directly).
 
 
 Warning
@@ -187,23 +263,15 @@ This module uses many open source leaflet libraries. See [asset/vendor] for
 details.
 
 
-Contact
--------
-
-Current maintainers:
-
-* Daniel Berthereau (see [Daniel-KM] on GitHub)
-
-This module was built first for the French École des hautes études en sciences
-sociales [EHESS].
-
-
 Copyright
 ---------
 
-* Copyright Daniel Berthereau, 2018
+* See `asset/vendor/` and `vendor/` for the copyright of the libraries.
+* Some portions are adapterd from the modules [Numeric data types] and [Neatline].
+* Copyright Daniel Berthereau, 2018, (see [Daniel-KM] on GitHub)
 
-* See [asset/vendor] for the copyright of the libraries.
+This module was built first for the French École des hautes études en sciences
+sociales [EHESS].
 
 
 [Cartography]: https://github.com/Daniel-KM/Omeka-S-module-Cartography
@@ -213,14 +281,28 @@ Copyright
 [wms]: https://en.wikipedia.org/wiki/Web_Map_Service
 [Annotate]: https://github.com/Daniel-KM/Omeka-S-module-Annotate
 [Installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
+[MariaDB 10.2.2]: https://mariadb.com/kb/en/library/spatial-index/
+[mySql 5.7.5]: https://dev.mysql.com/doc/relnotes/mysql/5.7/en/news-5-7-5.html#mysqld-5-7-5-innodb
+[mySql 5.5.3]: https://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-3.html
+[MariaDB 5.5.20]: https://mariadb.com/kb/en/library/mariadb-5521-release-notes/
+[mySql 5.6.1]: https://dev.mysql.com/doc/relnotes/mysql/5.6/en/news-5-6-1.html
+[MariaDB 5.3.3]: https://mariadb.com/kb/en/library/mariadb-533-release-notes/
+[spatial support matrix]: https://mariadb.com/kb/en/library/mysqlmariadb-spatial-support-matrix/
+[`data_type_geometry`]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/tree/master/data/install/schema.sql
+[doctrine2-spatial]: https://github.com/creof/doctrine2-spatial/blob/HEAD/doc/index.md
 [`Cartography.zip`]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/releases
+[config file]: https://github.com/Daniel-KM/Omeka-S-module-Annotate/tree/master/data/mappings/properties_to_annotation_parts.php
+[Annotate]: https://github.com/Daniel-KM/Omeka-S-module-Annotate
 [IGN map service]: https://geoservices.ign.fr
 [free ign key]: https://geoservices.ign.fr/blog/2018/09/06/acces_geoportail_sans_compte.html
+[discussion]: https://github.com/json-ld/json-ld.org/issues/397
+[`geo:asWKT`]: http://geovocab.org/geometry#asWKT
 [module issues]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/issues
 [CeCILL v2.1]: https://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org
 [OSI]: http://opensource.org
-[asset/vendor]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/tree/master/asset/vendor
+[Numeric data types]: https://github.com/omeka-s-modules/NumericDataTypes
+[Neatline]: https://github.com/performant-software/neatline-omeka-s
 [EHESS]: https://www.ehess.fr
 [Daniel-KM]: https://github.com/Daniel-KM "Daniel Berthereau"

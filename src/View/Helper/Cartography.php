@@ -99,8 +99,10 @@ class Cartography extends AbstractHelper
 
         // The module is independant from the module Mapping, but some js are the same,
         // so it is recommenced to choose one module or the other to avoid js conflicts.
-        $headLink->appendStylesheet($view->assetUrl('vendor/leaflet/leaflet.css', 'Cartography'));
-        $headScript->appendFile($view->assetUrl('vendor/leaflet/leaflet.js', 'Cartography'));
+        $headLink
+            ->appendStylesheet($view->assetUrl('vendor/leaflet/leaflet.css', 'Cartography'));
+        $headScript
+            ->appendFile($view->assetUrl('vendor/leaflet/leaflet.js', 'Cartography'));
 
         // Add specific code for annotation.
         if ($annotate) {
@@ -108,38 +110,47 @@ class Cartography extends AbstractHelper
             $rights = $this->globalRights($user, $annotate);
 
             // Edition via draw (used for creation, edit or delete).
-            $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-draw/leaflet.draw.css', 'Cartography'));
-            $headScript->appendFile($view->assetUrl('vendor/leaflet-draw/leaflet.draw.js', 'Cartography'));
+            $headLink
+                ->appendStylesheet($view->assetUrl('vendor/leaflet-draw/leaflet.draw.css', 'Cartography'));
+            $headScript
+                ->appendFile($view->assetUrl('vendor/leaflet-draw/leaflet.draw.js', 'Cartography'));
 
             // TODO Check if valuesuggest is used in one of the annotation templates.
             if ($view->hasValueSuggest()) {
                 // $event = new \Zend\EventManager\Event('cartography.add_value_suggest', $view);
                 // (new \ValueSuggest\Module)->prepareResourceForm($event);
-                $headLink->appendStylesheet($view->assetUrl('css/valuesuggest.css', 'ValueSuggest'));
-                $headScript->appendFile($view->assetUrl('js/jQuery-Autocomplete/1.2.26/jquery.autocomplete.min.js', 'ValueSuggest'));
-                $headScript->appendFile($view->assetUrl('js/valuesuggest.js', 'ValueSuggest'));
-                $headScript->appendScript(sprintf(
-                    'var valueSuggestProxyUrl = "%s";',
-                    $view->escapeJs($view->url('admin/value-suggest/proxy'))
-                ));
+                $headLink
+                    ->appendStylesheet($view->assetUrl('css/valuesuggest.css', 'ValueSuggest'));
+                $headScript
+                    ->appendFile($view->assetUrl('js/jQuery-Autocomplete/1.2.26/jquery.autocomplete.min.js', 'ValueSuggest'))
+                    ->appendFile($view->assetUrl('js/valuesuggest.js', 'ValueSuggest'))
+                    ->appendScript(sprintf(
+                        'var valueSuggestProxyUrl = "%s";',
+                        $view->escapeJs($view->url('admin/value-suggest/proxy'))
+                    ));
             }
 
             if ($rights['create']) {
                 // Leaflet paste.
-                $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-paste/css/Leaflet.paste.css', 'Cartography'));
-                $headScript->appendFile($view->assetUrl('vendor/leaflet-paste/vendor/wicket.src.js', 'Cartography'));
-                $headScript->appendFile($view->assetUrl('vendor/leaflet-paste/vendor/wicket-leaflet.src.js', 'Cartography'));
-                $headScript->appendFile($view->assetUrl('vendor/leaflet-paste/js/Leaflet.Layer.WKT.js', 'Cartography'));
-                $headScript->appendFile($view->assetUrl('vendor/leaflet-paste/js/Leaflet.paste.js', 'Cartography'));
+                $headLink
+                    ->appendStylesheet($view->assetUrl('vendor/leaflet-paste/css/Leaflet.paste.css', 'Cartography'));
+                $headScript
+                    ->appendFile($view->assetUrl('vendor/leaflet-paste/vendor/wicket.src.js', 'Cartography'))
+                    ->appendFile($view->assetUrl('vendor/leaflet-paste/vendor/wicket-leaflet.src.js', 'Cartography'))
+                    ->appendFile($view->assetUrl('vendor/leaflet-paste/js/Leaflet.Layer.WKT.js', 'Cartography'))
+                    ->appendFile($view->assetUrl('vendor/leaflet-paste/js/Leaflet.paste.js', 'Cartography'));
             }
 
             if ($rights['edit']) {
                 // Style editor.
-                $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-styleeditor/css/Leaflet.StyleEditor.min.css', 'Cartography'));
-                $headScript->appendFile($view->assetUrl('vendor/leaflet-styleeditor/javascript/Leaflet.StyleEditor.min.js', 'Cartography'));
+                $headLink
+                    ->appendStylesheet($view->assetUrl('vendor/leaflet-styleeditor/css/Leaflet.StyleEditor.min.css', 'Cartography'));
+                $headScript
+                    ->appendFile($view->assetUrl('vendor/leaflet-styleeditor/javascript/Leaflet.StyleEditor.min.js', 'Cartography'));
 
                 // TODO Load only the item selector part of the resource-form.js.
-                $headScript->appendFile($view->assetUrl('js/resource-form.js', 'Omeka'));
+                $headScript
+                    ->appendFile($view->assetUrl('js/resource-form.js', 'Omeka'));
 
                 // TODO Integrate the resource selector sidebar in public view (or inside the style editor, that will allow full screen linking too).
                 $html .= $view->partial('common/resource-select-sidebar');
@@ -148,19 +159,24 @@ class Cartography extends AbstractHelper
 
         if ($geoBrowse) {
             // Just to display a square or a circle.
-            $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-draw/leaflet.draw.css', 'Cartography'));
-            $headScript->appendFile($view->assetUrl('vendor/leaflet-draw/leaflet.draw.js', 'Cartography'));
+            $headLink
+                ->appendStylesheet($view->assetUrl('vendor/leaflet-draw/leaflet.draw.css', 'Cartography'));
+            $headScript
+                ->appendFile($view->assetUrl('vendor/leaflet-draw/leaflet.draw.js', 'Cartography'));
         }
 
         // Leaflet terraformer.
         // TODO See if terraformer can replace leaflet paste.
-        $headScript->appendFile($view->assetUrl('vendor/terraformer/terraformer.min.js', 'DataTypeGeometry'));
-        $headScript->appendFile($view->assetUrl('vendor/terraformer-arcgis-parser/terraformer-arcgis-parser.min.js', 'DataTypeGeometry'));
-        $headScript->appendFile($view->assetUrl('vendor/terraformer-wkt-parser/terraformer-wkt-parser.min.js', 'DataTypeGeometry'));
+        $headScript
+            ->appendFile($view->assetUrl('vendor/terraformer/terraformer.min.js', 'DataTypeGeometry'))
+            ->appendFile($view->assetUrl('vendor/terraformer-arcgis-parser/terraformer-arcgis-parser.min.js', 'DataTypeGeometry'))
+            ->appendFile($view->assetUrl('vendor/terraformer-wkt-parser/terraformer-wkt-parser.min.js', 'DataTypeGeometry'));
 
         // Leaflet full screen (full view).
-        $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-fullscreen/leaflet.fullscreen.css', 'Cartography'));
-        $headScript->appendFile($view->assetUrl('vendor/leaflet-fullscreen/Leaflet.fullscreen.min.js', 'Cartography'));
+        $headLink
+            ->appendStylesheet($view->assetUrl('vendor/leaflet-fullscreen/leaflet.fullscreen.css', 'Cartography'));
+        $headScript
+            ->appendFile($view->assetUrl('vendor/leaflet-fullscreen/Leaflet.fullscreen.min.js', 'Cartography'));
 
         // TODO Fit bounds and default view (js from module Mapping).
         // $headScript->appendFile($view->assetUrl('js/control.fit-bounds.js', 'Cartography'));
@@ -172,37 +188,48 @@ class Cartography extends AbstractHelper
         // Headers for locate.
 
         // Geosearch.
-        $headScript->appendFile($view->assetUrl('vendor/leaflet-providers/leaflet-providers.min.js', 'Cartography'));
-        $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-geosearch/style.css', 'Cartography'));
-        $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-geosearch/leaflet.css', 'Cartography'));
-        $headScript->appendFile($view->assetUrl('vendor/leaflet-geosearch/bundle.min.js', 'Cartography'));
+        $headLink
+            ->appendStylesheet($view->assetUrl('vendor/leaflet-geosearch/style.css', 'Cartography'))
+            ->appendStylesheet($view->assetUrl('vendor/leaflet-geosearch/leaflet.css', 'Cartography'));
+        $headScript
+            ->appendFile($view->assetUrl('vendor/leaflet-providers/leaflet-providers.min.js', 'Cartography'))
+            ->appendFile($view->assetUrl('vendor/leaflet-geosearch/bundle.min.js', 'Cartography'));
 
         // Add wms layers if any (may be added in the config or in the resource).
         // TODO Load wms js only if there are wms layers (the list is loaded dynamically).
-        $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-markercluster/MarkerCluster.css', 'Cartography'));
-        $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-markercluster/MarkerCluster.Default.css', 'Cartography'));
-        $headScript->appendFile($view->assetUrl('vendor/leaflet-markercluster/leaflet.markercluster.js', 'Cartography'));
-        $headLink->appendStylesheet($view->assetUrl('vendor/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.min.css', 'Cartography'));
-        $headScript->appendFile($view->assetUrl('vendor/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.min.js', 'Cartography'));
+        $headLink
+            ->appendStylesheet($view->assetUrl('vendor/leaflet-markercluster/MarkerCluster.css', 'Cartography'))
+            ->appendStylesheet($view->assetUrl('vendor/leaflet-markercluster/MarkerCluster.Default.css', 'Cartography'));
+        $headScript
+            ->appendFile($view->assetUrl('vendor/leaflet-markercluster/leaflet.markercluster.js', 'Cartography'));
+        $headLink
+            ->appendStylesheet($view->assetUrl('vendor/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.min.css', 'Cartography'));
+        $headScript
+            ->appendFile($view->assetUrl('vendor/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.min.js', 'Cartography'));
         // From module Mapping.
         $headScript->appendFile($view->assetUrl('js/control.opacity.js', 'Cartography'));
 
         if ($js = $view->setting('cartography_js_locate')) {
             // Add wmts layers if needed.
             // $headScript->appendFile($view->assetUrl('vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts.js', 'Cartography'));
-            $headScript->appendFile($view->assetUrl('vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts-src.js', 'Cartography'));
-            $headScript->appendScript('$(document).ready( function() { ' . $js . ' });');
+            $headScript
+                ->appendFile($view->assetUrl('vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts-src.js', 'Cartography'));
+            $headScript
+                ->appendScript('$(document).ready( function() { ' . $js . ' });');
         }
 
         // Headers for describe.
 
         if ($js = $view->setting('cartography_js_describe')) {
-            $headScript->appendScript('$(document).ready( function() { ' . $js . ' });');
+            $headScript
+                ->appendScript('$(document).ready( function() { ' . $js . ' });');
         }
 
         // More common headers.
-        $headLink->appendStylesheet($view->assetUrl('css/cartography.css', 'Cartography'));
-        $headScript->appendFile($view->assetUrl('js/cartography.js', 'Cartography'));
+        $headLink
+            ->appendStylesheet($view->assetUrl('css/cartography.css', 'Cartography'));
+        $headScript
+            ->appendFile($view->assetUrl('js/cartography.js', 'Cartography'));
 
         // Integration in Omeka S.
         $script = '';

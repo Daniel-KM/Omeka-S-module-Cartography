@@ -54,7 +54,7 @@ class ImageSize extends AbstractPlugin
 
         // This is an image, but failed to get the resolution.
         if (empty($result)) {
-            $this->logger->err(new Message(
+            $this->getController()->logger()->err(new Message(
                 'Failed to get image resolution of media #%d (%s). Check your files.', // @translate
                 $media->id(), $storagePath
             ));

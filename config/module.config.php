@@ -36,7 +36,7 @@ return [
     ],
     'controller_plugins' => [
         'factories' => [
-            'imageSize' => Service\ControllerPlugin\ImageSizeFactory::class,
+            'sizeImage' => Service\ControllerPlugin\SizeImageFactory::class,
         ],
     ],
     'navigation' => [

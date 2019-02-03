@@ -6,7 +6,7 @@ use Omeka\File\TempFileFactory;
 use Omeka\Stdlib\Message;
 use Zend\Mvc\Controller\Plugin\AbstractPlugin;
 
-class ImageSize extends AbstractPlugin
+class SizeImage extends AbstractPlugin
 {
     /**
      * @var string

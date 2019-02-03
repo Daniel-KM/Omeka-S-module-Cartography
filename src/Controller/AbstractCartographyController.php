@@ -713,32 +713,9 @@ abstract class AbstractCartographyController extends AbstractActionController
             unset($data['oa:hasBody'][0]['oa:hasPurpose']);
         }
 
-        // Check and add a default motivation if none.
-        if (!empty($data['oa:motivatedBy'][0]) && empty($data['oa:hasBody'][0]['rdf:value'])) {
-            unset($data['oa:motivatedBy'][0]);
-            unset($data['oa:hasBody'][0]['oa:hasPurpose']);
-            if (!$oaLinking) {
-                $data['oa:motivatedBy'][] = [
-                    'property_id' => $this->propertyId('oa:motivatedBy'),
-                    'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
-                    '@value' => 'highlighting',
-                ];
-            }
-        }
-
-        // Manage the special case for annotation resource link.
+        // Manage the special case for annotation resource link: each link is a
+        // separate body. Deduplicate ids too.
         if ($oaLinking) {
-            // A link is motivated by linking.
-            // Remove the other motivation if there is no description.
-            // This removing is done only here, because there may be no
-            // description when only a geometry is drawn.
-            $data['oa:motivatedBy'][] = [
-                'property_id' => $this->propertyId('oa:motivatedBy'),
-                'type' => 'customvocab:' . $this->customVocabId('Annotation oa:motivatedBy'),
-                '@value' => 'linking',
-            ];
-
-            // Each link is a separate body. Deduplicate ids too.
             $ids = [];
             $annotationId = $annotation ? ['o:id' => $annotation->id()] : null;
             foreach ($oaLinking as $valueResource) {

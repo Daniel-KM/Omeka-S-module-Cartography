@@ -1,12 +1,13 @@
 <?php
 namespace Cartography;
 
-// TODO Remove this requirement.
-require_once dirname(__DIR__) . '/Annotate/src/Module/AbstractGenericModule.php';
-require_once dirname(__DIR__) . '/Annotate/src/Module/ModuleResourcesTrait.php';
+if (!class_exists(\Generic\AbstractModule::class)) {
+    require file_exists(dirname(__DIR__) . '/Generic/AbstractModule.php')
+        ? dirname(__DIR__) . '/Generic/AbstractModule.php'
+        : __DIR__ . '/src/Generic/AbstractModule.php';
+}
 
-use Annotate\Module\AbstractGenericModule;
-use Annotate\Module\ModuleResourcesTrait;
+use Generic\AbstractModule;
 use Zend\EventManager\Event;
 use Zend\EventManager\SharedEventManagerInterface;
 use Zend\Mvc\MvcEvent;
@@ -21,9 +22,9 @@ use Zend\ServiceManager\ServiceLocatorInterface;
  * @copyright Daniel Berthereau, 2018
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt
  */
-class Module extends AbstractGenericModule
+class Module extends AbstractModule
 {
-    use ModuleResourcesTrait;
+    const NAMESPACE = __NAMESPACE__;
 
     protected $dependencies = [
         'Annotate',
@@ -77,14 +78,15 @@ class Module extends AbstractGenericModule
 
         $roles = $acl->getRoles();
         // TODO Limit rights to access annotate actions too (annotations are already managed).
-        $acl->allow(
-            null,
-            [Controller\Site\CartographyController::class]
-        );
-        $acl->allow(
-            $roles,
-            [Controller\Admin\CartographyController::class]
-        );
+        $acl
+            ->allow(
+                null,
+                [Controller\Site\CartographyController::class]
+            )
+            ->allow(
+                $roles,
+                [Controller\Admin\CartographyController::class]
+            );
     }
 
     public function attachListeners(SharedEventManagerInterface $sharedEventManager)
@@ -312,7 +314,15 @@ class Module extends AbstractGenericModule
 
     protected function installResources()
     {
+        if (!class_exists(\Generic\InstallResources::class)) {
+            require_once file_exists(dirname(__DIR__) . '/Generic/InstallResources.php')
+                ? dirname(__DIR__) . '/Generic/InstallResources.php'
+                : __DIR__ . '/src/Generic/InstallResources.php';
+        }
+
         $services = $this->getServiceLocator();
+        $installResources = new \Generic\InstallResources($services);
+        $installResources = $installResources();
 
         // Complete the annotation custom vocabularies.
         $customVocabPaths = [
@@ -320,7 +330,7 @@ class Module extends AbstractGenericModule
             __DIR__ . '/data/custom-vocabs/Cartography-Target-rdf-type.json',
         ];
         foreach ($customVocabPaths as $filepath) {
-            $this->updateCustomVocab($filepath);
+            $installResources->updateCustomVocab($filepath);
         }
 
         // Create resource templates for annotations.
@@ -345,7 +355,7 @@ class Module extends AbstractGenericModule
         ];
         $resourceTemplateData = $settings->get('annotate_resource_template_data', []);
         foreach ($resourceTemplatePaths as $key => $filepath) {
-            $resourceTemplate = $this->createResourceTemplate($filepath);
+            $resourceTemplate = $installResources->createResourceTemplate($filepath);
             // Add the special resource template settings.
             $resourceTemplateData[$resourceTemplate->id()] = $resourceTemplateSettings[$key];
             // Set the template as default template.

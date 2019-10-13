@@ -6,10 +6,10 @@ use Zend\Form\Fieldset;
 
 class SiteSettingsFieldset extends Fieldset
 {
+    protected $label = 'Cartography (annotate images and maps)'; // @translate
+
     public function init()
     {
-        $this->setLabel('Cartography (annotate images and maps)'); // @translate
-
         $this->add([
             'name' => 'cartography_append_public',
             'type' => Element\MultiCheckbox::class,

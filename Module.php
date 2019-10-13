@@ -50,8 +50,19 @@ class Module extends AbstractGenericModule
     public function uninstall(ServiceLocatorInterface $serviceLocator)
     {
         $this->setServiceLocator($serviceLocator);
+        $services = $serviceLocator;
+
+        if (!class_exists(\Generic\InstallResources::class)) {
+            require_once file_exists(dirname(__DIR__) . '/Generic/InstallResources.php')
+                ? dirname(__DIR__) . '/Generic/InstallResources.php'
+                : __DIR__ . '/src/Generic/InstallResources.php';
+        }
+
+        $installResources = new \Generic\InstallResources($services);
+        $installResources = $installResources();
+
         foreach (['Cartography Describe', 'Cartography Locate'] as $resourceTemplate) {
-            $this->removeResourceTemplate($resourceTemplate);
+            $installResources->removeResourceTemplate($resourceTemplate);
         }
         parent::uninstall($serviceLocator);
     }
@@ -142,39 +153,41 @@ class Module extends AbstractGenericModule
     public function handleMainSettingsFilters(Event $event)
     {
         $inputFilter = $event->getParam('inputFilter');
-        $inputFilter->get('cartography')->add([
-            'name' => 'cartography_display_tab',
-            'required' => false,
-        ]);
-        $inputFilter->get('cartography')->add([
-            'name' => 'cartography_template_describe',
-            'required' => false,
-        ]);
-        $inputFilter->get('cartography')->add([
-            'name' => 'cartography_template_describe_empty',
-            'required' => false,
-        ]);
-        $inputFilter->get('cartography')->add([
-            'name' => 'cartography_template_locate',
-            'required' => false,
-        ]);
-        $inputFilter->get('cartography')->add([
-            'name' => 'cartography_template_describe_empty',
-            'required' => false,
-        ]);
+        $inputFilter->get('cartography')
+            ->add([
+                'name' => 'cartography_display_tab',
+                'required' => false,
+            ])
+            ->add([
+                'name' => 'cartography_template_describe',
+                'required' => false,
+            ])
+            ->add([
+                'name' => 'cartography_template_describe_empty',
+                'required' => false,
+            ])
+            ->add([
+                'name' => 'cartography_template_locate',
+                'required' => false,
+            ])
+            ->add([
+                'name' => 'cartography_template_describe_empty',
+                'required' => false,
+            ]);
     }
 
     public function handleSiteSettingsFilters(Event $event)
     {
         $inputFilter = $event->getParam('inputFilter');
-        $inputFilter->get('cartography')->add([
-            'name' => 'cartography_append_public',
-            'required' => false,
-        ]);
-        $inputFilter->get('cartography')->add([
-            'name' => 'cartography_annotate',
-            'required' => false,
-        ]);
+        $inputFilter->get('cartography')
+            ->add([
+                'name' => 'cartography_append_public',
+                'required' => false,
+            ])
+            ->add([
+                'name' => 'cartography_annotate',
+                'required' => false,
+            ]);
     }
 
     /**

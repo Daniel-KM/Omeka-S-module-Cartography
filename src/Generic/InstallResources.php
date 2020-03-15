@@ -91,7 +91,8 @@ class InstallResources
         }
 
         // Check if it is the same vocabulary.
-        if ($vocabularyRepresentation->namespaceUri() === $vocabulary['vocabulary']['o:namespace_uri']) {
+        // See createVocabulary() about the trim.
+        if (rtrim($vocabularyRepresentation->namespaceUri(), '#/') === rtrim($vocabulary['vocabulary']['o:namespace_uri'], '#/')) {
             return true;
         }
 
@@ -211,7 +212,10 @@ class InstallResources
 
         if ($vocabularyRepresentation) {
             // Check if it is the same vocabulary.
-            if ($vocabularyRepresentation->namespaceUri() === $vocabulary['vocabulary']['o:namespace_uri']) {
+            // Note: in some cases, the uri of the ontology and the uri of the
+            // namespace are mixed. So, the last character ("#" or "/") is
+            // skipped for easier management.
+            if (rtrim($vocabularyRepresentation->namespaceUri(), '#/') === rtrim($vocabulary['vocabulary']['o:namespace_uri'], '#/')) {
                 $message = new Message('The vocabulary "%s" was already installed and was kept.', // @translate
                     $vocabulary['vocabulary']['o:label']);
                 $messenger = new Messenger();
@@ -222,7 +226,7 @@ class InstallResources
             // It is another vocabulary with the same prefix.
             throw new ModuleCannotInstallException(
                 new Message(
-                    'An error occured when adding the prefix "%s": another vocabulary exists. Resolve the conflict before installing this module.', // @translate
+                    'An error occured when adding the prefix "%s": another vocabulary exists with the same prefix. Resolve the conflict before installing this module.', // @translate
                     $vocabulary['vocabulary']['o:prefix']
                 )
             );

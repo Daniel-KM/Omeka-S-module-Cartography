@@ -13,6 +13,7 @@ Installation
 ------------
 
 This module requires the modules [Annotate] and [Data Type Geometry].
+If the module [Generic] is used, it must be version greater or equal to 3.0.16.
 
 The module uses external libraries, so use the release zip to install it, or use
 and init the source.
@@ -244,6 +245,7 @@ sociales [EHESS].
 [wms]: https://en.wikipedia.org/wiki/Web_Map_Service
 [Annotate]: https://github.com/Daniel-KM/Omeka-S-module-Annotate
 [Data Type Geometry]: https://github.com/Daniel-KM/Omeka-S-module-DataTypeGeometry
+[Generic]: https://github.com/Daniel-KM/Omeka-S-module-Generic
 [Installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
 [MariaDB 10.2.2]: https://mariadb.com/kb/en/library/spatial-index/
 [mySql 5.7.5]: https://dev.mysql.com/doc/relnotes/mysql/5.7/en/news-5-7-5.html#mysqld-5-7-5-innodb

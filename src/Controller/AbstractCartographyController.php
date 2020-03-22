@@ -178,11 +178,11 @@ abstract class AbstractCartographyController extends AbstractActionController
         $response = $this->api()->search('annotations', $query);
         $this->paginator($response->getTotalResults(), $this->params()->fromQuery('page'));
 
-        $view = new ViewModel();
         $annotations = $response->getContent();
-        $view->setVariable('annotations', $annotations);
-        $view->setVariable('resources', $annotations);
-        return $view;
+        return new ViewModel([
+            'annotations' => $annotations,
+            'resources' => $annotations,
+        ]);
     }
 
     /**

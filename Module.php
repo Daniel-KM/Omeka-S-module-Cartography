@@ -19,7 +19,7 @@ use Zend\ServiceManager\ServiceLocatorInterface;
  * Allows to annotate an image or a wms map with the w3c web annotation data
  * model and vocabulary.
  *
- * @copyright Daniel Berthereau, 2018
+ * @copyright Daniel Berthereau, 2018-2020
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt
  */
 class Module extends AbstractModule
@@ -42,23 +42,56 @@ class Module extends AbstractModule
         $this->addAclRules();
     }
 
-    public function install(ServiceLocatorInterface $serviceLocator)
+    protected function postInstall()
     {
-        parent::install($serviceLocator);
-        $this->installResources();
+        $services = $this->getServiceLocator();
+        $installResources = new \Generic\InstallResources($services);
+        $installResources = $installResources();
+
+        $settings = $services->get('Omeka\Settings');
+        $api = $services->get('Omeka\ApiManager');
+
+        // The resource templates are automatically installed during install.
+        $resourceTemplateSettings = [
+            'Cartography Describe' => [
+                'setting' => 'cartography_template_describe',
+                'data' => [
+                    'oa:motivatedBy' => 'oa:Annotation',
+                    'rdf:value' => 'oa:hasBody',
+                    'oa:hasPurpose' => 'oa:hasBody',
+                    'oa:hasBody' => 'oa:Annotation',
+                ],
+            ],
+            'Cartography Locate' => [
+                'setting' => 'cartography_template_locate',
+                'data' => [
+                    'oa:motivatedBy' => 'oa:Annotation',
+                    'rdf:value' => 'oa:hasBody',
+                    'oa:hasPurpose' => 'oa:hasBody',
+                    'oa:hasBody' => 'oa:Annotation',
+                ],
+            ],
+        ];
+        $resourceTemplateData = $settings->get('annotate_resource_template_data', []);
+        foreach ($resourceTemplateSettings as $label => $data) {
+            $resourceTemplate = $api->read('resource_templates', ['label' => $label])->getContent();
+            // Add the special resource template settings.
+            $resourceTemplateData[$resourceTemplate->id()] = $data['data'];
+            // Set the template as default template.
+            $settings->set($data['setting'], [$resourceTemplate->id()]);
+        }
+        $settings->set('annotate_resource_template_data', $resourceTemplateData);
     }
 
     public function uninstall(ServiceLocatorInterface $serviceLocator)
     {
-        $this->setServiceLocator($serviceLocator);
-        $services = $serviceLocator;
-
         if (!class_exists(\Generic\InstallResources::class)) {
             require_once file_exists(dirname(__DIR__) . '/Generic/InstallResources.php')
                 ? dirname(__DIR__) . '/Generic/InstallResources.php'
                 : __DIR__ . '/src/Generic/InstallResources.php';
         }
 
+        $services = $this->getServiceLocator();
         $installResources = new \Generic\InstallResources($services);
         $installResources = $installResources();
 
@@ -310,57 +343,5 @@ class Module extends AbstractModule
                 'sections' => $displayAll ? ['describe', 'locate'] : ['locate'],
             ]);
         }
-    }
-
-    protected function installResources()
-    {
-        if (!class_exists(\Generic\InstallResources::class)) {
-            require_once file_exists(dirname(__DIR__) . '/Generic/InstallResources.php')
-                ? dirname(__DIR__) . '/Generic/InstallResources.php'
-                : __DIR__ . '/src/Generic/InstallResources.php';
-        }
-
-        $services = $this->getServiceLocator();
-        $installResources = new \Generic\InstallResources($services);
-        $installResources = $installResources();
-
-        // Complete the annotation custom vocabularies.
-        $customVocabPaths = [
-            __DIR__ . '/data/custom-vocabs/Cartography-Target-dcterms-format.json',
-            __DIR__ . '/data/custom-vocabs/Cartography-Target-rdf-type.json',
-        ];
-        foreach ($customVocabPaths as $filepath) {
-            $installResources->updateCustomVocab($filepath);
-        }
-
-        // Create resource templates for annotations.
-        $settings = $services->get('Omeka\Settings');
-        $resourceTemplatePaths = [
-            'cartography_template_describe' => __DIR__ . '/data/resource-templates/Cartography_Describe.json',
-            'cartography_template_locate' => __DIR__ . '/data/resource-templates/Cartography_Locate.json',
-        ];
-        $resourceTemplateSettings = [
-            'cartography_template_describe' => [
-                'oa:motivatedBy' => 'oa:Annotation',
-                'rdf:value' => 'oa:hasBody',
-                'oa:hasPurpose' => 'oa:hasBody',
-                'oa:hasBody' => 'oa:Annotation',
-            ],
-            'cartography_template_locate' => [
-                'oa:motivatedBy' => 'oa:Annotation',
-                'rdf:value' => 'oa:hasBody',
-                'oa:hasPurpose' => 'oa:hasBody',
-                'oa:hasBody' => 'oa:Annotation',
-            ],
-        ];
-        $resourceTemplateData = $settings->get('annotate_resource_template_data', []);
-        foreach ($resourceTemplatePaths as $key => $filepath) {
-            $resourceTemplate = $installResources->createResourceTemplate($filepath);
-            // Add the special resource template settings.
-            $resourceTemplateData[$resourceTemplate->id()] = $resourceTemplateSettings[$key];
-            // Set the template as default template.
-            $settings->set($key, [$resourceTemplate->id()]);
-        }
-        $settings->set('annotate_resource_template_data', $resourceTemplateData);
     }
 }

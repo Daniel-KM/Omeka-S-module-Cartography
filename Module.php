@@ -45,11 +45,8 @@ class Module extends AbstractModule
     protected function postInstall()
     {
         $services = $this->getServiceLocator();
-        $installResources = new \Generic\InstallResources($services);
-        $installResources = $installResources();
-
-        $settings = $services->get('Omeka\Settings');
         $api = $services->get('Omeka\ApiManager');
+        $settings = $services->get('Omeka\Settings');
 
         // The resource templates are automatically installed during install.
         $resourceTemplateSettings = [

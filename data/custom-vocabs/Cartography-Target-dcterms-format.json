@@ -2,8 +2,11 @@
     "o:label": "Annotation Target dcterms:format",
     "o:lang": "",
     "o:terms": [
+        "application/json",
+        "application/xml",
+        "image/svg+xml",
+        "application/wkt",
         "application/vnd.ogc.gml",
-        "application/vnd.google-earth.kml+xml",
-        "application/wkt"
+        "application/vnd.google-earth.kml+xml"
     ]
 }

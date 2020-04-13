@@ -12,6 +12,7 @@ const bundle = [
         'dest': 'asset/vendor/leaflet',
     },
     // A small patch allows to manage permissions.
+    // The original package was not updated since.
     // {
     //     'source': 'node_modules/leaflet-draw/dist/**',
     //     'dest': 'asset/vendor/leaflet-draw',
@@ -29,6 +30,7 @@ const bundle = [
         'dest': 'asset/vendor/leaflet-geosearch',
     },
     // TODO The original has a bug not yet fixed.
+    // See https://github.com/ismyrnow/leaflet-groupedlayercontrol/pull/69
     // {
     //     'source': 'node_modules/leaflet-groupedlayercontrol/dist/**',
     //     'dest': 'asset/vendor/leaflet-groupedlayercontrol',
@@ -38,6 +40,7 @@ const bundle = [
         'dest': 'asset/vendor/leaflet-markercluster',
     },
     // Upgraded, but not yet pushed upstream and not in npm (on leaflet only).
+    // This package seems to have disappeared of main repositories.
     // {
     //     'source': 'node_modules/leaflet-paste/**',
     //     'dest': 'asset/vendor/leaflet-paste',

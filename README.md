@@ -131,7 +131,6 @@ var ign = new L.TileLayer.WMTS(url, {
 
 baseMaps = {
     'Streets': L.tileLayer.provider('OpenStreetMap.Mapnik'),
-    'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'),
     'Satellite': L.tileLayer.provider('Esri.WorldImagery'),
     'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief'),
     'IGN': ign,

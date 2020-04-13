@@ -26,3 +26,16 @@ if (version_compare($oldVersion, '3.1.0', '<')) {
             'To upgrade to Cartography 3.1.0, you must follow the steps described in upgrade_from_alpha.md.' // @translate
     ));
 }
+
+if (version_compare($oldVersion, '3.1.3.2', '<')) {
+    $locate = $settings->get('cartography_js_locate', '');
+    $replace = <<<JS
+'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'),
+JS;
+    $locate = str_replace($replace, '', $locate);
+    $replace = <<<JS
+'Grayscale':L.tileLayer.provider('OpenStreetMap.BlackAndWhite'),
+JS;
+    $locate = str_replace($replace, '', $locate);
+    $settings->set('cartography_js_locate', $locate);
+}

@@ -212,10 +212,8 @@ class Cartography extends AbstractHelper
 
         if ($js = $view->setting('cartography_js_locate')) {
             // Add wmts layers if needed.
-            // $headScript->appendFile($assetUrl('vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts.js', 'Cartography'));
             $headScript
-                ->appendFile($assetUrl('vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts-src.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
-            $headScript
+                ->appendFile($assetUrl('vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts.min.js', 'Cartography'), 'text/javascript', ['defer' => 'defer'])
                 ->appendScript('$(document).ready( function() { ' . $js . ' });');
         }
 

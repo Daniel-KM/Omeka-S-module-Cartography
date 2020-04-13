@@ -2200,7 +2200,7 @@ var initLocate = function() {
     if (typeof baseMaps !== 'object' || $.isEmptyObject(baseMaps)) {
         baseMaps = {
             'Streets': L.tileLayer.provider('OpenStreetMap.Mapnik'),
-            'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'),
+            /* 'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'), // Removed from OpenStreetMap https://github.com/leaflet-extras/leaflet-providers/issues/316 */
             'Satellite': L.tileLayer.provider('Esri.WorldImagery'),
             'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief'),
         };
@@ -2348,7 +2348,7 @@ var initGeobrowse = function() {
     if (typeof baseMaps !== 'object' || $.isEmptyObject(baseMaps)) {
         baseMaps = {
             'Streets': L.tileLayer.provider('OpenStreetMap.Mapnik'),
-            'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'),
+            /* 'Grayscale': L.tileLayer.provider('OpenStreetMap.BlackAndWhite'), // Removed from OpenStreetMap https://github.com/leaflet-extras/leaflet-providers/issues/316 */
             'Satellite': L.tileLayer.provider('Esri.WorldImagery'),
             'Terrain': L.tileLayer.provider('Esri.WorldShadedRelief'),
         };

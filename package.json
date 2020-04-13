@@ -13,8 +13,8 @@
     "leaflet-fullscreen": "^1.0.2",
     "leaflet-geosearch": "^2.7.0",
     "leaflet-groupedlayercontrol": "^0.6.1",
-    "leaflet-providers": "^1.5.0",
-    "leaflet-styleeditor": "^0.1.10-beta",
+    "leaflet-providers": "^1.9.1",
+    "leaflet-styleeditor": "=0.1.10-beta",
     "leaflet-tilelayer-wmts": "^1.0.0",
     "leaflet.markercluster": "^1.4.1"
   },

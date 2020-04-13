@@ -53,11 +53,11 @@ const bundle = [
     //     'source': 'node_modules/leaflet-styleeditor/dist/**',
     //     'dest': 'asset/vendor/leaflet-styleeditor',
     // },
-    // TODO Check if original works.
-    // {
-    //     'source': 'node_modules/leaflet-tilelayer-wmts/dist/**',
-    //     'dest': 'asset/vendor/leaflet-tilelayer-wmts',
-    // },
+    {
+        'source': 'node_modules/leaflet-tilelayer-wmts/dist/leaflet-tilelayer-wmts.js',
+        'dest': 'asset/vendor/leaflet-tilelayer-wmts',
+        'rename': true,
+    },
 ];
 
 const hack_leaflet_draw = function (done) {

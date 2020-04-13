@@ -8,13 +8,13 @@
     "url": "https://github.com/Daniel-KM/Omeka-S-module-Cartography.git"
   },
   "dependencies": {
-    "leaflet": "^1.6.0",
+    "leaflet": "^1.5.1",
     "leaflet-draw": "^1.0.4",
     "leaflet-fullscreen": "^1.0.2",
     "leaflet-geosearch": "^2.7.0",
     "leaflet-groupedlayercontrol": "^0.6.1",
-    "leaflet-providers": "^1.9.1",
-    "leaflet-styleeditor": "^0.1.16",
+    "leaflet-providers": "^1.9.0",
+    "leaflet-styleeditor": "^0.1.13",
     "leaflet-tilelayer-wmts": "^1.0.0",
     "leaflet.markercluster": "^1.4.1"
   },

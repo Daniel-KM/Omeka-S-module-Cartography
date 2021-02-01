@@ -1,6 +1,10 @@
 Cartography: Annotate images and maps (module for Omeka S)
 ==========================================================
 
+> __New versions of this module and support for Omeka S version 3.0 and above
+> are available on [GitLab], which seems to respect users and privacy better
+> than the previous repository.__
+
 [Cartography] is a module for [Omeka S] that allows to annotate (to draw points,
 lines, polylines, polygons, etc.) an image or a map with the [web annotation vocabulary]
 and the [web annotation data model].
@@ -194,7 +198,7 @@ See online issues on the [module issues] page on GitHub.
 License
 -------
 
-This module is published under the [CeCILL v2.1] licence, compatible with
+This module is published under the [CeCILL v2.1] license, compatible with
 [GNU/GPL] and approved by [FSF] and [OSI].
 
 This software is governed by the CeCILL license under French law and abiding by
@@ -270,4 +274,5 @@ sociales [EHESS].
 [Numeric data types]: https://github.com/omeka-s-modules/NumericDataTypes
 [Neatline]: https://github.com/performant-software/neatline-omeka-s
 [EHESS]: https://www.ehess.fr
+[GitLab]: https://gitlab.com/Daniel-KM
 [Daniel-KM]: https://github.com/Daniel-KM "Daniel Berthereau"

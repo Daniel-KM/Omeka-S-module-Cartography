@@ -1,16 +1,16 @@
-<?php
+<?php declare(strict_types=1);
 namespace Cartography\Form;
 
 use Annotate\Form\Element\ResourceTemplateSelect;
-use Omeka\Form\Element\CkeditorInline;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
+use Omeka\Form\Element\CkeditorInline;
 
 class SettingsFieldset extends Fieldset
 {
     protected $label = 'Cartography (annotate images and maps)'; // @translate
 
-    public function init()
+    public function init(): void
     {
         $this->add([
             'name' => 'cartography_user_guide',

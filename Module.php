@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 namespace Cartography;
 
 if (!class_exists(\Generic\AbstractModule::class)) {
@@ -31,7 +31,7 @@ class Module extends AbstractModule
         'DataTypeGeometry',
     ];
 
-    public function onBootstrap(MvcEvent $event)
+    public function onBootstrap(MvcEvent $event): void
     {
         parent::onBootstrap($event);
         if (!$this->areModulesActive($this->dependencies)) {
@@ -42,7 +42,7 @@ class Module extends AbstractModule
         $this->addAclRules();
     }
 
-    protected function postInstall()
+    protected function postInstall(): void
     {
         $services = $this->getServiceLocator();
         $api = $services->get('Omeka\ApiManager');
@@ -80,7 +80,7 @@ class Module extends AbstractModule
         $settings->set('annotate_resource_template_data', $resourceTemplateData);
     }
 
-    public function uninstall(ServiceLocatorInterface $serviceLocator)
+    public function uninstall(ServiceLocatorInterface $serviceLocator): void
     {
         if (!class_exists(\Generic\InstallResources::class)) {
             require_once file_exists(dirname(__DIR__) . '/Generic/InstallResources.php')
@@ -101,7 +101,7 @@ class Module extends AbstractModule
     /**
      * Add ACL rules for this module.
      */
-    protected function addAclRules()
+    protected function addAclRules(): void
     {
         /** @var \Omeka\Permissions\Acl $acl */
         $acl = $this->getServiceLocator()->get('Omeka\Acl');
@@ -119,7 +119,7 @@ class Module extends AbstractModule
             );
     }
 
-    public function attachListeners(SharedEventManagerInterface $sharedEventManager)
+    public function attachListeners(SharedEventManagerInterface $sharedEventManager): void
     {
         // Events for the admin board.
         $sharedEventManager->attach(
@@ -174,7 +174,7 @@ class Module extends AbstractModule
         );
     }
 
-    public function handleMainSettings(Event $event)
+    public function handleMainSettings(Event $event): void
     {
         $ckEditorHelper = $this->getServiceLocator()->get('ViewHelperManager')
             ->get('ckEditor');
@@ -182,7 +182,7 @@ class Module extends AbstractModule
         parent::handleMainSettings($event);
     }
 
-    public function handleMainSettingsFilters(Event $event)
+    public function handleMainSettingsFilters(Event $event): void
     {
         $inputFilter = $event->getParam('inputFilter');
         $inputFilter->get('cartography')
@@ -208,7 +208,7 @@ class Module extends AbstractModule
             ]);
     }
 
-    public function handleSiteSettingsFilters(Event $event)
+    public function handleSiteSettingsFilters(Event $event): void
     {
         $inputFilter = $event->getParam('inputFilter');
         $inputFilter->get('cartography')
@@ -227,7 +227,7 @@ class Module extends AbstractModule
      *
      * @param Event $event
      */
-    public function addTab(Event $event)
+    public function addTab(Event $event): void
     {
         $services = $this->getServiceLocator();
         $acl = $services->get('Omeka\Acl');
@@ -256,7 +256,7 @@ class Module extends AbstractModule
      *
      * @param Event $event
      */
-    public function displayTabSection(Event $event)
+    public function displayTabSection(Event $event): void
     {
         $services = $this->getServiceLocator();
 
@@ -305,7 +305,7 @@ class Module extends AbstractModule
      *
      * @param Event $event
      */
-    public function displayPublic(Event $event)
+    public function displayPublic(Event $event): void
     {
         $siteSettings = $this->getServiceLocator()->get('Omeka\Settings\Site');
         $displayTabs = $siteSettings->get('cartography_append_public');

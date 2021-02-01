@@ -1,14 +1,14 @@
-<?php
+<?php declare(strict_types=1);
 namespace Cartography\Controller;
 
 use Annotate\Api\Representation\AnnotationRepresentation;
-use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
-use Omeka\Api\Representation\MediaRepresentation;
-use Omeka\Stdlib\Message;
 use Laminas\Http\Response;
 use Laminas\Mvc\Controller\AbstractActionController;
 use Laminas\View\Model\JsonModel;
 use Laminas\View\Model\ViewModel;
+use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
+use Omeka\Api\Representation\MediaRepresentation;
+use Omeka\Stdlib\Message;
 
 abstract class AbstractCartographyController extends AbstractActionController
 {
@@ -228,8 +228,8 @@ abstract class AbstractCartographyController extends AbstractActionController
         $api = $this->viewHelpers()->get('api');
 
         // Options contains styles and metadata.
-        $options = isset($data['options']) ? $data['options'] : [];
-        $metadata = isset($options['metadata']) ? $options['metadata'] : [];
+        $options = $data['options'] ?? [];
+        $metadata = $options['metadata'] ?? [];
         $styles = $options;
         unset($styles['metadata']);
         // Clean old styles and useless leaflet data.
@@ -499,7 +499,7 @@ abstract class AbstractCartographyController extends AbstractActionController
      * @param array $metadata
      * @param bool $hasMetadata
      * @param bool $isDescribe
-     * @return int|null
+     * @return int|null
      */
     protected function forceTemplate(array $metadata, $hasMetadata, $isDescribe)
     {
@@ -692,9 +692,8 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         foreach ($partValues as $term => $pValues) {
             foreach ($pValues as $partValue) {
-                $annotationPart = isset($annotationPartMap[$term])
-                    ? $annotationPartMap[$term]
-                    : 'oa:Annotation';
+                $annotationPart = $annotationPartMap[$term]
+                    ?? 'oa:Annotation';
                 if ($annotationPart === 'oa:Annotation') {
                     $data[$term][] = $partValue;
                 } else {
@@ -971,7 +970,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 return $images;
         }
 
-        $imageType = isset($params['type']) ? $params['type'] : null;
+        $imageType = $params['type'] ?? null;
         foreach ($medias as $media) {
             if (!$media->hasOriginal()) {
                 continue;
@@ -1265,7 +1264,8 @@ abstract class AbstractCartographyController extends AbstractActionController
                 continue;
             }
             /** @var Omeka\Api\Representation\ValueRepresentation $value */
-            foreach ($property['values'] as $value) switch ($value->type()) {
+            foreach ($property['values'] as $value) {
+                switch ($value->type()) {
                 case 'resource':
                     if (isset($specialProperties[$term]['resource'])) {
                         $term = $specialProperties[$term]['resource'];
@@ -1285,6 +1285,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 default:
                     $metadata[$term][] = $value->value();
                     break;
+            }
             }
         }
         return $metadata;

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 namespace Cartography\Service\ControllerPlugin;
 
 use Cartography\Mvc\Controller\Plugin\SizeImage;

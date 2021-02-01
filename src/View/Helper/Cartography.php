@@ -1,10 +1,10 @@
-<?php
+<?php declare(strict_types=1);
 namespace Cartography\View\Helper;
 
+use Laminas\View\Helper\AbstractHelper;
 use Omeka\Api\Exception\NotFoundException;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Omeka\Entity\User;
-use Laminas\View\Helper\AbstractHelper;
 
 class Cartography extends AbstractHelper
 {
@@ -180,8 +180,8 @@ class Cartography extends AbstractHelper
             ->appendFile($assetUrl('vendor/leaflet-fullscreen/Leaflet.fullscreen.min.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
 
         // TODO Fit bounds and default view (js from module Mapping).
-            // $headScript->appendFile($assetUrl('js/control.fit-bounds.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
-            // $headScript->appendFile($assetUrl('js/control.default-view.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
+        // $headScript->appendFile($assetUrl('js/control.fit-bounds.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
+        // $headScript->appendFile($assetUrl('js/control.default-view.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
 
         // For simplicity of the code, all headers are added, whatever the type.
         //  TODO Don't load the specific part of the headers if the type is not present in none of the blocks.
@@ -239,7 +239,7 @@ var Omeka = {};';
 
         $script .= 'var basePath = ' . json_encode($view->basePath(), 320) . ';
 var baseUrl = ' . json_encode($options['baseUrl'], 320) . ';
-var cartographySections = ' . json_encode($options['sections'], 320). ';';
+var cartographySections = ' . json_encode($options['sections'], 320) . ';';
         if ($resource):
             $script .= '
 var resourceId = ' . $resource->id() . ';';
@@ -269,7 +269,7 @@ var userId = ' . ($user ? $user->getId() : 0) . ';
 var userRights = ' . json_encode($rights, 320) . ';';
             if ($resource):
                 $script .= '
-var valuesJson =  ' . json_encode($resource->values(), 320). ';';
+var valuesJson =  ' . json_encode($resource->values(), 320) . ';';
             endif;
             $script .= '
 var oaMotivatedBySelect = ' . json_encode($options['oaMotivatedBySelect'], 320) . ';

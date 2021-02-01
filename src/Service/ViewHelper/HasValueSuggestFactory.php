@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 namespace Cartography\Service\ViewHelper;
 
 use Cartography\View\Helper\HasValueSuggest;

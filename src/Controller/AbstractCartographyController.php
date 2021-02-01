@@ -384,6 +384,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         $resource = $target->sources()[0];
 
         // The media is saved as selector of the main item (a page in a book).
+        // TODO Manage other resource types.
         $mediaValue = $target->value('oa:hasSelector', ['type' => 'resource']);
         $media = $mediaValue && $mediaValue->valueResource()->resourceName() === 'media'
             ? $mediaValue->valueResource()
@@ -1070,7 +1071,7 @@ abstract class AbstractCartographyController extends AbstractActionController
     protected function extractWmsLayers(AbstractResourceEntityRepresentation $resource)
     {
         $wmsLayers = [];
-        $values = $resource->value('dcterms:spatial', ['type' => 'uri', 'all' => true, 'default' => []]);
+        $values = $resource->value('dcterms:spatial', ['type' => 'uri', 'all' => true]);
         foreach ($values as $value) {
             $url = $value->uri();
             if (parse_url($url)) {
@@ -1152,6 +1153,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 continue;
             }
 
+            // TODO Manage other resource types.
             $hasSelector = $target->value('oa:hasSelector', ['type' => 'resource']);
             if ($hasSelector) {
                 $geometry['mediaId'] = $hasSelector->valueResource()->id();
@@ -1315,7 +1317,7 @@ abstract class AbstractCartographyController extends AbstractActionController
      */
     protected function checkAndCleanWkt($string)
     {
-        $string = trim($string);
+        $string = trim((string) $string);
         if (strlen($string) == 0) {
             return;
         }

@@ -8,10 +8,10 @@ if (!class_exists(\Generic\AbstractModule::class)) {
 }
 
 use Generic\AbstractModule;
-use Zend\EventManager\Event;
-use Zend\EventManager\SharedEventManagerInterface;
-use Zend\Mvc\MvcEvent;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Laminas\EventManager\Event;
+use Laminas\EventManager\SharedEventManagerInterface;
+use Laminas\Mvc\MvcEvent;
+use Laminas\ServiceManager\ServiceLocatorInterface;
 
 /**
  * Cartography
@@ -273,7 +273,7 @@ class Module extends AbstractModule
             return;
         }
 
-        /** @var \Zend\View\Renderer\PhpRenderer $view */
+        /** @var \Laminas\View\Renderer\PhpRenderer $view */
         $view = $event->getTarget();
         $resource = $view->resource;
         $displayDescribe = in_array('describe', $displayTabs);

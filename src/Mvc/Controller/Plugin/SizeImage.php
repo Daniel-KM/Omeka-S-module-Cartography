@@ -4,7 +4,7 @@ namespace Cartography\Mvc\Controller\Plugin;
 use Omeka\Api\Representation\MediaRepresentation;
 use Omeka\File\TempFileFactory;
 use Omeka\Stdlib\Message;
-use Zend\Mvc\Controller\Plugin\AbstractPlugin;
+use Laminas\Mvc\Controller\Plugin\AbstractPlugin;
 
 class SizeImage extends AbstractPlugin
 {

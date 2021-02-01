@@ -3,7 +3,7 @@ namespace Cartography\Service\ControllerPlugin;
 
 use Cartography\Mvc\Controller\Plugin\SizeImage;
 use Interop\Container\ContainerInterface;
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 
 class SizeImageFactory implements FactoryInterface
 {

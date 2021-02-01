@@ -3,7 +3,7 @@ namespace Cartography\Service\ViewHelper;
 
 use Cartography\View\Helper\HasValueSuggest;
 use Interop\Container\ContainerInterface;
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 
 class HasValueSuggestFactory implements FactoryInterface
 {

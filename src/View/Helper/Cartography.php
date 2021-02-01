@@ -4,7 +4,7 @@ namespace Cartography\View\Helper;
 use Omeka\Api\Exception\NotFoundException;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Omeka\Entity\User;
-use Zend\View\Helper\AbstractHelper;
+use Laminas\View\Helper\AbstractHelper;
 
 class Cartography extends AbstractHelper
 {
@@ -118,7 +118,7 @@ class Cartography extends AbstractHelper
 
             // TODO Check if valuesuggest is used in one of the annotation templates.
             if ($view->hasValueSuggest()) {
-                // $event = new \Zend\EventManager\Event('cartography.add_value_suggest', $view);
+                // $event = new \Laminas\EventManager\Event('cartography.add_value_suggest', $view);
                 // (new \ValueSuggest\Module)->prepareResourceForm($event);
                 $headLink
                     ->appendStylesheet($assetUrl('css/valuesuggest.css', 'ValueSuggest'));

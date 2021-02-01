@@ -3,8 +3,8 @@ namespace Cartography\Form;
 
 use Annotate\Form\Element\ResourceTemplateSelect;
 use Omeka\Form\Element\CkeditorInline;
-use Zend\Form\Element;
-use Zend\Form\Fieldset;
+use Laminas\Form\Element;
+use Laminas\Form\Fieldset;
 
 class SettingsFieldset extends Fieldset
 {

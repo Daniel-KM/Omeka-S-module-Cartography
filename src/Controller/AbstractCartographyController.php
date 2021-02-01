@@ -5,10 +5,10 @@ use Annotate\Api\Representation\AnnotationRepresentation;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Omeka\Api\Representation\MediaRepresentation;
 use Omeka\Stdlib\Message;
-use Zend\Http\Response;
-use Zend\Mvc\Controller\AbstractActionController;
-use Zend\View\Model\JsonModel;
-use Zend\View\Model\ViewModel;
+use Laminas\Http\Response;
+use Laminas\Mvc\Controller\AbstractActionController;
+use Laminas\View\Model\JsonModel;
+use Laminas\View\Model\ViewModel;
 
 abstract class AbstractCartographyController extends AbstractActionController
 {
@@ -333,7 +333,7 @@ abstract class AbstractCartographyController extends AbstractActionController
      * @param array $metadata
      * @param array $styles
      * @param MediaRepresentation|null $media
-     * @return \Zend\View\Model\JsonModel
+     * @return \Laminas\View\Model\JsonModel
      */
     protected function createAnnotation(
         AbstractResourceEntityRepresentation $resource,
@@ -371,7 +371,7 @@ abstract class AbstractCartographyController extends AbstractActionController
      * @param string $geometry
      * @param array $metadata
      * @param array $styles
-     * @return \Zend\View\Model\JsonModel
+     * @return \Laminas\View\Model\JsonModel
      */
     protected function updateAnnotation(
         AnnotationRepresentation $annotation,

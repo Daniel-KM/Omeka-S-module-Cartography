@@ -1,7 +1,7 @@
 <?php
 namespace Cartography\View\Helper;
 
-use Zend\View\Helper\AbstractHelper;
+use Laminas\View\Helper\AbstractHelper;
 
 class HasValueSuggest extends AbstractHelper
 {

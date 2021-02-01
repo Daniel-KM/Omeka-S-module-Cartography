@@ -5,7 +5,7 @@
   "description": "Cartography (module for Omeka S)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Daniel-KM/Omeka-S-module-Cartography.git"
+    "url": "https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography.git"
   },
   "dependencies": {
     "leaflet": "^1.6.0",

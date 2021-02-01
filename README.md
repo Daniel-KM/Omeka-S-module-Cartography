@@ -37,7 +37,7 @@ the module to `Cartography`, go to the root of the module, and run:
 
 ```
     npm install
-    composer install
+composer install --no-dev
     gulp
 ```
 
@@ -192,7 +192,7 @@ your archives regularly so you can roll back if needed.
 Troubleshooting
 ---------------
 
-See online issues on the [module issues] page on GitHub.
+See online issues on the [module issues] page on GitLab.
 
 
 License
@@ -235,20 +235,20 @@ Copyright
 
 * See `asset/vendor/` and `vendor/` for the copyright of the libraries.
 * Some portions are adapterd from the modules [Numeric data types] and [Neatline].
-* Copyright Daniel Berthereau, 2018, (see [Daniel-KM] on GitHub)
+* Copyright Daniel Berthereau, 2018, (see [Daniel-KM] on GitLab)
 
 This module was built first for the French École des hautes études en sciences
 sociales [EHESS].
 
 
-[Cartography]: https://github.com/Daniel-KM/Omeka-S-module-Cartography
+[Cartography]: https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography
 [Omeka S]: https://omeka.org/s
 [web annotation data model]: https://www.w3.org/TR/annotation-model/
 [web annotation vocabulary]: https://www.w3.org/TR/annotation-vocab/
 [wms]: https://en.wikipedia.org/wiki/Web_Map_Service
-[Annotate]: https://github.com/Daniel-KM/Omeka-S-module-Annotate
-[Data Type Geometry]: https://github.com/Daniel-KM/Omeka-S-module-DataTypeGeometry
-[Generic]: https://github.com/Daniel-KM/Omeka-S-module-Generic
+[Annotate]: https://gitlab.com/Daniel-KM/Omeka-S-module-Annotate
+[Data Type Geometry]: https://gitlab.com/Daniel-KM/Omeka-S-module-DataTypeGeometry
+[Generic]: https://gitlab.com/Daniel-KM/Omeka-S-module-Generic
 [Installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
 [MariaDB 10.2.2]: https://mariadb.com/kb/en/library/spatial-index/
 [mySql 5.7.5]: https://dev.mysql.com/doc/relnotes/mysql/5.7/en/news-5-7-5.html#mysqld-5-7-5-innodb
@@ -257,16 +257,16 @@ sociales [EHESS].
 [mySql 5.6.1]: https://dev.mysql.com/doc/relnotes/mysql/5.6/en/news-5-6-1.html
 [MariaDB 5.3.3]: https://mariadb.com/kb/en/library/mariadb-533-release-notes/
 [spatial support matrix]: https://mariadb.com/kb/en/library/mysqlmariadb-spatial-support-matrix/
-[`data_type_geometry`]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/tree/master/data/install/schema.sql
+[`data_type_geometry`]: https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/tree/master/data/install/schema.sql
 [doctrine2-spatial]: https://github.com/creof/doctrine2-spatial/blob/HEAD/doc/index.md
-[`Cartography.zip`]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/releases
-[config file]: https://github.com/Daniel-KM/Omeka-S-module-Annotate/tree/master/data/mappings/properties_to_annotation_parts.php
-[Annotate]: https://github.com/Daniel-KM/Omeka-S-module-Annotate
+[`Cartography.zip`]: https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/releases
+[config file]: https://gitlab.com/Daniel-KM/Omeka-S-module-Annotate/-/tree/master/data/mappings/properties_to_annotation_parts.php
+[Annotate]: https://gitlab.com/Daniel-KM/Omeka-S-module-Annotate
 [IGN map service]: https://geoservices.ign.fr
 [free ign key]: https://geoservices.ign.fr/blog/2018/09/06/acces_geoportail_sans_compte.html
 [discussion]: https://github.com/json-ld/json-ld.org/issues/397
 [`geo:asWKT`]: http://geovocab.org/geometry#asWKT
-[module issues]: https://github.com/Daniel-KM/Omeka-S-module-Cartography/issues
+[module issues]: https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/issues
 [CeCILL v2.1]: https://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org
@@ -275,4 +275,4 @@ sociales [EHESS].
 [Neatline]: https://github.com/performant-software/neatline-omeka-s
 [EHESS]: https://www.ehess.fr
 [GitLab]: https://gitlab.com/Daniel-KM
-[Daniel-KM]: https://github.com/Daniel-KM "Daniel Berthereau"
+[Daniel-KM]: https://gitlab.com/Daniel-KM "Daniel Berthereau"

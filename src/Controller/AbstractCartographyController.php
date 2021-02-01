@@ -976,8 +976,8 @@ abstract class AbstractCartographyController extends AbstractActionController
             if (!$media->hasOriginal()) {
                 continue;
             }
-            $size = $this->sizeImage($media, $imageType);
-            if (!$size) {
+            $size = $this->imageSize($media, $imageType);
+            if (empty($size['width'])) {
                 continue;
             }
             $image = [];

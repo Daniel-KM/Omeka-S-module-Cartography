@@ -36,7 +36,8 @@ return [
     ],
     'controller_plugins' => [
         'factories' => [
-            'sizeImage' => Service\ControllerPlugin\SizeImageFactory::class,
+            // Copy of ImageSize from module ImageServer.
+            'imageSize' => Service\ControllerPlugin\ImageSizeFactory::class,
         ],
     ],
     'navigation' => [

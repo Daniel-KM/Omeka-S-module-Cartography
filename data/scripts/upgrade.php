@@ -22,7 +22,7 @@ $space = strtolower(__NAMESPACE__);
 
 if (version_compare($oldVersion, '3.1.0', '<')) {
     throw new \Omeka\Module\Exception\ModuleCannotInstallException(
-        new \Omeka\Stdlib\Message(
+        (string) new \Omeka\Stdlib\Message(
             'To upgrade to Cartography 3.1.0, you must follow the steps described in upgrade_from_alpha.md.' // @translate
     ));
 }

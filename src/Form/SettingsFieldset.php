@@ -1,10 +1,11 @@
 <?php declare(strict_types=1);
+
 namespace Cartography\Form;
 
-use Annotate\Form\Element\ResourceTemplateSelect;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
 use Omeka\Form\Element\CkeditorInline;
+use Omeka\Form\Element\ResourceTemplateSelect;
 
 class SettingsFieldset extends Fieldset
 {

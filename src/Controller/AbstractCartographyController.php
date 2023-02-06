@@ -1107,6 +1107,8 @@ abstract class AbstractCartographyController extends AbstractActionController
      */
     protected function fetchSimpleGeometries(AbstractResourceEntityRepresentation $resource, array $query = [])
     {
+        $query['resource_id'] = $resource->id();
+
         $geometries = [];
 
         $mediaId = array_key_exists('mediaId', $query)
@@ -1126,7 +1128,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         }
 
         /** @var \Annotate\Api\Representation\AnnotationRepresentation[] $annotations */
-        $annotations = $this->resourceAnnotations($resource, $query);
+        $annotations = $this->api()->search('annotations', $query)->getContent();
         foreach ($annotations as $annotation) {
             // Currently, only one target by annotation.
             $target = $annotation->primaryTarget();

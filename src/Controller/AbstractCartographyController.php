@@ -792,7 +792,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         ]];
         $target['rdf:value'] = [[
             'property_id' => $this->propertyId('rdf:value'),
-            'type' => empty($media) ? 'geometry:geography' : 'geometry:geometry',
+            'type' => empty($media) ? 'geography' : 'geometry',
             '@value' => $geometry,
         ]];
         // There is no style during creation.
@@ -1107,11 +1107,11 @@ abstract class AbstractCartographyController extends AbstractActionController
             ? (int) $query['mediaId']
             : null;
         if ($mediaId) {
-            $geometryTypes = ['geometry:geometry'];
+            $geometryTypes = ['geometry'];
         } elseif ($mediaId === 0) {
-            $geometryTypes = ['geometry:geography'];
+            $geometryTypes = ['geography'];
         } else {
-            $geometryTypes = ['geometry:geometry', 'geometry:geography'];
+            $geometryTypes = ['geometry', 'geography'];
         }
 
         // The search is done via the annotation adapter, not the resource one.

@@ -9,14 +9,20 @@ class SiteSettingsFieldset extends Fieldset
 {
     protected $label = 'Cartography (annotate images and maps)'; // @translate
 
+    protected $elementGroups = [
+        'annotate_cartography' => 'Annotate cartography', // @translate
+    ];
+
     public function init(): void
     {
         $this
             ->setAttribute('id', 'cartography')
+            ->setOption('element_groups', $this->elementGroups)
             ->add([
                 'name' => 'cartography_append_public',
                 'type' => Element\MultiCheckbox::class,
                 'options' => [
+                    'element_group' => 'annotate_cartography',
                     'label' => 'Append to pages', // @translate
                     'info' => 'If unchecked, the viewer can be added via the helper in the theme or the block in any page.', // @translate
                     'value_options' => [
@@ -38,6 +44,7 @@ class SiteSettingsFieldset extends Fieldset
         //         'name' => 'cartography_annotate',
         //         'type' => Element\Checkbox::class,
         //         'options' => [
+        //             'element_group' => 'annotate_cartography',
         //             'label' => 'Enable annotation', // @translate
         //             'info' => 'Allows to enable/disable the image/map annotation on this specific site. In all cases, the rights are defined by the module Annotate.', // @translate
         //         ],

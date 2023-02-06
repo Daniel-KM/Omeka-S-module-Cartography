@@ -19,7 +19,7 @@ use Laminas\ServiceManager\ServiceLocatorInterface;
  * Allows to annotate an image or a wms map with the w3c web annotation data
  * model and vocabulary.
  *
- * @copyright Daniel Berthereau, 2018-2020
+ * @copyright Daniel Berthereau, 2018-2023
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt
  */
 class Module extends AbstractModule
@@ -184,8 +184,10 @@ class Module extends AbstractModule
 
     public function handleMainSettingsFilters(Event $event): void
     {
-        $inputFilter = $event->getParam('inputFilter');
-        $inputFilter->get('cartography')
+        $inputFilter = version_compare(\Omeka\Module::VERSION, '4', '<')
+            ? $event->getParam('inputFilter')->get('cartography')
+            : $event->getParam('inputFilter');
+        $inputFilter
             ->add([
                 'name' => 'cartography_display_tab',
                 'required' => false,
@@ -210,8 +212,10 @@ class Module extends AbstractModule
 
     public function handleSiteSettingsFilters(Event $event): void
     {
-        $inputFilter = $event->getParam('inputFilter');
-        $inputFilter->get('cartography')
+        $inputFilter = version_compare(\Omeka\Module::VERSION, '4', '<')
+            ? $event->getParam('inputFilter')->get('cartography')
+            : $event->getParam('inputFilter');
+        $inputFilter
             ->add([
                 'name' => 'cartography_append_public',
                 'required' => false,

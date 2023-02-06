@@ -1,4 +1,5 @@
 <?php declare(strict_types=1);
+
 namespace Cartography\Controller;
 
 use Annotate\Api\Representation\AnnotationRepresentation;
@@ -693,8 +694,7 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         foreach ($partValues as $term => $pValues) {
             foreach ($pValues as $partValue) {
-                $annotationPart = $annotationPartMap[$term]
-                    ?? 'oa:Annotation';
+                $annotationPart = $annotationPartMap[$term] ?? 'oa:Annotation';
                 if ($annotationPart === 'oa:Annotation') {
                     $data[$term][] = $partValue;
                 } else {
@@ -1265,7 +1265,7 @@ abstract class AbstractCartographyController extends AbstractActionController
             ) {
                 continue;
             }
-            /** @var Omeka\Api\Representation\ValueRepresentation $value */
+            /** @var \Omeka\Api\Representation\ValueRepresentation $value */
             foreach ($property['values'] as $value) {
                 switch ($value->type()) {
                 case 'resource':

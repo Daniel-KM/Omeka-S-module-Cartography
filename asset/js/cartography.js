@@ -1,16 +1,12 @@
 
 /**
- * @Description: To extend the style-editor, put annotation dynamic data form
- *               inside the side bar.
- *               This part is for rendering different types of elements like:
- *               select, input, textarea ...links, input-select?
- *               To make a new type of element available, add a new service like createInputFieldService()
- * @Author: Tom, cancms@163.com
- *
- * */
+ * @description To extend the style-editor, put annotation dynamic data form inside the side bar.
+ *  This part is for rendering different types of elements like select, input, textarea..., links, input-select?
+ *  To make a new type of element available, add a new service like createInputFieldService()
+ * @author Tom, cancms@163.com
+ */
 // Field services
 (function (jQuery, L) {
-
 
     function wrapObj2Array(obj) {
         var arr = [];
@@ -38,14 +34,12 @@
         };
         var $ = jQuery;
 
-
-
-
         function setElementRenderData(propertyTplData, leafletLayer, tplDataService) {
             _renderData.propertyTplData = propertyTplData;
             _renderData.leafletLayer = leafletLayer;
             _renderData.tplDataService = tplDataService;
         }
+
         // the index of the metadata value
         function getValueAtIndex( metaKey = null, index = 'auto', propertyTplData = null) {
             propertyTplData = propertyTplData || _renderData.propertyTplData;
@@ -59,7 +53,6 @@
 
             return value;
         }
-
 
         function renderPlainHtml(propertyTplData, leafletLayer, tplDataService) {
             setElementRenderData(propertyTplData, leafletLayer, tplDataService);
@@ -82,7 +75,6 @@
             }
             return htmlRs;
         }
-
 
         function isEmptyValue(value) {
             var rs = true;
@@ -133,8 +125,8 @@
                     html += `<div class=" value">
                                 <p class="resource-oa-linking">
                                     <span class="o-title ${valueObj['value_resource_name']}-no" >
-                                        ${thumbnail} 
-                                        <a href="${valueObj['url']}" title="${title}"  
+                                        ${thumbnail}
+                                        <a href="${valueObj['url']}" title="${title}"
                                             style="
                                                 display: inline-block;
                                                 width: 180px;
@@ -142,7 +134,7 @@
                                                 overflow: hidden !important;
                                                 text-overflow: ellipsis;
                                         ">${title}</a>
-                                    </span>  
+                                    </span>
                                 </p>
                             </div>
                             `;
@@ -174,9 +166,6 @@
         return renderService;
     }
 
-
-
-
     function createElementRenderService(styleFormOptions = {}) {
         var renderService = {
             render: render,
@@ -188,13 +177,11 @@
             propertyTplData: {},
             tplDataService: {},
             styleFormOptions: styleFormOptions
-
         };
 
         initialize();
 
         function initialize() {
-
         }
 
         function createJqElement(strHtml) {
@@ -278,9 +265,6 @@
             return element;
         }
 
-
-
-
         function appendDestroyEventsFn(element, eventNames = []) {
             element.annotateElementDestroyEvents = function () {
                 eventNames.map(function (eName) {
@@ -309,7 +293,6 @@
 
                     propertyField.val(initValue);
                 }
-
             }
 
             function initElementSelectOptions(selectElement, propertyData) {
@@ -319,7 +302,6 @@
                     selectElement.append(option);
                 });
             }
-
 
             // bind events
             function initElementEvents(propertyNode, propertyData) {
@@ -358,8 +340,6 @@
                 }
             }
 
-
-
             function createFieldElement() {
                 var element = '<input class="_annotate_property leaflet-styleeditor-input " />';
                 switch (getType()) {
@@ -377,17 +357,13 @@
                 return wrapperElement;
             }
 
-
-
             return service;
         }
-
 
         function createResourceLinksService () {
             var resourceLinksService = {
                 createFieldElement: createFieldElement,
             };
-
 
             var listLinks = [];
 
@@ -400,13 +376,12 @@
                 resourcePropertyTplData: {} // clone
             };
 
-
             initialize();
+
             function initialize() {
 
                 // deep copy
                 _data.resourcePropertyTplData = $.extend(true, {}, _renderData.propertyTplData);
-
 
                 listLinks = _renderData.propDataModel.getPropertyData(
                     _data.sourcePropertyKey,
@@ -422,7 +397,6 @@
                     doOnNewLinkItemReturn(data);
                 });
             }
-
 
             function removeLinkItem(resourceId) {
                 listLinks = listLinks.filter(function (item) {
@@ -441,7 +415,6 @@
                     propertyTplData: _data.resourcePropertyTplData
                 });
             }
-
 
             function onDeleteClick(resourceId) {
                 removeLinkItem(resourceId);
@@ -465,8 +438,7 @@
 
             function createFieldElement() {
 
-
-                var linkItemsDiv = `<div class="leaflet-styleeditor-oalinking value selecting-resource _oaLinking" 
+                var linkItemsDiv = `<div class="leaflet-styleeditor-oalinking value selecting-resource _oaLinking"
                                             ></div>`;
 
                 // add the list div
@@ -481,10 +453,8 @@
                 // mark the list div
                 _data.linkItemsDiv = wrapperElement.find('._oaLinking');
 
-
                 // list the items
                 reRenderLinkItems();
-
 
                 appendDestroyEventsFn(wrapperElement, [_data.events.onAddNewResourceItem]);
                 return wrapperElement;
@@ -502,18 +472,15 @@
 
             }
 
-
-
-
             function createLinkItemElements() {
                 var itemTplFn = function (itemData) {
                     var itemTpl = `<div class="value selecting-resource">
                          <p class="selected-resource">
                              <span class="o-title items-no">
                                  <img class=""
-                                       src="${itemData.thumbnail_url || ''}" 
-                                       alt="${itemData.display_title || ''}" 
-                                       title="${itemData.display_title || ''}" 
+                                       src="${itemData.thumbnail_url || ''}"
+                                       alt="${itemData.display_title || ''}"
+                                       title="${itemData.display_title || ''}"
                                        >
                                  <a class="" href="${itemData.url || ''}">${itemData.display_title || ''}</a>
                               </span>
@@ -542,14 +509,11 @@
                 return itemElements;
             }
 
-
-
-
             function addLinkButton() {
                 var sideBarContentUrl = basePath + '/admin/item/sidebar-select';
-                var addBtn = `<a class="leaflet-styleeditor-linking o-icon-items button resource-selection" 
-                                 href="#item-resource-select" 
-                                 id="item-resource-select-button" 
+                var addBtn = `<a class="leaflet-styleeditor-linking o-icon-items button resource-selection"
+                                 href="#item-resource-select"
+                                 id="item-resource-select-button"
                                  data-sidebar-content-url="${sideBarContentUrl}">
                              Add links</a>`;
 
@@ -558,11 +522,9 @@
                     _openOmekaSidebar ( );
                 });
 
-
                 return btnElement;
 
             }
-
 
             function _openOmekaSidebar ( ) {
                 // There may be multiple style editors in tabs, so use the map of the current tab.
@@ -576,14 +538,6 @@
                 // this.options.styleEditorOptions.util.fireEvent('changed', this.options.styleEditorOptions.util.getCurrentElement())
             }
 
-
-
-
-
-
-
-
-
             return resourceLinksService;
 
         }
@@ -592,7 +546,6 @@
             var elementService = {
                 createFieldElement: createFieldElement,
             };
-
 
             var _data = {
                 // suggestionLabelKey: 'label',
@@ -612,7 +565,6 @@
                 }
 
             }
-
 
             // bind events
             function doOnValueChange(propertyNode, suggestion) {
@@ -651,8 +603,6 @@
                     configAutoComplete(propertyNode);
                 }
             }
-
-
 
             function configAutoComplete(propertyNode) {
                 if (! propertyNode) {
@@ -696,10 +646,6 @@
                 });
             }
 
-
-
-
-
             function createFieldElement() {
                 var element = '<input class="_annotate_property leaflet-styleeditor-input " />';
                 var wrapperElement = wrapper(element);
@@ -708,8 +654,6 @@
                 return wrapperElement;
             }
 
-
-
             return elementService;
 
         }
@@ -717,43 +661,17 @@
         return renderService;
     }
 
-
-
     L.StyleEditorAnnotation = L.StyleEditorAnnotation || {};
     L.StyleEditorAnnotation.createElementRenderService = createElementRenderService;
     L.StyleEditorAnnotation.createElementDescriptiveHtmlService = createElementDescriptiveHtmlService;
 
-
-
-
 }(jQuery, L));
-
-
-
-
-
-
-
-
 
 /**
  * @Description: To extend the style-editor, put annotation dynamic data form
  *               inside the side bar
  * @Author: Tom, cancms@163.com
- *
- * Sample template source:
- * https://sempiternelia.com/cartography2/modules/Cartography/data/resource-templates/cartography_describe_templates.json
- * https://sempiternelia.com/cartography2/admin/cartography/81/geometries?mediaId=82
- * https://sempiternelia.com/cartography2/modules/Cartography/data/sample_geometries.json
- *
- *
- * https://sempiternelia.com/cartography2/modules/Cartography/data/resource-templates/cartography_describe_templates.json
- * https://sempiternelia.com/cartography2/modules/Cartography/data/resource-templates/cartography_locate_templates.json
- *
- *
- *
- *
- * */
+ */
 // Form services
 (function (jQuery, L) {
 
@@ -763,7 +681,6 @@
             renderDescriptiveHtml: renderDescriptiveHtml,
             isEmptyValue: isEmptyValue,
         };
-
 
         function createPropertyTemplateDataService(styleFormOptions = {}) {
             var service = {
@@ -793,7 +710,6 @@
             }
 
             function getJsonData() {
-
                 return _data.jsonData;
             }
 
@@ -807,7 +723,6 @@
             function hasTypes() {
                 return (_data.jsonData.length > 0);
             }
-
 
             function getTypeData(typeId) {
                 var rs = _data.jsonData.find(function (item) {
@@ -829,7 +744,6 @@
                 }
                 return id;
             }
-
 
             function initTemplateData() {
                 _data.jsonData = _data.jsonData || [];
@@ -886,7 +800,6 @@
                 });
             }
 
-
             function _initTemplateTypeData(typeData) {
                 typeData = typeData || {};
                 typeData['o:id'] = typeData['o:id'] || _data.sourceTypeDefaultId;
@@ -894,7 +807,6 @@
                 typeData['o:label'] = typeData['o:label'] || (typeData.placeholder || 'Select type below...');
                 _data.allTypeIds.push(typeData['o:id']);
             }
-
 
             function _initTemplatePropertiesData(propertiesData) {
                 propertiesData.map(function (propertyItem, idx) {
@@ -911,7 +823,6 @@
                 });
             }
 
-
             function hasTypeId(typeId) {
                 return ($.inArray(typeId, _data.allTypeIds) > -1);
             }
@@ -925,7 +836,6 @@
                 }
                 return rs;
             }
-
 
             function getLayerMetaData(leafletLayer, metaKey, dataIndex = 0) {
                 leafletLayer = leafletLayer || {};
@@ -953,6 +863,7 @@
                 }
                 return valueIndex;
             }
+
             function getValueAtIndex(leafletLayer, metaKey = null, index = 'auto', propertyTplData = null) {
                 propertyTplData = propertyTplData || {};
 
@@ -973,10 +884,8 @@
                 return value;
             }
 
-
             return service;
         }
-
 
         function createPropertiesDataModel(styleFormOptions = {}) {
             var service = {
@@ -1032,7 +941,6 @@
                 return layer;
             }
 
-
             function unifyKeyTerm(key) {
                 // use the rdf key from template
 
@@ -1043,7 +951,6 @@
 
                 return key;
             }
-
 
             function getUnifiedLayerOptionsData() {
                 var data = {};
@@ -1069,29 +976,23 @@
 
             // the Leaflet Layer object
             function layerOptionChange(propertyKey, newValue, propertyTplData = null) {
-
                 var layer = currentLayer();
                 if (layer) {
                     if (propertyKey !== null) {
-
                         // ONLY operates on the options.metadata
                         layer.options.metadata = layer.options.metadata || {};
-
                         if (propertyTplData && propertyTplData._jsFnIsArrayProperty && propertyTplData._jsFnIsArrayProperty()) {
                             var uniqueKey = propertyTplData._jsFnGetUniqueKey() || 0;
                             layer.options.metadata[propertyKey] = layer.options.metadata[propertyKey] || [];
                             layer.options.metadata[propertyKey][uniqueKey] = newValue;
-
                         } else {
                             layer.options.metadata[propertyKey] = newValue;
                         }
-
                     }
                     // fire event for changed layer
                     getEditorOption('util').fireChangeEvent(layer)
                 }
             }
-
 
             function getPropertyData(propertyName, index = null) {
                 var rs = _data.unifiedLayerOptionsData[unifyKeyTerm(propertyName)];
@@ -1107,14 +1008,11 @@
                 if (key !== null) {
                     _data.unifiedLayerOptionsData[unifyKeyTerm(key)] = value;
                     if (layerOptionsMetaDataChange === true) {
-
                         layerOptionChange(key, value, propertyTplData);
-
                     }
                 }
                 return service;
             }
-
 
             function getSourceTypeId() {
                 var propertyKey = _data.formTypeIdString;
@@ -1128,7 +1026,6 @@
                 return service;
             }
 
-
             function doOnPropertyChange(data) {
                 // set
                 var propertyKey = data.newData.key;
@@ -1137,7 +1034,6 @@
                 setPropertyData(propertyKey, newValue, propertyTplData);
 
             }
-
 
             return service;
         }
@@ -1154,7 +1050,6 @@
                 propDataModel: {},  // the data from geoItem
                 elementRenderService: {},  // the element render service
 
-
                 placeHolderDiv: null, // the holder for the dynamic form
 
                 // the dynamic form wrapper div element, a jq object
@@ -1164,7 +1059,6 @@
                 createdPropertyElements: [],
 
             };
-
 
             initialize();
 
@@ -1176,7 +1070,6 @@
                 //  init the tpl element service
                 _data.tplDataService = createPropertyTemplateDataService(styleFormOptions);
                 _data.elementRenderService = L.StyleEditorAnnotation.createElementRenderService(styleFormOptions);
-
 
                 // where to put the form
                 addPlaceHolderDiv();
@@ -1209,13 +1102,11 @@
                 return rs;
             }
 
-
             function addPlaceHolderDiv() {
                 var div = _createJqElement('<div></div>');
                 _data.styleFormOptions.styleEditorInterior.appendChild(_jqToDomElement(div));
                 _data.placeHolderDiv = div;
             }
-
 
             function formDivTemplate() {
                 var html = `<div>
@@ -1241,7 +1132,6 @@
                 populateTypeSelect();
                 _data.placeHolderDiv.append(_data.createdFormDiv);
             }
-
 
             function populateTypeSelect() {
                 var select = _data.createdFormDiv.find('.annotation-types select');
@@ -1276,7 +1166,6 @@
                 createAnnotateProperties();
 
             }
-
 
             function removeCreatedProperties() {
                 _data.createdPropertyElements.map(function (item) {
@@ -1314,13 +1203,8 @@
 
             }
 
-
             return service;
         }
-
-
-
-
 
         function renderDescriptiveHtml(layer, templateJson) {
             templateJson = templateJson || [];
@@ -1355,10 +1239,10 @@
                                     </a>
                                     <ul class="actions">
                                         <li>
-                                            <span><a class="o-icon-external" href="${linkUrl}" 
-                                                    target="_blank" 
-                                                    title="${Omeka.jsTranslate('Show annotation')}" 
-                                                    aria-label="${Omeka.jsTranslate('Show annotation')}" 
+                                            <span><a class="o-icon-external" href="${linkUrl}"
+                                                    target="_blank"
+                                                    title="${Omeka.jsTranslate('Show annotation')}"
+                                                    aria-label="${Omeka.jsTranslate('Show annotation')}"
                                                    ></a></span>
                                         </li>
                                     </ul>
@@ -1394,8 +1278,6 @@
 
             return elementsHtml.join('\n');
         }
-
-
 
         function _createJqElement(strHtml) {
             return $('<div/>').html(strHtml).contents();
@@ -1435,23 +1317,13 @@
             })
         }
 
-
         return formService;
     }
 
     L.StyleEditorAnnotation = L.StyleEditorAnnotation || {};
     L.StyleEditorAnnotation.createAnnotateFormService = createAnnotateFormService;
 
-
 }(jQuery, L));
-
-
-
-
-
-
-
-
 
 /*
  * Cartography annotate
@@ -1580,12 +1452,10 @@ var displayGeometry = function(data) {
         // var popupContent = popupAnnotation(options);
         // layer.bindPopup(popupContent);
 
-
         // To reserve the options from geoJson.
         layer.options = layer.options || {};
         // To prepare for style editor form-element initial value.
         layer.options = $.extend(options, layer.options);
-
 
         cartographyDataService.bindLayerPopup(layer);
     }
@@ -1622,7 +1492,6 @@ var displayGeometry = function(data) {
     // Set the content of the popup in all cases, not only description.
     // var popupContent = popupAnnotation(options);
     // layer.bindPopup(popupContent);
-
 
     // Append the geometry to the map.
     addGeometry(layer, data['id'], this.drawnItems);
@@ -1849,7 +1718,7 @@ var popupAnnotation = function(options) {
         html += '</div>';
     }
 
-    // 3. Display informations about the annotation. 
+    // 3. Display informations about the annotation.
     html += '<div class="annotation-metadata">';
     if (annotationIdentifier) {
         url = basePath + baseUrl + '/annotation/' + annotationIdentifier;
@@ -2442,7 +2311,6 @@ var initGeobrowse = function() {
         annotateControl(map, drawnItems);
     }
 
-
     var drawControlOptions = {
         draw: {
             polyline: false,
@@ -2464,7 +2332,6 @@ var initGeobrowse = function() {
         removeAllLayers: false,
     });
     map.addControl(drawControl);
-
 
     // Append the opacity control at the end of the toolbar for better ux.
     if (typeof openWmsLayer !== 'undefined' && openWmsLayer) {
@@ -2490,7 +2357,6 @@ var initGeobrowse = function() {
         annotateGeometries(map, section, drawnItems);
     }
 }
-
 
 /* Manage geometries. */
 
@@ -2851,11 +2717,8 @@ var imageMediaService = createImageMediaService();
 // Disable the core resource-form.js bind for the sidebar selector.
 $(document).off('o:prepare-value');
 
-
 // data service
 var cartographyDataService = createCartographyDataService();
-
-
 
 if (cartographySections.indexOf('describe') > -1) {
     // initDescribe();
@@ -2879,11 +2742,7 @@ if (cartographySections.indexOf('geobrowse') > -1) {
 
 });
 
-
-
-
 // global data service, like annotation dynamic form template json
-
 
 function createCartographyDataService() {
     var service = {
@@ -2903,7 +2762,6 @@ function createCartographyDataService() {
         maps: {}
     };
 
-
     initialize();
 
     function initialize() {
@@ -2911,11 +2769,9 @@ function createCartographyDataService() {
         handleTabClick();
     }
 
-
     function setMap(map, section) {
         _data.maps[section] = map;
     }
-
 
     function handleTabClick() {
 
@@ -2938,7 +2794,6 @@ function createCartographyDataService() {
             });
         });
     }
-
 
     function validSection(section) {
         var rs = true;
@@ -2991,7 +2846,6 @@ function createCartographyDataService() {
         return service;
     }
 
-
     function ajaxLoadDescribeLocateTemplateJson() {
         var requests = [];
         var dynamicPropertiesUrl = basePath + '/admin/cartography/resource-templates';
@@ -3015,7 +2869,6 @@ function createCartographyDataService() {
         return rsPromise;
     }
 
-
     function bindLayerPopup(layer) {
         if (!(layer instanceof L.Layer) ) {
             return false;
@@ -3038,12 +2891,9 @@ function createCartographyDataService() {
 
     }
 
-
     return service;
 
 }
-
-
 
 /**
  * The currentMediaId is the image id used to manage multiple background.

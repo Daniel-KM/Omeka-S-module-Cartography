@@ -17,7 +17,7 @@ Installation
 ------------
 
 This module requires the modules [Annotate] and [Data Type Geometry].
-If the module [Generic] is used, it must be version greater or equal to 3.0.16.
+If the module [Generic] is used, it must be version greater or equal to 3.4.41.
 
 The module uses external libraries, so use the release zip to install it, or use
 and init the source.
@@ -35,11 +35,15 @@ directory.
 If the module was installed from the source, rename the name of the folder of
 the module to `Cartography`, go to the root of the module, and run:
 
-```
-    npm install
+```sh
+npm install
 composer install --no-dev
-    gulp
+gulp
 ```
+
+* Database
+
+See notes in the module [Data Type Geometry].
 
 
 Quick start
@@ -48,8 +52,8 @@ Quick start
 The module allows to annotate standard images and georeferenced maps.
 - To annotate a still image, simply upload it as media.
 - To annotate a georeferenced image, the [wms] url should be set as URI in
-  `dcterms:spatial`, for example: `https://mapwarper.net/maps/wms/14068` with
-  label `Us and territories`. There can be multiple [wms] layers, for example
+  `dcterms:spatial`, for example: `https://mapwarper.net/maps/wms/12428` with
+  label `London Hogenberg 1572`. There can be multiple [wms] layers, for example
   you can add the `Roads to Santiago de Compostela in Spain` too with the url
   `https://www.ign.es/wms-inspire/camino-santiago?layers=PS.ProtectedSite`.
 
@@ -78,18 +82,18 @@ Configuration
 
 ### Forms
 
-The images and  the maps can be described with any metadata. These metadata are
+The images and the maps can be described with any metadata. These metadata are
 listed in a standard Òmeka resource template, but it must have the class
 `oa:Annotation`.
 
-The images and  the maps can be described with any metadata. Nevertheless, it is
+The images and the maps can be described with any metadata. Nevertheless, it is
 recommended to use standard annotations ones, in particular `rdf:value` for the
 body (equivalent to `dcterms:description` for the resources) and `oa:motivatedBy`
 for annotation itself (to simplify the search). The relations with other
 resources (for example identification of an object on an image is an image of
 another item) should use the element `oa:hasBody`.
 
-Note that according to the Open Annotation data model, an annotation is divided
+Note that according to the [Web Annotation data model], an annotation is divided
 in three part: the annoation itself, one or more target (only one with this
 module) and zero or more bodies (a description, a link, etc.). So the properties
 of the annoations should be attached to one of this part via the resource
@@ -104,7 +108,7 @@ to describe place. They are selected in the main settings of Omeka S.
 
 ### Ontologies
 
-The annotations uses the [web annotation vocabulary].
+The annotations use the [web annotation vocabulary].
 
 #### Locate georeferenced images
 
@@ -126,11 +130,11 @@ var layerIGNScanStd = 'GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD';
 var ignKey = 'choisirgeoportail';
 var url = 'https://wxs.ign.fr/' + ignKey + '/geoportail/wmts';
 var ign = new L.TileLayer.WMTS(url, {
-   layer: layerIGNScanStd,
-   style: 'normal',
-   tilematrixSet: 'PM',
-   format: 'image/jpeg',
-   attribution: '&copy; <a href="https://www.ign.fr">IGN</a>',
+    layer: layerIGNScanStd,
+    style: 'normal',
+    tilematrixSet: 'PM',
+    format: 'image/jpeg',
+    attribution: '&copy; <a href="https://www.ign.fr">IGN</a>',
 });
 
 baseMaps = {
@@ -175,9 +179,8 @@ The deprecated datatype `http://geovocab.org/geometry#asWKT` is no more used.
 TODO
 ----
 
-- Add a configurable list of styles in the style editor (or replace the fields
-  used to edit styles).
-- Add the specific config of the wmts at the site level.
+- [ ] Add a configurable list of styles in the style editor (or replace the fields used to edit styles).
+- [ ] Add the specific config of the wmts at the site level.
 
 
 Warning
@@ -238,7 +241,7 @@ Copyright
 * Copyright Daniel Berthereau, 2018, (see [Daniel-KM] on GitLab)
 
 This module was built first for the French École des hautes études en sciences
-sociales [EHESS].
+sociales [EHESS]. The maintenance was done for [INHA].
 
 
 [Cartography]: https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography
@@ -260,6 +263,7 @@ sociales [EHESS].
 [`data_type_geometry`]: https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/tree/master/data/install/schema.sql
 [doctrine2-spatial]: https://github.com/creof/doctrine2-spatial/blob/HEAD/doc/index.md
 [`Cartography.zip`]: https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/releases
+[Web Annotation data model]: https://www.w3.org/TR/annotation-model/#introduction
 [config file]: https://gitlab.com/Daniel-KM/Omeka-S-module-Annotate/-/tree/master/data/mappings/properties_to_annotation_parts.php
 [Annotate]: https://gitlab.com/Daniel-KM/Omeka-S-module-Annotate
 [IGN map service]: https://geoservices.ign.fr
@@ -274,5 +278,6 @@ sociales [EHESS].
 [Numeric data types]: https://github.com/omeka-s-modules/NumericDataTypes
 [Neatline]: https://github.com/performant-software/neatline-omeka-s
 [EHESS]: https://www.ehess.fr
+[INHA]: https://www.inha.fr
 [GitLab]: https://gitlab.com/Daniel-KM
 [Daniel-KM]: https://gitlab.com/Daniel-KM "Daniel Berthereau"

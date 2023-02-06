@@ -1,4 +1,5 @@
 <?php declare(strict_types=1);
+
 namespace Cartography\View\Helper;
 
 use Laminas\View\Helper\AbstractHelper;
@@ -257,7 +258,8 @@ var resourceId = ' . $resource->id() . ';';
                     $customVocab = $api->read('custom_vocabs', [
                         'label' => $label,
                     ])->getContent();
-                    $options[$key] = explode(PHP_EOL, $customVocab->terms());
+                    $terms = $customVocab->terms();
+                    $options[$key] = is_array($terms) ? $terms : explode(PHP_EOL, $terms);
                 } catch (NotFoundException $e) {
                     $options[$key] = [];
                 }

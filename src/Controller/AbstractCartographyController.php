@@ -606,7 +606,7 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         /** @var \Omeka\Api\Representation\ResourceTemplateRepresentation $template */
         $template = $this->api()->read('resource_templates', ['id' => $templateId])->getContent();
-        $template = json_decode(json_encode($template), 320);
+        $template = json_decode(json_encode($template), true);
         $templateProperties = $template['o:resource_template_property'];
 
         // Get the special annotation mapping of this template.

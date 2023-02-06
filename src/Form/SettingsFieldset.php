@@ -14,6 +14,7 @@ class SettingsFieldset extends Fieldset
     public function init(): void
     {
         $this
+            ->setAttribute('id', 'cartography')
             ->add([
                 'name' => 'cartography_user_guide',
                 'type' => CkeditorInline::class,

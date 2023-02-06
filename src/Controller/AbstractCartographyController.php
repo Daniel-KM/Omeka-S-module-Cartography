@@ -639,6 +639,11 @@ abstract class AbstractCartographyController extends AbstractActionController
             $shortKey = array_search($term, $terms);
             $propertyId = $templateProperties[$shortKey]['o:property']['o:id'];
             $dataType = $templateProperties[$shortKey]['o:data_type'];
+            // Since version 3, it's always an array anyway.
+            if (is_array($dataType)) {
+                $dataType = reset($dataType);
+            }
+            $dataType = $dataType ?: 'literal';
             $lang = empty($templateProperties[$shortKey]['o:lang'])
                 ? null
                 : $templateProperties[$shortKey]['o:lang'];
@@ -842,7 +847,8 @@ abstract class AbstractCartographyController extends AbstractActionController
         foreach ($template->resourceTemplateProperties() as $templateProperty) {
             // The data type may have been removed (custom vocab, etc.), so a
             // default is forced.
-            $dataType = $templateProperty->dataType() ?: 'literal';
+            $dataType = $templateProperty->dataTypes();
+            $dataType = reset($dataType) ?: 'literal';
             $input = [];
             $input['o:id'] = $templateProperty->property()->id();
             $input['o:term'] = $templateProperty->property()->term();

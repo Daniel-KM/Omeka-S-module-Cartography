@@ -1532,9 +1532,9 @@ var addGeometry = function(layer, identifier, drawnItems) {
     var data = {
         // Identifier is always empty when an annotation is created.
         id : identifier,
-        resourceId: resourceId,
+        resource_id: resourceId,
         // Media id is empty on locate.
-        mediaId: currentMediaId(),
+        media_id: currentMediaId(),
         wkt: wkt,
         options: options,
     };
@@ -2564,8 +2564,8 @@ var annotateGeometries = function(map, section, drawnItems) {
         var url = basePath + baseUrl + '/cartography/' + resourceId + '/geometries';
         var partIdentifier = currentMediaId();
         var data = {
-            mediaId: partIdentifier === null ? '0' : (partIdentifier || '-1'),
-            annotationId: identifier,
+            media_id: partIdentifier === null ? '0' : (partIdentifier || '-1'),
+            annotation_id: identifier,
         }
 
         $.get(url, data)

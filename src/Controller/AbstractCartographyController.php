@@ -125,12 +125,6 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         $query = $this->params()->fromQuery();
 
-        // TODO Fix js to use "annotation_id" and not "annotationId".
-        if (isset($query['annotationId']) && !isset($query['annotation_id'])) {
-            $query['annotation_id'] = $query['annotationId'];
-            unset($query['annotationId']);
-        }
-
         $geometries = $this->fetchSimpleGeometries($resource, $query);
 
         return new JsonModel([
@@ -243,11 +237,11 @@ abstract class AbstractCartographyController extends AbstractActionController
         }
 
         if (empty($data['id'])) {
-            if (empty($data['resourceId'])) {
+            if (empty($data['resource_id'])) {
                 return $this->jsonError('An internal error occurred from the client: no resource.', Response::STATUS_CODE_400); // @translate
             }
 
-            $resourceId = $data['resourceId'];
+            $resourceId = $data['resource_id'];
             try {
                 $resource = $api->read('resources', ['id' => $resourceId])->getContent();
             } catch (\Omeka\Api\Exception\NotFoundException $e) {
@@ -255,7 +249,7 @@ abstract class AbstractCartographyController extends AbstractActionController
             }
 
             // Save media id too to manage multiple media by image, else wms.
-            $mediaId = empty($data['mediaId']) ? null : $data['mediaId'];
+            $mediaId = empty($data['media_id']) ? null : $data['media_id'];
             if ($mediaId) {
                 $media = $api
                     ->searchOne('media', ['id' => $mediaId])
@@ -1111,8 +1105,8 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         $geometries = [];
 
-        $mediaId = array_key_exists('mediaId', $query)
-            ? (int) $query['mediaId']
+        $mediaId = array_key_exists('media_id', $query)
+            ? (int) $query['media_id']
             : null;
         if ($mediaId) {
             $geometryTypes = ['geometry'];
@@ -1123,8 +1117,11 @@ abstract class AbstractCartographyController extends AbstractActionController
         }
 
         // The search is done via the annotation adapter, not the resource one.
-        if (!empty($query['annotation_id'])) {
-            $query['id'] = $query['annotation_id'];
+        if (array_key_exists('annotation_id', $query)) {
+            if (!empty($query['annotation_id'])) {
+                $query['id'] = $query['annotation_id'];
+            }
+            unset($query['annotation_id']);
         }
 
         /** @var \Annotate\Api\Representation\AnnotationRepresentation[] $annotations */

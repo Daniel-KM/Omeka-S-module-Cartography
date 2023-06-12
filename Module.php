@@ -80,22 +80,23 @@ class Module extends AbstractModule
         $settings->set('annotate_resource_template_data', $resourceTemplateData);
     }
 
-    public function uninstall(ServiceLocatorInterface $serviceLocator): void
+    public function uninstall(ServiceLocatorInterface $services): void
     {
+        $this->setServiceLocator($services);
+
         if (!class_exists(\Generic\InstallResources::class)) {
             require_once file_exists(dirname(__DIR__) . '/Generic/InstallResources.php')
                 ? dirname(__DIR__) . '/Generic/InstallResources.php'
                 : __DIR__ . '/src/Generic/InstallResources.php';
         }
 
-        $services = $this->getServiceLocator();
         $installResources = new \Generic\InstallResources($services);
         $installResources = $installResources();
 
         foreach (['Cartography Describe', 'Cartography Locate'] as $resourceTemplate) {
             $installResources->removeResourceTemplate($resourceTemplate);
         }
-        parent::uninstall($serviceLocator);
+        parent::uninstall($services);
     }
 
     /**

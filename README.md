@@ -181,6 +181,8 @@ TODO
 
 - [ ] Add a configurable list of styles in the style editor (or replace the fields used to edit styles).
 - [ ] Add the specific config of the wmts at the site level.
+- [ ] Omeka S v4: fix link resource.
+- [ ] Fix display of data in popup.
 
 
 Warning

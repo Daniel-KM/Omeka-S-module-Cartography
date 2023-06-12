@@ -1,8 +1,10 @@
+const baseUrl = window.location.pathname.replace(/\/admin\/.*/, '/');
 
 /**
  * @description To extend the style-editor, put annotation dynamic data form inside the side bar.
- *  This part is for rendering different types of elements like select, input, textarea..., links, input-select?
- *  To make a new type of element available, add a new service like createInputFieldService()
+ * This part is for rendering different types of elements like select, input, textarea, links, input-select…
+ * To make a new type of element available, add a new service like createInputFieldService().
+ *
  * @author Tom, cancms@163.com
  */
 // Field services
@@ -509,8 +511,9 @@
                 return itemElements;
             }
 
+            // For admin.
             function addLinkButton() {
-                var sideBarContentUrl = basePath + '/admin/item/sidebar-select';
+                var sideBarContentUrl = baseUrl + 'admin/item/sidebar-select';
                 var addBtn = `<a class="leaflet-styleeditor-linking o-icon-items button resource-selection"
                                  href="#item-resource-select"
                                  id="item-resource-select-button"
@@ -1231,7 +1234,7 @@
 
                 var annotationId = tplDataService.getValueAtIndex(layer, 'o:id', null);
                 if (annotationId) {
-                    var linkUrl = basePath + baseUrl + '/annotation/' + annotationId;
+                    var linkUrl = baseUrl + currentPath + '/annotation/' + annotationId;
                     html += `<div class="_annotation_property_plain_html annotation-metadata ">
                                 <div class="annotation-caption">
                                     <a class="resource-link" href="${linkUrl}">
@@ -1340,7 +1343,7 @@ $(document).ready( function() {
  * @return array
  */
 var fetchImages = function(resourceId, data) {
-    var url = basePath + baseUrl + '/cartography/' + resourceId + '/images';
+    var url = baseUrl + currentPath + '/cartography/' + resourceId + '/images';
 
     $.ajax({url: url, data: data, async: false})
         .done(function(data) {
@@ -1368,7 +1371,7 @@ var fetchImages = function(resourceId, data) {
  * @return array
  */
 var fetchWmsLayers = function(resourceId, data) {
-    var url = basePath + baseUrl + '/cartography/' + resourceId + '/wmsLayers';
+    var url = baseUrl + currentPath + '/cartography/' + resourceId + '/wmsLayers';
 
     $.ajax({url: url, data: data, async: false})
         .done(function(data) {
@@ -1396,7 +1399,7 @@ var fetchWmsLayers = function(resourceId, data) {
  * @param L.FeatureGroup drawnItems
  */
 var fetchGeometries = function(resourceId, data, drawnItems) {
-    var url = basePath + baseUrl + '/cartography/' + resourceId + '/geometries';
+    var url = baseUrl + currentPath + '/cartography/' + resourceId + '/geometries';
 
     $.get(url, data)
         .done(function(data) {
@@ -1528,7 +1531,7 @@ var addGeometry = function(layer, identifier, drawnItems) {
     var options = {};
     prepareSaveOptions(layer, options);
 
-    var url = basePath + baseUrl + '/cartography/annotate';
+    var url = baseUrl + currentPath + '/cartography/annotate';
     var data = {
         // Identifier is always empty when an annotation is created.
         id : identifier,
@@ -1596,7 +1599,7 @@ var editGeometry = function(layer) {
     }
     prepareSaveOptions(layer, layer.options);
 
-    var url = basePath + baseUrl + '/cartography/annotate';
+    var url = baseUrl + currentPath + '/cartography/annotate';
     var data = {
         id: identifier,
         wkt: wkt,
@@ -1633,7 +1636,7 @@ var editGeometry = function(layer) {
  * @param layer
  */
 var deleteGeometry = function(layer) {
-    var url = basePath + baseUrl + '/cartography/delete-annotation';
+    var url = baseUrl + currentPath + '/cartography/delete-annotation';
     var identifier = layer.options.annotationIdentifier || getMarkerIdentifier(layer);
     if (!identifier) {
         console.log('Unable to delete the geometry: no identifier.');
@@ -1721,7 +1724,7 @@ var popupAnnotation = function(options) {
     // 3. Display informations about the annotation.
     html += '<div class="annotation-metadata">';
     if (annotationIdentifier) {
-        url = basePath + baseUrl + '/annotation/' + annotationIdentifier;
+        url = baseUrl + currentPath + '/annotation/' + annotationIdentifier;
         html += '<div class="annotation-caption">'
             + '<a class="resource-link" href="' + url + '">'
             + '<span class="resource-name">[#' + annotationIdentifier + ']</span>'
@@ -2561,7 +2564,7 @@ var annotateGeometries = function(map, section, drawnItems) {
         }
 
         // Check if the selected resource is already linked.
-        var url = basePath + baseUrl + '/cartography/' + resourceId + '/geometries';
+        var url = baseUrl + currentPath + '/cartography/' + resourceId + '/geometries';
         var partIdentifier = currentMediaId();
         var data = {
             media_id: partIdentifier === null ? '0' : (partIdentifier || '-1'),
@@ -2846,9 +2849,10 @@ function createCartographyDataService() {
         return service;
     }
 
+    // For admin.
     function ajaxLoadDescribeLocateTemplateJson() {
         var requests = [];
-        var dynamicPropertiesUrl = basePath + '/admin/cartography/resource-templates';
+        var dynamicPropertiesUrl = baseUrl + 'admin/cartography/resource-templates';
         ['describe', 'locate'].map(function (section) {
 
             // test

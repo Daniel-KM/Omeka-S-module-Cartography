@@ -95,9 +95,9 @@ class Cartography extends AbstractHelper
         $annotate = $options['annotate'];
         $geoBrowse = $options['type'] === 'geobrowse';
         $isPublic = (bool) $view->params()->fromRoute('__SITE__');
-        $options['baseUrl'] = $isPublic
-            ? '/s/' . $view->params()->fromRoute('site-slug')
-            : '/admin';
+        $options['currentPath'] = $isPublic
+            ? 's/' . $view->params()->fromRoute('site-slug')
+            : 'admin';
 
         // The module is independant from the module Mapping, but some js are the same,
         // so it is recommenced to choose one module or the other to avoid js conflicts.
@@ -238,12 +238,12 @@ class Cartography extends AbstractHelper
 var Omeka = {};';
         }
 
-        $script .= 'var basePath = ' . json_encode($view->basePath(), 320) . ';
-var baseUrl = ' . json_encode($options['baseUrl'], 320) . ';
-var cartographySections = ' . json_encode($options['sections'], 320) . ';';
+        $script .= 'const currentPath = ' . json_encode($options['currentPath'], 320) . ';
+const cartographySections = ' . json_encode($options['sections'], 320) . ';';
+
         if ($resource):
             $script .= '
-var resourceId = ' . $resource->id() . ';';
+const resourceId = ' . $resource->id() . ';';
         endif;
 
         if ($annotate) {
@@ -267,20 +267,20 @@ var resourceId = ' . $resource->id() . ';';
 
             $user = $view->identity();
             $script .= '
-var userId = ' . ($user ? $user->getId() : 0) . ';
-var userRights = ' . json_encode($rights, 320) . ';';
+const userId = ' . ($user ? $user->getId() : 0) . ';
+const userRights = ' . json_encode($rights, 320) . ';';
             if ($resource):
                 $script .= '
-var valuesJson =  ' . json_encode($resource->values(), 320) . ';';
+const valuesJson = ' . json_encode($resource->values(), 320) . ';';
             endif;
             $script .= '
-var oaMotivatedBySelect = ' . json_encode($options['oaMotivatedBySelect'], 320) . ';
-var oaHasPurposeSelect = ' . json_encode($options['oaHasPurposeSelect'], 320) . ';
-var cartographyUncertaintySelect = ' . json_encode($options['cartographyUncertaintySelect'], 320) . ';';
+const oaMotivatedBySelect = ' . json_encode($options['oaMotivatedBySelect'], 320) . ';
+const oaHasPurposeSelect = ' . json_encode($options['oaHasPurposeSelect'], 320) . ';
+const cartographyUncertaintySelect = ' . json_encode($options['cartographyUncertaintySelect'], 320) . ';';
         } else {
             $script .= '
-var userId = 0;
-var userRights = {"create":false,"edit":false,"delete":false};';
+const userId = 0;
+const userRights = {"create":false,"edit":false,"delete":false};';
         }
 
         $headScript->appendScript($script);

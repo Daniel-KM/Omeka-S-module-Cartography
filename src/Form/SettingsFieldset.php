@@ -39,7 +39,7 @@ class SettingsFieldset extends Fieldset
                 'type' => Element\MultiCheckbox::class,
                 'options' => [
                     'element_group' => 'annotate_cartography',
-                    'label' => 'Tabs to display', // @translate
+                    'label' => 'Tabs to display in resource form', // @translate
                     'value_options' => [
                         'describe' => 'Describe: annotate images of the item', // @translate
                         'locate' => 'Locate: annotate georeferenced wms (dcterms:spatial) of the item', // @translate

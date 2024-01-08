@@ -254,7 +254,7 @@ sociales [EHESS]. The maintenance was done for [INHA].
 [Annotate]: https://gitlab.com/Daniel-KM/Omeka-S-module-Annotate
 [Data Type Geometry]: https://gitlab.com/Daniel-KM/Omeka-S-module-DataTypeGeometry
 [Generic]: https://gitlab.com/Daniel-KM/Omeka-S-module-Generic
-[Installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
+[installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
 [MariaDB 10.2.2]: https://mariadb.com/kb/en/library/spatial-index/
 [mySql 5.7.5]: https://dev.mysql.com/doc/relnotes/mysql/5.7/en/news-5-7-5.html#mysqld-5-7-5-innodb
 [mySql 5.5.3]: https://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-3.html

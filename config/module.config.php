@@ -47,7 +47,7 @@ return [
                 // It avoids an error when Annotate is automatically disabled for upgrading.
                 // This errors occurs one time only anyway.
                 'label' => 'Annotations', // @translate
-                'class' => 'o-icon- annotations fa-hand-o-up',
+                'class' => 'o-icon- annotations o-icon- fa-hand-point-up fa-hand-o-up',
                 'route' => 'admin/annotate/default',
                 'resource' => \Annotate\Controller\Admin\AnnotationController::class,
                 'privilege' => 'browse',

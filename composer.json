@@ -22,8 +22,8 @@
         "issues": "https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/issues",
         "forum": "https://forum.omeka.org/"
     },
-    "_require (not set until Omeka S merges PR #2432)": {
-        "omeka/omeka-s": "^4.0"
+    "require": {
+        "sempia/external-assets": "^1.0"
     },
     "autoload": {
         "psr-4": {
@@ -36,6 +36,38 @@
         }
     },
     "extra": {
-        "installer-name": "Cartography"
+        "installer-name": "Cartography",
+        "external-assets": {
+            "asset/vendor/leaflet/leaflet.js": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js",
+            "asset/vendor/leaflet/leaflet.css": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css",
+            "asset/vendor/leaflet/images/layers.png": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/layers.png",
+            "asset/vendor/leaflet/images/layers-2x.png": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/layers-2x.png",
+            "asset/vendor/leaflet/images/marker-icon.png": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png",
+            "asset/vendor/leaflet/images/marker-icon-2x.png": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+            "asset/vendor/leaflet/images/marker-shadow.png": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png",
+            "asset/vendor/leaflet-draw/leaflet.draw.js": "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js",
+            "asset/vendor/leaflet-draw/leaflet.draw.css": "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css",
+            "asset/vendor/leaflet-draw/images/spritesheet.png": "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/images/spritesheet.png",
+            "asset/vendor/leaflet-draw/images/spritesheet-2x.png": "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/images/spritesheet-2x.png",
+            "asset/vendor/leaflet-draw/images/spritesheet.svg": "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/images/spritesheet.svg",
+            "asset/vendor/leaflet-fullscreen/Leaflet.fullscreen.min.js": "https://cdn.jsdelivr.net/npm/leaflet-fullscreen@1.0.2/dist/Leaflet.fullscreen.min.js",
+            "asset/vendor/leaflet-fullscreen/leaflet.fullscreen.css": "https://cdn.jsdelivr.net/npm/leaflet-fullscreen@1.0.2/dist/leaflet.fullscreen.css",
+            "asset/vendor/leaflet-fullscreen/fullscreen.png": "https://cdn.jsdelivr.net/npm/leaflet-fullscreen@1.0.2/dist/fullscreen.png",
+            "asset/vendor/leaflet-geosearch/bundle.min.js": "https://cdn.jsdelivr.net/npm/leaflet-geosearch@4.0.0/dist/bundle.min.js",
+            "asset/vendor/leaflet-geosearch/style.css": "https://cdn.jsdelivr.net/npm/leaflet-geosearch@4.0.0/dist/geosearch.css",
+            "asset/vendor/leaflet-geosearch/leaflet.css": "https://cdn.jsdelivr.net/npm/leaflet-geosearch@4.0.0/assets/css/leaflet.css",
+            "asset/vendor/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.min.js": "https://cdn.jsdelivr.net/npm/leaflet-groupedlayercontrol@0.6.1/src/leaflet.groupedlayercontrol.js",
+            "asset/vendor/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.min.css": "https://cdn.jsdelivr.net/npm/leaflet-groupedlayercontrol@0.6.1/src/leaflet.groupedlayercontrol.css",
+            "asset/vendor/leaflet-providers/leaflet-providers.min.js": "https://cdn.jsdelivr.net/npm/leaflet-providers@2.0.0/leaflet-providers.js",
+            "asset/vendor/leaflet-markercluster/leaflet.markercluster.js": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js",
+            "asset/vendor/leaflet-markercluster/MarkerCluster.css": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css",
+            "asset/vendor/leaflet-markercluster/MarkerCluster.Default.css": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css",
+            "asset/vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts.min.js": "https://cdn.jsdelivr.net/npm/leaflet-tilelayer-wmts@1.0.0/dist/leaflet-tilelayer-wmts.js"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "sempia/external-assets": true
+        }
     }
 }

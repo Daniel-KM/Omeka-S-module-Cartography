@@ -1469,6 +1469,42 @@ var fetchGeometries = function(resourceId, data, drawnItems) {
 }
 
 /**
+ * Fetch geometries of all georeferenced annotations (geobrowse).
+ *
+ * @param L.FeatureGroup drawnItems
+ */
+var fetchAllGeometries = function(drawnItems) {
+    var url = baseUrl + currentPath + '/cartography/browse-geometries';
+    $.get(url)
+        .done(function(data) {
+            if (data.status === 'error') {
+                alert(data.message);
+                return;
+            }
+            if (data.geometries && data.geometries.length) {
+                displayGeometries(data.geometries, drawnItems);
+                if (drawnItems.getLayers().length && drawnItems._map) {
+                    try {
+                        drawnItems._map.fitBounds(drawnItems.getBounds(), {maxZoom: 10});
+                    } catch (e) {}
+                }
+            }
+            if (drawnItems && drawnItems._map && drawnItems._map.fireEvent) {
+                drawnItems._map.fireEvent('fetchGeometries:done', {
+                    returnData: data,
+                    drawnItems: drawnItems,
+                });
+            }
+        })
+        .fail(function(jqxhr) {
+            var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
+                ? JSON.parse(jqxhr.responseText).message
+                : Omeka.jsTranslate('Unable to fetch the geometries.');
+            alert(message);
+        });
+}
+
+/**
  * Display geometries.
  *
  * @param array geometries
@@ -2607,8 +2643,7 @@ var initGeobrowse = function() {
     var drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
 
-    // TODO Fix and add the fit bound control with geometries, not markers.
-    // fetchGeometries(resourceId, {mediaId: 0}, drawnItems);
+    fetchAllGeometries(drawnItems);
 
     map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
 

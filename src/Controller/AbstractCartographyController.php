@@ -131,6 +131,25 @@ abstract class AbstractCartographyController extends AbstractActionController
     }
 
     /**
+     * Get the geometries of all georeferenced annotations for the geobrowse.
+     *
+     * @return JsonModel
+     */
+    public function browseGeometriesAction()
+    {
+        $query = $this->params()->fromQuery();
+        $query['resource_class'] = 'oa:Annotation';
+        $query['mediaId'] = 0;
+
+        $geometries = $this->fetchSimpleGeometries(null, $query);
+
+        return new JsonModel([
+            'status' => 'success',
+            'geometries' => $geometries,
+        ]);
+    }
+
+    /**
      * Get the resource from the params of the request.
      *
      * @return \Omeka\Api\Representation\AbstractResourceEntityRepresentation|null
@@ -1158,9 +1177,11 @@ abstract class AbstractCartographyController extends AbstractActionController
      * returned.
      * @return array Array of geometries.
      */
-    protected function fetchSimpleGeometries(AbstractResourceEntityRepresentation $resource, array $query = [])
+    protected function fetchSimpleGeometries(?AbstractResourceEntityRepresentation $resource, array $query = [])
     {
-        $query['resource_id'] = $resource->id();
+        if ($resource) {
+            $query['resource_id'] = $resource->id();
+        }
 
         $geometries = [];
 

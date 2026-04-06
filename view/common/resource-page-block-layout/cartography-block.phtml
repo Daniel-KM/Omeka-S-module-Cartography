@@ -1,0 +1,28 @@
+<?php
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource
+ * @var string $type
+ * @var bool $annotate
+ * @var bool $annotateGlobal
+ * @var bool $emitHeaders
+ */
+
+// When this block emits headers, use the OR of describe/locate annotations so
+// leaflet-draw and global userRights are loaded even if the enabled block is
+// rendered after a disabled one on the same page.
+$helperAnnotate = $emitHeaders ? ($annotateGlobal ?? $annotate) : $annotate;
+?>
+
+<div class="block resource-block block-cartography cartography-<?= $type ?>">
+    <div class="cartography-map" data-resource-id="<?= $resource->id() ?>">
+        <?= $this->cartography($resource, [
+            'type' => $type,
+            'annotate' => $helperAnnotate,
+            'headers' => $emitHeaders,
+            // Always declare both sections so the JS init handles whichever div
+            // is present (the missing one is silently skipped).
+            'sections' => ['describe', 'locate'],
+        ]) ?>
+    </div>
+</div>

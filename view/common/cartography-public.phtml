@@ -10,13 +10,13 @@ $translate = $this->plugin('translate');
 <?php if ($options['annotate']): ?>
 
 <?php if ($options['type'] === 'describe'): ?>
-<div id="describe" class="section">
+<div id="describe" class="section cartography-public">
     <h3><?php echo $translate('Annotate an image'); ?></h3>
     <div id="annotate-describe" style="height:600px;"></div>
     <div class="description"><?php echo $this->setting('cartography_user_guide'); ?></div>
 </div>
 <?php elseif ($options['type'] === 'locate'): ?>
-<div id="locate" class="section">
+<div id="locate" class="section cartography-public">
     <h3><?php echo $translate('Geolocate resource'); ?></h3>
     <div id="annotate-locate" style="height:600px;"></div>
     <div class="description"><?php echo $this->setting('cartography_user_guide'); ?></div>
@@ -26,12 +26,12 @@ $translate = $this->plugin('translate');
 <?php else: ?>
 
 <?php if ($options['type'] === 'describe'): ?>
-<div id="describe" class="section">
+<div id="describe" class="section cartography-public">
     <h3><?php echo $translate('Image annotations'); ?></h3>
     <div id="annotate-describe" style="height:600px;"></div>
 </div>
 <?php elseif ($options['type'] === 'locate'): ?>
-<div id="locate" class="section">
+<div id="locate" class="section cartography-public">
     <h3><?php echo $translate('Georeferenced annotations'); ?></h3>
     <div id="annotate-locate" style="height:600px;"></div>
 </div>

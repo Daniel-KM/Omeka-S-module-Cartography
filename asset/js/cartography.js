@@ -1,6 +1,5 @@
-// cartographyBasePath is set by the view helper (PHP) before
-// this script. baseUrl is derived from the current URL for
-// API calls.
+// cartographyBasePath is set by the view helper (PHP) before this script.
+// baseUrl is derived from the current URL for API calls.
 const baseUrl = window.location.pathname.replace(/\/(admin|s)\/.*/, '/');
 
 // Leaflet default marker images path.

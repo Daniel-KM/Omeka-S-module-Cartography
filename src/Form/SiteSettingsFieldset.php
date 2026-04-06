@@ -37,20 +37,28 @@ class SiteSettingsFieldset extends Fieldset
                 'attributes' => [
                     'id' => 'cartography_append_public',
                 ],
+            ])
+            ->add([
+                'name' => 'cartography_annotate_describe',
+                'type' => Element\Checkbox::class,
+                'options' => [
+                    'element_group' => 'annotate_cartography',
+                    'label' => 'Resource block Describle: Enable annotation', // @translate
+                ],
+                'attributes' => [
+                    'id' => 'cartography_annotate_describe',
+                ],
+            ])
+            ->add([
+                'name' => 'cartography_annotate_locate',
+                'type' => Element\Checkbox::class,
+                'options' => [
+                    'element_group' => 'annotate_cartography',
+                    'label' => 'Resource block Locate: Enable annotation', // @translate
+                ],
+                'attributes' => [
+                    'id' => 'cartography_annotate_locate',
+                ],
             ]);
-
-        // $fieldset
-        //     ->add([
-        //         'name' => 'cartography_annotate',
-        //         'type' => Element\Checkbox::class,
-        //         'options' => [
-        //             'element_group' => 'annotate_cartography',
-        //             'label' => 'Enable annotation', // @translate
-        //             'info' => 'Allows to enable/disable the image/map annotation on this specific site. In all cases, the rights are defined by the module Annotate.', // @translate
-        //         ],
-        //         'attributes' => [
-        //             'id' => 'cartography_annotate',
-        //         ],
-        //     ]);
     }
 }

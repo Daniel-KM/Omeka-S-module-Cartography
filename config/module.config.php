@@ -34,6 +34,12 @@ return [
             'cartographyLocate' => Site\BlockLayout\CartographyLocate::class,
         ],
     ],
+    'resource_page_block_layouts' => [
+        'invokables' => [
+            'cartographyDescribe' => Site\ResourcePageBlockLayout\CartographyDescribe::class,
+            'cartographyLocate' => Site\ResourcePageBlockLayout\CartographyLocate::class,
+        ],
+    ],
     'controllers' => [
         'invokables' => [
             Controller\Admin\CartographyController::class => Controller\Admin\CartographyController::class,
@@ -221,7 +227,8 @@ return [
                 'locate_items_show',
                 'locate_media_show',
             ],
-            'cartography_annotate' => false,
+            'cartography_annotate_describe' => false,
+            'cartography_annotate_locate' => false,
         ],
     ],
 ];

@@ -80,6 +80,13 @@
         touch-action: none;
     }
 
+    /* Hide "Add links" on public resource page blocks: it relies on the
+       admin sidebar select. .block-cartography is only emitted by the public
+       resource page block. */
+    .block-cartography .annotation-attribute.leaflet-styleeditor-uiElement:has(.leaflet-styleeditor-oalinking) {
+        display: none;
+    }
+
     /* Show #select-resource sidebar above pseudo-fullscreen map only when explicitly requested (Add links). */
     .cartography-fullscreen.cartography-sidebar-active #select-resource {
         z-index: 100000 !important;

@@ -40,45 +40,6 @@ return [
             'imageSize' => Service\ControllerPlugin\ImageSizeFactory::class,
         ],
     ],
-    'navigation' => [
-        'AdminResource' => [
-            'annotate' => [
-                // Copy of the first level of navigation from the config of the module Annotate.
-                // It avoids an error when Annotate is automatically disabled for upgrading.
-                // This errors occurs one time only anyway.
-                'label' => 'Annotations', // @translate
-                'class' => 'o-icon- annotations o-icon- fa-hand-point-up fa-hand-o-up',
-                'route' => 'admin/annotate/default',
-                'resource' => \Annotate\Controller\Admin\AnnotationController::class,
-                'privilege' => 'browse',
-                'pages' => [
-                    [
-                        'route' => 'admin/annotate/id',
-                        'controller' => \Annotate\Controller\Admin\AnnotationController::class,
-                        'visible' => false,
-                    ],
-                    [
-                        'route' => 'admin/annotate/default',
-                        'controller' => \Annotate\Controller\Admin\AnnotationController::class,
-                        'visible' => false,
-                    ],
-                    [
-                        'label' => 'Cartography', // @translate
-                        'route' => 'admin/cartography/default',
-                        'resource' => Controller\Admin\CartographyController::class,
-                        'privilege' => 'browse',
-                        // 'class' => 'o-icon-map',
-                        'pages' => [
-                            [
-                                'route' => 'admin/cartography/default',
-                                'visible' => false,
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ],
-    ],
     'router' => [
         'routes' => [
             'site' => [
@@ -166,6 +127,19 @@ return [
                         ],
                     ],
                 ],
+            ],
+        ],
+    ],
+    'navigation' => [
+        'AdminModule' => [
+            [
+                'label' => 'Cartography', // @translate
+                'route' => 'admin/cartography/default',
+                'controller' => Controller\Admin\CartographyController::class,
+                'action' => 'browse',
+                'resource' => Controller\Admin\CartographyController::class,
+                'class' => 'o-icon- fa-map-marked-alt',
+                'admin_section' => 'users',
             ],
         ],
     ],

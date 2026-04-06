@@ -2256,6 +2256,15 @@ var initDescribe = function() {
         annotateControl(map, drawnItems);
     }
 
+    // Tab may not have its final size at init time; recompute the container
+    // size and refit bounds once layout is settled.
+    setTimeout(function () {
+        map.invalidateSize();
+        if (describeBounds) {
+            map.fitBounds(describeBounds);
+        }
+    }, 200);
+
     // Handle the image change (only for describe).
     currentMapElement = 'annotate-describe';
     map.on('baselayerchange', function(element){

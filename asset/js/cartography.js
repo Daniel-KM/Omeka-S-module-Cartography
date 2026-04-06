@@ -2254,7 +2254,6 @@ var initDescribe = function() {
     var map = L.map('annotate-' + section, {
         minZoom: -4,
         maxZoom: 8,
-        maxBoundsViscosity: 1,
         crs: L.CRS.Simple,
         pasteControl: pasteControl
     });

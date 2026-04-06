@@ -51,6 +51,22 @@
         font-size: 14px;
     }
 
+    /* Map container sizing: fill viewport below tabs. */
+    .cartography-section {
+        display: flex;
+        flex-direction: column;
+    }
+    .cartography-map {
+        /* 180px = header + tabs + legend + guide line. */
+        height: calc(100vh - 180px);
+        min-height: 400px;
+    }
+    .cartography-guide {
+        padding: 6px 0;
+        font-size: 0.9em;
+        flex-shrink: 0;
+    }
+
     /* Prevent page scroll when interacting with the map. */
     .leaflet-container {
         touch-action: none;
@@ -97,7 +113,33 @@
         list-style: none;
     }
 
-    /* Icon selector: scale markers down in the dropdown. */
+    /* Icon field container: position context for dropdown. */
+    .leaflet-styleeditor-uiElement {
+        position: relative;
+    }
+    /* Icon display box: fit the marker, center it. */
+    .leaflet-styleeditor-select {
+        height: 44px;
+    }
+    .leaflet-styleeditor-select .leaflet-styleeditor-select-image-wrapper {
+        position: static;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+    /* Icon dropdown: just below the select box. */
+    .leaflet-styleeditor-select-option-wrapper {
+        top: auto;
+        bottom: auto;
+        left: 0;
+        right: 0;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 10;
+    }
+    /* Scale markers down in the dropdown. */
     .leaflet-styleeditor-select-option .cartography-marker {
         width: 20px;
         height: 33px;
@@ -107,6 +149,8 @@
     /* Style editor */
     .leaflet-styleeditor-interior {
         width: inherit;
+        padding-right: 12px;
+        overflow-x: hidden;
     }
     .leaflet-styleeditor-interior .value.selecting-resource {
         display: flex;
@@ -140,6 +184,11 @@
     }
     .leaflet-styleeditor-interior  textarea.leaflet-styleeditor-input {
         max-height: unset;
+    }
+    /* Sliders must fit inside the sidebar padding. */
+    .leaflet-styleeditor-interior input[type="range"] {
+        width: 100%;
+        box-sizing: border-box;
     }
     .leaflet-styleeditor-header {
         background-color: inherit;

@@ -1497,7 +1497,17 @@ var displayGeometry = function(data) {
     } else if (geojson.type === 'Point') {
         // Marker: restore custom icon if styled, else default.
         var latlng = [geojson.coordinates[1], geojson.coordinates[0]];
-        if (options.iconColor && L.StyleEditor
+        // Icon name may be stored as iconName (new) or icon
+        // (old). Ignore icon if it is an object (serialized
+        // L.Icon from old data).
+        var iconName = options.iconName
+            || (typeof options.icon === 'string' ? options.icon : null);
+        // Remove any serialized icon object — it is not a valid
+        // L.Icon instance and would break L.marker().
+        if (options.icon && typeof options.icon !== 'string') {
+            delete options.icon;
+        }
+        if (options.iconColor && iconName && L.StyleEditor
             && L.StyleEditor.marker
             && L.StyleEditor.marker.GlyphiconMarker
         ) {
@@ -1506,7 +1516,7 @@ var displayGeometry = function(data) {
                 iconSize: options.iconSize
                     || gm.options.size.small,
                 iconColor: options.iconColor,
-                icon: options.icon || 'glyphicon-map-marker',
+                icon: iconName,
             });
             layer = L.marker(latlng, $.extend({}, options, {icon: markerIcon}));
         } else {
@@ -1825,6 +1835,19 @@ var prepareSaveOptions = function(layer, options) {
     ) {
         options._isRectangle = '1';
     }
+
+    // Remove bulky icon data from saved options: only keep
+    // iconColor, icon, iconSize — the icon is rebuilt on load.
+    delete options.iconUrl;
+    delete options.shadowUrl;
+    if (options.icon && typeof options.icon === 'object') {
+        // L.Icon/L.DivIcon object — extract just the parameters.
+        var iconOpts = options.icon.options || options.icon;
+        options.iconColor = iconOpts.iconColor || options.iconColor;
+        options.iconName = iconOpts.icon || options.iconName;
+        options.iconSize = iconOpts.iconSize || options.iconSize;
+        delete options.icon;
+    }
 }
 
 /**
@@ -1986,25 +2009,33 @@ var annotateControl = function(map, drawnItems) {
                 ._getMarkerUrl = _markerPngUrl;
             L.StyleEditor.marker.GlyphiconMarker.prototype
                 .getMarkerHtml = function(size, color, icon) {
+                var inner = icon
+                    ? '<i class="fas ' + icon + '"></i>'
+                    : '';
                 return '<div class="cartography-marker'
                     + ' cartography-marker-'
                     + this.sizeToName(size)[0] + '">'
-                    + '<i class="fas ' + icon + '"></i>'
+                    + inner
                     + '</div>';
             };
             L.StyleEditor.marker.GlyphiconMarker.prototype
                 .createMarkerIcon = function(opts) {
                 var size = opts.iconSize;
                 var sizeName = this.sizeToName(size)[0];
-                // Marker dimensions matching Leaflet default.
-                var dims = {s: [25, 41], m: [30, 50], l: [35, 58]};
-                var d = dims[sizeName] || dims.s;
+                // Dimensions and anchors matching Leaflet
+                // default marker exactly (no shift on click).
+                var cfg = {
+                    s: {size: [25, 41], anchor: [12, 41], popup: [1, -34]},
+                    m: {size: [30, 50], anchor: [15, 50], popup: [0, -42]},
+                    l: {size: [35, 58], anchor: [17, 58], popup: [1, -50]},
+                };
+                var c = cfg[sizeName] || cfg.s;
                 return L.divIcon({
                     className: 'leaflet-styleeditor-glyphicon-marker-wrapper',
                     html: this.getMarkerHtml(size, opts.iconColor, opts.icon),
-                    iconSize: d,
-                    iconAnchor: [d[0] / 2, d[1]],
-                    popupAnchor: [0, -d[1]],
+                    iconSize: c.size,
+                    iconAnchor: c.anchor,
+                    popupAnchor: c.popup,
                     icon: opts.icon,
                     iconColor: opts.iconColor,
                 });
@@ -2017,7 +2048,7 @@ var annotateControl = function(map, drawnItems) {
             };
             L.StyleEditor.marker.GlyphiconMarker.prototype
                 .options.markers = [
-                'fa-map-marker-alt', 'fa-thumbtack', 'fa-star',
+                '', 'fa-map-marker-alt', 'fa-thumbtack', 'fa-star',
                 'fa-heart', 'fa-home', 'fa-flag', 'fa-bookmark',
                 'fa-tag', 'fa-circle', 'fa-square', 'fa-university',
                 'fa-landmark', 'fa-monument', 'fa-church', 'fa-tree',
@@ -2072,6 +2103,27 @@ var annotateControl = function(map, drawnItems) {
                 }
             });
         };
+        // Allow empty icon (no FA, just the Leaflet pin).
+        _IconEl.prototype._styleSelectInputImage = function(t, e, i) {
+            if (e === null || e === undefined) {
+                e = t.getAttribute('value');
+                if (e === null || e === undefined) return;
+            }
+            var o = this.options.styleEditorOptions.markerType
+                .getIconOptions();
+            if (i) o.iconColor = i;
+            t.innerHTML = '';
+            this.options.styleEditorOptions.markerType
+                .createSelectHTML(t, o, e);
+            t.setAttribute('value', e);
+        };
+        _IconEl.prototype._selectMarker = function(t) {
+            var e = t.target.getAttribute('value');
+            if (e === null || e === undefined) return;
+            this.options.selectBoxImage.setAttribute('value', e);
+            this.setStyle(e);
+            this._hideSelectOptions();
+        };
     }
 
     // Initialize the StyleEditor.
@@ -2086,7 +2138,7 @@ var annotateControl = function(map, drawnItems) {
         },
         useGrouping: false,
         defaultMarkerColor: '#2A81CB',
-        defaultMarkerIcon: 'fa-map-marker-alt',
+        defaultMarkerIcon: '',
         colorRamp: [
             '#2A81CB', '#1abc9c', '#2ecc71', '#3498db',
             '#9b59b6', '#34495e', '#16a085', '#27ae60',

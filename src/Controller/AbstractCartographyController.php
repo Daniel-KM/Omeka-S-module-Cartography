@@ -234,6 +234,16 @@ abstract class AbstractCartographyController extends AbstractActionController
         unset($styles['owner']);
         unset($styles['right']);
         unset($styles['onEachFeature']);
+        // Remove bulky icon data (SVG data URIs, HTML, shadow).
+        // Only iconColor, iconName and iconSize are kept; the
+        // icon is rebuilt on load from these parameters.
+        unset($styles['iconUrl']);
+        unset($styles['shadowUrl']);
+        unset($styles['html']);
+        unset($styles['className']);
+        if (isset($styles['icon']) && is_array($styles['icon'])) {
+            unset($styles['icon']);
+        }
         if (empty($styles['_isRectangle'])) {
             unset($styles['_isRectangle']);
         }

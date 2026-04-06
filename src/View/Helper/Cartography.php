@@ -255,7 +255,9 @@ class Cartography extends AbstractHelper
 var Omeka = {};';
         }
 
-        $script .= 'const currentPath = ' . json_encode($options['currentPath'], 320) . ';
+        $script .= 'const cartographyBasePath = '
+            . json_encode($assetUrl('', 'Cartography', false, false), 320) . ';
+const currentPath = ' . json_encode($options['currentPath'], 320) . ';
 const cartographySections = ' . json_encode($options['sections'], 320) . ';';
 
         if ($resource):

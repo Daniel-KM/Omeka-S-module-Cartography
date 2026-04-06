@@ -1,4 +1,26 @@
-const baseUrl = window.location.pathname.replace(/\/admin\/.*/, '/');
+// cartographyBasePath is set by the view helper (PHP) before
+// this script. baseUrl is derived from the current URL for
+// API calls.
+const baseUrl = window.location.pathname.replace(/\/(admin|s)\/.*/, '/');
+
+// Leaflet default marker images path.
+var _cartographyImagePath = (typeof cartographyBasePath !== 'undefined'
+    ? cartographyBasePath
+    : baseUrl + 'modules/Cartography/asset/')
+    + 'vendor/leaflet/images/';
+if (typeof L !== 'undefined') {
+    L.Icon.Default.prototype.options.imagePath = _cartographyImagePath;
+}
+// Fallback marker icon when StyleEditor is not loaded.
+var _defaultMarkerIcon = null;
+var _getDefaultMarkerIcon = function() {
+    if (!_defaultMarkerIcon) {
+        _defaultMarkerIcon = new L.Icon.Default({
+            imagePath: _cartographyImagePath,
+        });
+    }
+    return _defaultMarkerIcon;
+};
 
 /**
  * @description To extend the style-editor, put annotation dynamic data form inside the side bar.
@@ -1516,7 +1538,194 @@ var fetchAllGeometries = function(drawnItems) {
  */
 var displayGeometries = function(geometries, drawnItems) {
     geometries.forEach(displayGeometry, {drawnItems: drawnItems});
-}
+};
+
+/**
+ * Patch StyleEditor marker prototypes once at global scope.
+ *
+ * Must run before displayGeometry so that loaded markers use
+ * the patched createMarkerIcon / getMarkerHtml.
+ */
+(function patchStyleEditorMarkers() {
+    if (typeof L === 'undefined'
+        || !L.StyleEditor || !L.StyleEditor.marker
+    ) return;
+
+    // SVG marker matching Leaflet default proportions (25x41)
+    // with dynamic color and white inner circle.
+    var _markerSvg = function(size, color, hasIcon) {
+        color = color || '#2A81CB';
+        if (color.indexOf('#') !== 0) {
+            color = '#' + color;
+        }
+        var circle = hasIcon ? ''
+            : '<circle cx="12.5" cy="12.5" r="5.5"'
+            + ' fill="#fff" opacity=".9"/>';
+        return 'data:image/svg+xml,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg"'
+            + ' viewBox="0 0 25 41">'
+            + '<path d="M12.5 0C5.6 0 0 5.6 0 12.5'
+            + ' 0 21.2 12.5 41 12.5 41S25 21.2 25 12.5'
+            + 'C25 5.6 19.4 0 12.5 0Z" fill="' + color + '"/>'
+            + circle
+            + '</svg>'
+        );
+    };
+
+    if (L.StyleEditor.marker.DefaultMarker) {
+        L.StyleEditor.marker.DefaultMarker.prototype
+            ._getMarkerUrl = _markerSvg;
+    }
+
+    if (L.StyleEditor.marker.GlyphiconMarker) {
+        L.StyleEditor.marker.GlyphiconMarker.prototype
+            ._getMarkerUrl = _markerSvg;
+        L.StyleEditor.marker.GlyphiconMarker.prototype
+            .getMarkerHtml = function(size, color, icon) {
+            var hasIcon = !!icon;
+            var url = this._getMarkerUrl(size, color, hasIcon);
+            var inner = hasIcon
+                ? '<i class="fas ' + icon + '"></i>'
+                : '';
+            return '<div class="cartography-marker'
+                + ' cartography-marker-'
+                + this.sizeToName(size)[0]
+                + '" style="background-image: url(' + url + ');">'
+                + inner
+                + '</div>';
+        };
+        // Override getIconOptions so setStyle changes are
+        // not overwritten by re-reading the old divIcon.
+        L.StyleEditor.marker.GlyphiconMarker.prototype
+            .getIconOptions = function() {
+            if (this.options.iconOptions
+                && this.options.iconOptions.iconColor
+            ) {
+                return this.options.iconOptions;
+            }
+            var t = {};
+            if (this.options.styleEditorOptions.currentElement) {
+                var icon = this.options.styleEditorOptions
+                    .currentElement.target.options.icon;
+                if (icon && icon.options) {
+                    t = $.extend({}, icon.options);
+                }
+            }
+            t.iconColor = t.iconColor
+                || this._getDefaultMarkerColor();
+            t.iconSize = t.iconSize
+                || this.options.styleEditorOptions
+                    .markerType.options.size.small;
+            t.icon = t.icon !== undefined ? t.icon
+                : this.options.styleEditorOptions.util
+                    .getDefaultMarkerForColor(t.iconColor);
+            this.options.iconOptions
+                = this._ensureMarkerIcon(t);
+            return t;
+        };
+        L.StyleEditor.marker.GlyphiconMarker.prototype
+            .createMarkerIcon = function(opts) {
+            var size = opts.iconSize;
+            var sizeName = this.sizeToName(size)[0];
+            var cfg = {
+                s: {size: [25, 41], anchor: [12, 41], popup: [1, -34]},
+                m: {size: [30, 50], anchor: [15, 50], popup: [0, -42]},
+                l: {size: [35, 58], anchor: [17, 58], popup: [1, -50]},
+            };
+            var c = cfg[sizeName] || cfg.s;
+            return L.divIcon({
+                className: 'leaflet-styleeditor-glyphicon-marker-wrapper',
+                html: this.getMarkerHtml(size, opts.iconColor, opts.icon),
+                iconSize: c.size,
+                iconAnchor: c.anchor,
+                popupAnchor: c.popup,
+                icon: opts.icon,
+                iconColor: opts.iconColor,
+            });
+        };
+        L.StyleEditor.marker.GlyphiconMarker.prototype
+            .options.size = {
+            small: [25, 41],
+            medium: [30, 50],
+            large: [35, 58],
+        };
+        L.StyleEditor.marker.GlyphiconMarker.prototype
+            .options.markers = [
+            '', 'fa-map-marker-alt', 'fa-thumbtack', 'fa-star',
+            'fa-heart', 'fa-home', 'fa-flag', 'fa-bookmark',
+            'fa-tag', 'fa-circle', 'fa-square', 'fa-university',
+            'fa-landmark', 'fa-monument', 'fa-church', 'fa-tree',
+            'fa-globe-americas', 'fa-map-pin', 'fa-crosshairs',
+            'fa-camera', 'fa-eye', 'fa-search', 'fa-user',
+            'fa-envelope', 'fa-music', 'fa-pencil-alt',
+            'fa-lock', 'fa-cog', 'fa-road', 'fa-parking',
+            'fa-hotel', 'fa-hospital', 'fa-school', 'fa-store',
+            'fa-industry', 'fa-warehouse', 'fa-dot-circle',
+            'fa-plus', 'fa-minus', 'fa-times', 'fa-check',
+            'fa-cloud', 'fa-film', 'fa-print', 'fa-inbox',
+            'fa-trash-alt',
+        ];
+    }
+
+    // Fix icon selector clicks.
+    if (L.StyleEditor.formElements
+        && L.StyleEditor.formElements.IconElement
+    ) {
+        var _IconEl = L.StyleEditor.formElements.IconElement;
+        _IconEl.prototype._createColorSelect = function(color) {
+            if (!this.options.selectOptions) {
+                this.options.selectOptions = {};
+            }
+            if (color in this.options.selectOptions) return;
+            var uiEl = this.options.uiElement;
+            var ul = L.DomUtil.create(
+                'ul', this._selectOptionWrapperClasses, uiEl
+            );
+            var markers = this.options.styleEditorOptions.util
+                .getMarkersForColor(color);
+            var self = this;
+            markers.forEach(function(icon) {
+                var li = L.DomUtil.create(
+                    'li', self._selectOptionClasses, ul
+                );
+                var img = self._createSelectInputImage(li);
+                self._styleSelectInputImage(img, icon, color);
+            });
+            this.options.selectOptions[color] = ul;
+            L.DomEvent.addListener(ul, 'click', function(evt) {
+                evt.stopPropagation();
+                if (evt.target.nodeName === 'UL') return;
+                var el = evt.target.closest(
+                    '.leaflet-styleeditor-select-image'
+                );
+                if (el) {
+                    self._selectMarker({target: el});
+                }
+            });
+        };
+        // Allow empty icon (no FA, just the pin).
+        _IconEl.prototype._styleSelectInputImage = function(t, e, i) {
+            if (e === null || e === undefined) {
+                e = t.getAttribute('value');
+                if (e === null || e === undefined) return;
+            }
+            var o = this.options.styleEditorOptions.markerType
+                .getIconOptions();
+            if (i) o.iconColor = i;
+            t.innerHTML = '';
+            this.options.styleEditorOptions.markerType
+                .createSelectHTML(t, o, e);
+            t.setAttribute('value', e);
+        };
+        _IconEl.prototype._selectMarker = function(t) {
+            var e = t.target.getAttribute('value');
+            if (e === null || e === undefined) return;
+            this.options.selectBoxImage.setAttribute('value', e);
+            this.setStyle(e);
+            this._hideSelectOptions();
+        };
+    }
+})();
 
 /**
  * Display one geometry on a feature group.
@@ -1558,31 +1767,23 @@ var displayGeometry = function(data) {
     } else if (geojson.type === 'Point') {
         // Marker: restore custom icon if styled, else default.
         var latlng = [geojson.coordinates[1], geojson.coordinates[0]];
-        // Icon name may be stored as iconName (new) or icon
-        // (old). Ignore icon if it is an object (serialized
-        // L.Icon from old data).
         var iconName = options.iconName
             || (typeof options.icon === 'string' ? options.icon : null);
-        // Remove any serialized icon object — it is not a valid
-        // L.Icon instance and would break L.marker().
         if (options.icon && typeof options.icon !== 'string') {
             delete options.icon;
         }
-        // Coerce iconSize strings to numbers (jQuery POST
-        // serializes arrays of numbers as strings).
         if (options.iconSize && Array.isArray(options.iconSize)) {
             options.iconSize = options.iconSize.map(Number);
         }
-        if (options.iconColor && L.StyleEditor
-            && L.StyleEditor.marker
+        if (L.StyleEditor && L.StyleEditor.marker
             && L.StyleEditor.marker.GlyphiconMarker
         ) {
             var gm = new (L.StyleEditor.marker.GlyphiconMarker)();
             var markerIcon = gm.createMarkerIcon({
                 iconSize: options.iconSize
                     || gm.options.size.small,
-                iconColor: options.iconColor,
-                icon: iconName,
+                iconColor: options.iconColor || '#2A81CB',
+                icon: iconName || '',
             });
             layer = L.marker(latlng, $.extend({}, options, {icon: markerIcon}));
         } else {
@@ -2076,154 +2277,9 @@ var annotateControl = function(map, drawnItems) {
     map.addControl(drawControl);
 
     /* Style Editor (https://github.com/dwilhelm89/Leaflet.StyleEditor) */
-
-    if (L.StyleEditor && L.StyleEditor.marker) {
-        // SVG marker matching Leaflet default proportions (25x41)
-        // with dynamic color and white inner circle.
-        var _markerSvg = function(size, color) {
-            color = color || '#2A81CB';
-            if (color.indexOf('#') !== 0) {
-                color = '#' + color;
-            }
-            return 'data:image/svg+xml,' + encodeURIComponent(
-                '<svg xmlns="http://www.w3.org/2000/svg"'
-                + ' viewBox="0 0 25 41">'
-                + '<path d="M12.5 0C5.6 0 0 5.6 0 12.5'
-                + ' 0 21.2 12.5 41 12.5 41S25 21.2 25 12.5'
-                + 'C25 5.6 19.4 0 12.5 0Z" fill="' + color + '"/>'
-                + '<circle cx="12.5" cy="12.5" r="5.5" fill="#fff"/>'
-                + '</svg>'
-            );
-        };
-        if (L.StyleEditor.marker.DefaultMarker) {
-            L.StyleEditor.marker.DefaultMarker.prototype
-                ._getMarkerUrl = _markerSvg;
-        }
-
-        // GlyphiconMarker: SVG marker with FA icon overlay.
-        if (L.StyleEditor.marker.GlyphiconMarker) {
-            L.StyleEditor.marker.GlyphiconMarker.prototype
-                ._getMarkerUrl = _markerSvg;
-            L.StyleEditor.marker.GlyphiconMarker.prototype
-                .getMarkerHtml = function(size, color, icon) {
-                var url = this._getMarkerUrl(size, color);
-                var inner = icon
-                    ? '<i class="fas ' + icon + '"></i>'
-                    : '';
-                return '<div class="cartography-marker'
-                    + ' cartography-marker-'
-                    + this.sizeToName(size)[0]
-                    + '" style="background-image: url(' + url + ');">'
-                    + inner
-                    + '</div>';
-            };
-            L.StyleEditor.marker.GlyphiconMarker.prototype
-                .createMarkerIcon = function(opts) {
-                var size = opts.iconSize;
-                var sizeName = this.sizeToName(size)[0];
-                // Dimensions and anchors matching Leaflet
-                // default marker exactly (no shift on click).
-                var cfg = {
-                    s: {size: [25, 41], anchor: [12, 41], popup: [1, -34]},
-                    m: {size: [30, 50], anchor: [15, 50], popup: [0, -42]},
-                    l: {size: [35, 58], anchor: [17, 58], popup: [1, -50]},
-                };
-                var c = cfg[sizeName] || cfg.s;
-                return L.divIcon({
-                    className: 'leaflet-styleeditor-glyphicon-marker-wrapper',
-                    html: this.getMarkerHtml(size, opts.iconColor, opts.icon),
-                    iconSize: c.size,
-                    iconAnchor: c.anchor,
-                    popupAnchor: c.popup,
-                    icon: opts.icon,
-                    iconColor: opts.iconColor,
-                });
-            };
-            L.StyleEditor.marker.GlyphiconMarker.prototype
-                .options.size = {
-                small: [25, 41],
-                medium: [30, 50],
-                large: [35, 58],
-            };
-            L.StyleEditor.marker.GlyphiconMarker.prototype
-                .options.markers = [
-                '', 'fa-map-marker-alt', 'fa-thumbtack', 'fa-star',
-                'fa-heart', 'fa-home', 'fa-flag', 'fa-bookmark',
-                'fa-tag', 'fa-circle', 'fa-square', 'fa-university',
-                'fa-landmark', 'fa-monument', 'fa-church', 'fa-tree',
-                'fa-globe-americas', 'fa-map-pin', 'fa-crosshairs',
-                'fa-camera', 'fa-eye', 'fa-search', 'fa-user',
-                'fa-envelope', 'fa-music', 'fa-pencil-alt',
-                'fa-lock', 'fa-cog', 'fa-road', 'fa-parking',
-                'fa-hotel', 'fa-hospital', 'fa-school', 'fa-store',
-                'fa-industry', 'fa-warehouse', 'fa-dot-circle',
-                'fa-plus', 'fa-minus', 'fa-times', 'fa-check',
-                'fa-cloud', 'fa-film', 'fa-print', 'fa-inbox',
-                'fa-trash-alt',
-            ];
-        }
-    }
-
-    // Fix icon selector clicks: the original _createColorSelect
-    // uses childNodes traversal to find the click target, which
-    // fails with the nested HTML. Use closest() instead.
-    if (L.StyleEditor && L.StyleEditor.formElements
-        && L.StyleEditor.formElements.IconElement
-    ) {
-        var _IconEl = L.StyleEditor.formElements.IconElement;
-        _IconEl.prototype._createColorSelect = function(color) {
-            if (!this.options.selectOptions) {
-                this.options.selectOptions = {};
-            }
-            if (color in this.options.selectOptions) return;
-            var uiEl = this.options.uiElement;
-            var ul = L.DomUtil.create(
-                'ul', this._selectOptionWrapperClasses, uiEl
-            );
-            var markers = this.options.styleEditorOptions.util
-                .getMarkersForColor(color);
-            var self = this;
-            markers.forEach(function(icon) {
-                var li = L.DomUtil.create(
-                    'li', self._selectOptionClasses, ul
-                );
-                var img = self._createSelectInputImage(li);
-                self._styleSelectInputImage(img, icon, color);
-            });
-            this.options.selectOptions[color] = ul;
-            L.DomEvent.addListener(ul, 'click', function(evt) {
-                evt.stopPropagation();
-                if (evt.target.nodeName === 'UL') return;
-                var el = evt.target.closest(
-                    '.leaflet-styleeditor-select-image'
-                );
-                if (el) {
-                    self._selectMarker({target: el});
-                }
-            });
-        };
-        // Allow empty icon (no FA, just the Leaflet pin).
-        _IconEl.prototype._styleSelectInputImage = function(t, e, i) {
-            if (e === null || e === undefined) {
-                e = t.getAttribute('value');
-                if (e === null || e === undefined) return;
-            }
-            var o = this.options.styleEditorOptions.markerType
-                .getIconOptions();
-            if (i) o.iconColor = i;
-            t.innerHTML = '';
-            this.options.styleEditorOptions.markerType
-                .createSelectHTML(t, o, e);
-            t.setAttribute('value', e);
-        };
-        _IconEl.prototype._selectMarker = function(t) {
-            var e = t.target.getAttribute('value');
-            if (e === null || e === undefined) return;
-            this.options.selectBoxImage.setAttribute('value', e);
-            this.setStyle(e);
-            this._hideSelectOptions();
-        };
-    }
+    // Prototype patches are applied once at global scope (see
+    // below annotateControl). Only the StyleEditor instantiation
+    // remains here.
 
     // Initialize the StyleEditor.
     var styleEditorControlOptions = {

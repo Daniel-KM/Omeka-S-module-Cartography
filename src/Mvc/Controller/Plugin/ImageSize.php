@@ -2,6 +2,7 @@
 
 namespace Cartography\Mvc\Controller\Plugin;
 
+use Doctrine\DBAL\Connection;
 use Laminas\Mvc\Controller\Plugin\AbstractPlugin;
 use Omeka\Api\Adapter\Manager as AdapterManager;
 use Omeka\Api\Representation\AssetRepresentation;
@@ -11,9 +12,13 @@ use Omeka\Entity\Media;
 use Omeka\File\TempFileFactory;
 
 /**
- *Copy of \IiifServer\Mvc\Controller\Plugin\ImageSize
+ * Get the width and height of an image (media or asset).
+ *
+ * Synced from ImageServer plugin ImageSize.
+ * Keep in sync periodically via diff.
+ * @see ImageServer\Mvc\Controller\Plugin\ImageSize
  */
- class ImageSize extends AbstractPlugin
+class ImageSize extends AbstractPlugin
 {
     /**
      * @var string
@@ -31,6 +36,11 @@ use Omeka\File\TempFileFactory;
     protected $adapterManager;
 
     /**
+     * @var Connection
+     */
+    protected $connection;
+
+    /**
      * The default output when the file is unavailable or unknown.
      *
      * @var array
@@ -43,11 +53,13 @@ use Omeka\File\TempFileFactory;
     public function __construct(
         ?string $basePath,
         TempFileFactory $tempFileFactory,
-        AdapterManager $adapterManager
+        AdapterManager $adapterManager,
+        Connection $connection
     ) {
         $this->basePath = $basePath;
         $this->tempFileFactory = $tempFileFactory;
         $this->adapterManager = $adapterManager;
+        $this->connection = $connection;
     }
 
     /**
@@ -64,21 +76,22 @@ use Omeka\File\TempFileFactory;
      */
     public function __invoke($image, string $type = 'original', bool $force = false): array
     {
-        if ($image instanceof MediaRepresentation) {
+        // A security check. Useful?
+        if (strpos($type, '/..') !== false || strpos($type, '../') !== false) {
+            return $this->emptySize;
+        } elseif ($image instanceof MediaRepresentation) {
             return $this->sizeMedia($image, $type, $force);
-        }
-        if ($image instanceof AssetRepresentation) {
+        } elseif ($image instanceof AssetRepresentation) {
             return $this->sizeAsset($image, $force);
-        }
-        if ($image instanceof Media) {
+        } elseif ($image instanceof Media) {
             $image = $this->adapterManager->get('media')->getRepresentation($image);
             return $this->sizeMedia($image, $type, $force);
-        }
-        if ($image instanceof Asset) {
+        } elseif ($image instanceof Asset) {
             $image = $this->adapterManager->get('assets')->getRepresentation($image);
             return $this->sizeAsset($image, $force);
+        } else {
+            return $this->getWidthAndHeight((string) $image);
         }
-        return $this->getWidthAndHeight((string) $image);
     }
 
     /**
@@ -86,14 +99,21 @@ use Omeka\File\TempFileFactory;
      */
     protected function sizeMedia(MediaRepresentation $media, string $type, bool $force): array
     {
-        // Check if this is an image.
-        $mainMediaType = substr((string) $media->mediaType(), 0, 5);
-        if ($mainMediaType !== 'image'
-            // A security check.
-            || strpos($type, '/..') !== false
-            || strpos($type, '../') !== false
-        ) {
-            return $this->emptySize;
+        // Check if this is an image for type original.
+        if ($type === 'original') {
+            $mainMediaType = substr((string) $media->mediaType(), 0, 5);
+            if ($mainMediaType !== 'image') {
+                return $this->emptySize;
+            }
+        }
+
+        // In-memory cache to avoid redundant lookups within the same request
+        // (the DB-cached mediaData may not reflect a just-written value).
+        static $cache = [];
+        $mediaId = $media->id();
+        $cacheKey = ($mediaId ?? spl_object_id($media)) . '/' . $type;
+        if (!$force && isset($cache[$cacheKey])) {
+            return $cache[$cacheKey];
         }
 
         // Check if size is already stored. The stored dimension may be null.
@@ -102,24 +122,35 @@ use Omeka\File\TempFileFactory;
             if (is_array($mediaData)
                 && !empty($mediaData['dimensions'][$type])
             ) {
+                $cache[$cacheKey] = $mediaData['dimensions'][$type];
                 return $mediaData['dimensions'][$type];
             }
         }
 
-        // In order to manage external storage, check if the file is local.
+        // Try local file first, fall back to URL for external storage.
         if ($type === 'original') {
             $storagePath = $this->getStoragePath($type, $media->filename());
             $filepath = $this->basePath . DIRECTORY_SEPARATOR . $storagePath;
-            return file_exists($filepath)
-                ? $this->getWidthAndHeightLocal($filepath)
-                : $this->getWidthAndHeightUrl($media->originalUrl());
+            $result = $this->getWidthAndHeightLocal($filepath);
+            if (!$result['width']) {
+                $result = $this->getWidthAndHeightUrl($media->originalUrl());
+            }
+        } else {
+            $storagePath = $this->getStoragePath($type, $media->storageId(), 'jpg');
+            $filepath = $this->basePath . DIRECTORY_SEPARATOR . $storagePath;
+            $result = $this->getWidthAndHeightLocal($filepath);
+            if (!$result['width']) {
+                $result = $this->getWidthAndHeightUrl($media->thumbnailUrl($type));
+            }
         }
 
-        $storagePath = $this->getStoragePath($type, $media->storageId(), 'jpg');
-        $filepath = $this->basePath . DIRECTORY_SEPARATOR . $storagePath;
-        return file_exists($filepath)
-            ? $this->getWidthAndHeightLocal($filepath)
-            : $this->getWidthAndHeightUrl($media->thumbnailUrl($type));
+        // Cache dimensions in media data to avoid computation on next request.
+        if ($result['width'] && $result['height'] && $mediaId) {
+            $this->cacheMediaDimensions($mediaId, $type, $result);
+            $cache[$cacheKey] = $result;
+        }
+
+        return $result;
     }
 
     /**
@@ -130,9 +161,11 @@ use Omeka\File\TempFileFactory;
         // The storage adapter should be checked for external storage.
         $storagePath = $this->getStoragePath('asset', $asset->filename());
         $filepath = $this->basePath . DIRECTORY_SEPARATOR . $storagePath;
-        return file_exists($filepath)
-            ? $this->getWidthAndHeightLocal($filepath)
-            : $this->getWidthAndHeightUrl($asset->assetUrl());
+        $result = $this->getWidthAndHeightLocal($filepath);
+        if ($result['width']) {
+            return $result;
+        }
+        return $this->getWidthAndHeightUrl($asset->assetUrl());
     }
 
     /**
@@ -153,22 +186,28 @@ use Omeka\File\TempFileFactory;
             return $this->getWidthAndHeightUrl($filepath);
         }
         // A normal path.
-        if (file_exists($filepath) && is_file($filepath) && is_readable($filepath) && filesize($filepath)) {
-            return $this->getWidthAndHeightLocal($filepath);
-        }
-        return $this->emptySize;
+        return $this->getWidthAndHeightLocal($filepath);
     }
 
     /**
-     * Helper to get width and height of an image (path is already checked).
+     * Helper to get width and height of a local image file.
+     *
+     * Handles missing or unreadable files gracefully: @getimagesize() returns
+     * false and the method returns $this->emptySize.
      */
     protected function getWidthAndHeightLocal(string $filepath): array
     {
-        $result = getimagesize($filepath);
+        $result = @getimagesize($filepath);
         if (!$result) {
             return $this->emptySize;
         }
-        list($width, $height) = $result;
+        [$width, $height] = $result;
+        // EXIF orientations 5-8 indicate a 90° or 270° rotation, so width and
+        // height must be swapped.
+        $exif = @exif_read_data($filepath);
+        if ($exif && !empty($exif['Orientation']) && $exif['Orientation'] >= 5) {
+            [$width, $height] = [$height, $width];
+        }
         return [
             'width' => $width,
             'height' => $height,
@@ -177,12 +216,33 @@ use Omeka\File\TempFileFactory;
 
     /**
      * Helper to get width and height of an image url.
+     *
+     * Try getimagesize() on the url first: it reads only the image header over
+     * HTTP, which is much faster than downloading the whole file, especially
+     * for remote storage (S3, etc.). Fall back to a full download only when the
+     * direct call fails (e.g. allow_url_fopen off, authenticated url, or
+     * unsupported format).
      */
     protected function getWidthAndHeightUrl(string $url): array
     {
-        $width = null;
-        $height = null;
+        // Fast path: getimagesize() reads only the image header via HTTP.
+        $result = @getimagesize($url);
+        if ($result) {
+            [$width, $height] = $result;
+            if ($width && $height) {
+                // Check EXIF orientation for 90°/270° rotated images.
+                $exif = @exif_read_data($url);
+                if ($exif && !empty($exif['Orientation']) && $exif['Orientation'] >= 5) {
+                    [$width, $height] = [$height, $width];
+                }
+                return [
+                    'width' => $width,
+                    'height' => $height,
+                ];
+            }
+        }
 
+        // Slow path: download the full file then check locally.
         $tempFile = $this->tempFileFactory->build();
         $tempPath = $tempFile->getTempPath();
         $tempFile->delete();
@@ -191,17 +251,49 @@ use Omeka\File\TempFileFactory;
             $result = file_put_contents($tempPath, $handle);
             @fclose($handle);
             if ($result) {
-                $result = getimagesize($tempPath);
-                if ($result) {
-                    list($width, $height) = $result;
-                }
+                $size = $this->getWidthAndHeightLocal($tempPath);
+                unlink($tempPath);
+                return $size;
             }
             unlink($tempPath);
         }
 
-        return [
-            'width' => $width,
-            'height' => $height,
-        ];
+        return $this->emptySize;
+    }
+
+    /**
+     * Store computed dimensions into media data.
+     *
+     * Omeka require mysl 5, so a single sql with json_set cannot be used.
+     */
+    protected function cacheMediaDimensions(
+        int $mediaId,
+        string $type,
+        array $dimensions
+    ): void {
+        // Only safe type values (original, large, medium, square).
+        if (!preg_match('/^[a-zA-Z][\w-]*$/', $type)) {
+            return;
+        }
+        try {
+            $raw = $this->connection->fetchOne(
+                'SELECT `data` FROM `media` WHERE `id` = ?',
+                [$mediaId]
+            );
+            $mediaData = $raw ? json_decode($raw, true) : [];
+            if (!is_array($mediaData)) {
+                $mediaData = [];
+            }
+            $mediaData['dimensions'][$type] = [
+                'width' => $dimensions['width'] ? (int) $dimensions['width'] : null,
+                'height' => $dimensions['height'] ? (int) $dimensions['height'] : null,
+            ];
+            $this->connection->executeStatement(
+                'UPDATE `media` SET `data` = ? WHERE `id` = ?',
+                [json_encode($mediaData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), $mediaId]
+            );
+        } catch (\Throwable $e) {
+            // Retry later.
+        }
     }
 }

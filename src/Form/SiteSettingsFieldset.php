@@ -2,6 +2,7 @@
 
 namespace Cartography\Form;
 
+use Common\Form\Element as CommonElement;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
 
@@ -11,6 +12,7 @@ class SiteSettingsFieldset extends Fieldset
 
     protected $elementGroups = [
         'annotate_cartography' => 'Annotate cartography', // @translate
+        'themes_old' => 'Old themes', // @translate
     ];
 
     public function init(): void
@@ -18,32 +20,13 @@ class SiteSettingsFieldset extends Fieldset
         $this
             ->setAttribute('id', 'cartography')
             ->setOption('element_groups', $this->elementGroups)
-            ->add([
-                'name' => 'cartography_append_public',
-                'type' => Element\MultiCheckbox::class,
-                'options' => [
-                    'element_group' => 'annotate_cartography',
-                    'label' => 'Append to pages', // @translate
-                    'info' => 'If unchecked, the viewer can be added via the helper in the theme or the block in any page.', // @translate
-                    'value_options' => [
-                        // 'describe_item_sets_show' => 'Describe item set', // @translate
-                        'describe_items_show' => 'Describe item', // @translate
-                        // 'describe_media_show' => 'Describe media', // @translate
-                        // 'locate_item_sets_show' => 'Locate item set', // @translate
-                        'locate_items_show' => 'Locate item', // @translate
-                        // 'locate_media_show' => 'Locate media', // @translate
-                    ],
-                ],
-                'attributes' => [
-                    'id' => 'cartography_append_public',
-                ],
-            ])
+
             ->add([
                 'name' => 'cartography_annotate_describe',
                 'type' => Element\Checkbox::class,
                 'options' => [
                     'element_group' => 'annotate_cartography',
-                    'label' => 'Resource block Describle: Enable annotation', // @translate
+                    'label' => 'Resource block Describe: Enable annotation', // @translate
                 ],
                 'attributes' => [
                     'id' => 'cartography_annotate_describe',
@@ -59,6 +42,24 @@ class SiteSettingsFieldset extends Fieldset
                 'attributes' => [
                     'id' => 'cartography_annotate_locate',
                 ],
-            ]);
+            ])
+
+            ->add([
+                'name' => 'cartography_placement',
+                'type' => CommonElement\OptionalMultiCheckbox::class,
+                'options' => [
+                    'element_group' => 'themes_old',
+                    'label' => 'Cartography (old themes)', // @translate
+                    'value_options' => [
+                        'after/items/describe' => 'Describe: item show', // @translate
+                        'after/items/locate' => 'Locate: item show', // @translate
+                    ],
+                ],
+                'attributes' => [
+                    'id' => 'cartography_placement',
+                    'required' => false,
+                ],
+            ])
+        ;
     }
 }

@@ -337,18 +337,23 @@ class Module extends AbstractModule
     public function displayPublic(Event $event): void
     {
         $siteSettings = $this->getServiceLocator()->get('Omeka\Settings\Site');
-        $displayTabs = $siteSettings->get('cartography_append_public');
-        if (empty($displayTabs)) {
+        $placements = $siteSettings->get('cartography_placement', []);
+        if (empty($placements)) {
             return;
         }
-
-        $annotate = (bool) $siteSettings->get('cartography_annotate');
 
         $view = $event->getTarget();
         $resource = $view->resource;
         $resourceName = $resource->resourceName();
-        $displayDescribe = in_array('describe_' . $resourceName . '_show', $displayTabs);
-        $displayLocate = in_array('locate_' . $resourceName . '_show', $displayTabs);
+        $displayDescribe = in_array('after/' . $resourceName . '/describe', $placements);
+        $displayLocate = in_array('after/' . $resourceName . '/locate', $placements);
+
+        $annotateDescribe = $displayDescribe
+            && (bool) $siteSettings->get('cartography_annotate_describe')
+            && $view->userIsAllowed(\Annotate\Entity\Annotation::class, 'create');
+        $annotateLocate = $displayLocate
+            && (bool) $siteSettings->get('cartography_annotate_locate')
+            && $view->userIsAllowed(\Annotate\Entity\Annotation::class, 'create');
 
         // This check avoids to load the css and js two times.
         $displayAll = $displayDescribe && $displayLocate;
@@ -356,7 +361,7 @@ class Module extends AbstractModule
         if ($displayDescribe) {
             echo $view->cartography($resource, [
                 'type' => 'describe',
-                'annotate' => $annotate,
+                'annotate' => $annotateDescribe,
                 'headers' => true,
                 'sections' => $displayAll ? ['describe', 'locate'] : ['describe'],
             ]);
@@ -364,7 +369,7 @@ class Module extends AbstractModule
         if ($displayLocate) {
             echo $view->cartography($resource, [
                 'type' => 'locate',
-                'annotate' => $annotate,
+                'annotate' => $annotateLocate,
                 'headers' => !$displayAll,
                 'sections' => $displayAll ? ['describe', 'locate'] : ['locate'],
             ]);

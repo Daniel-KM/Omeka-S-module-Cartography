@@ -219,14 +219,7 @@ return [
             'cartography_js_locate' => '',
         ],
         'site_settings' => [
-            'cartography_append_public' => [
-                'describe_item_sets_show',
-                'describe_items_show',
-                'describe_media_show',
-                'locate_item_sets_show',
-                'locate_items_show',
-                'locate_media_show',
-            ],
+            'cartography_placement' => [],
             'cartography_annotate_describe' => false,
             'cartography_annotate_locate' => false,
         ],

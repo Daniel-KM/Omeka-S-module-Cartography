@@ -477,8 +477,6 @@ abstract class AbstractCartographyController extends AbstractActionController
         ?MediaRepresentation $media = null,
         ?AnnotationRepresentation $annotation = null
     ) {
-        $api = $this->api();
-
         // Base annotation (force Annotation resource class).
         $data = [];
         // Force annotation to be public by default, like all resources.
@@ -1559,8 +1557,7 @@ abstract class AbstractCartographyController extends AbstractActionController
 
     protected function customVocabId($label)
     {
-        $api = $this->viewHelpers()->get('api');
-        $result = $api->read('custom_vocabs', ['label' => $label])->getContent();
+        $result = $this->api()->read('custom_vocabs', ['label' => $label])->getContent();
         return $result ? $result->id() : null;
     }
 

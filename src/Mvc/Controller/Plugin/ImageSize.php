@@ -116,11 +116,14 @@ class ImageSize extends AbstractPlugin
             return $cache[$cacheKey];
         }
 
-        // Check if size is already stored. The stored dimension may be null.
+        // Check if size is already stored. Stored dimensions may contain null
+        // values (legacy records), in which case we must fall through to the
+        // file-based computation instead of returning the cached null tuple.
         if (!$force) {
             $mediaData = $media->mediaData();
             if (is_array($mediaData)
-                && !empty($mediaData['dimensions'][$type])
+                && !empty($mediaData['dimensions'][$type]['width'])
+                && !empty($mediaData['dimensions'][$type]['height'])
             ) {
                 $cache[$cacheKey] = $mediaData['dimensions'][$type];
                 return $mediaData['dimensions'][$type];

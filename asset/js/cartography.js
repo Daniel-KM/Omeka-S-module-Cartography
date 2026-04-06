@@ -1363,6 +1363,8 @@ $(document).ready( function() {
 // Prevent page scrolling/dragging when interacting with a Leaflet map.
 (function() {
     var mapActive = false;
+    var savedOverflow = '';
+    var savedBodyOverflow = '';
     var initContainer = function(el) {
         if (el._scrollFixed) return;
         el._scrollFixed = true;
@@ -1370,13 +1372,31 @@ $(document).ready( function() {
         L.DomEvent.disableClickPropagation(el);
         el.addEventListener('mousedown', function() {
             mapActive = true;
+            // Firefox public: lock page scroll while dragging on the map.
+            savedOverflow = document.documentElement.style.overflow;
+            savedBodyOverflow = document.body.style.overflow;
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden';
         });
         el.addEventListener('wheel', function(e) {
             e.preventDefault();
         }, {passive: false});
+        // Prevent native HTML5 image drag (which in public pages lets the
+        // browser auto-scroll the page while dragging a Leaflet image).
+        el.addEventListener('dragstart', function(e) {
+            e.preventDefault();
+        });
+        // Also prevent text selection from propagating to the page.
+        el.addEventListener('selectstart', function(e) {
+            e.preventDefault();
+        });
     };
     document.addEventListener('mouseup', function() {
-        mapActive = false;
+        if (mapActive) {
+            mapActive = false;
+            document.documentElement.style.overflow = savedOverflow;
+            document.body.style.overflow = savedBodyOverflow;
+        }
     });
     // Firefox: block scroll while dragging on map.
     var lastScrollY = window.scrollY;

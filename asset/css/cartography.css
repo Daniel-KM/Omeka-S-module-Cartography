@@ -78,6 +78,14 @@
     /* Prevent page scroll when interacting with the map. */
     .leaflet-container {
         touch-action: none;
+        user-select: none;
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        overscroll-behavior: contain;
+    }
+    .leaflet-container img {
+        -webkit-user-drag: none;
+        user-drag: none;
     }
 
     /* Hide "Add links" on public resource page blocks: it relies on the

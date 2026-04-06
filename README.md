@@ -16,8 +16,7 @@ to annotate any images, even non-cartographic ones.
 Installation
 ------------
 
-This module requires the modules [Annotate] and [Data Type Geometry].
-If the module [Generic] is used, it must be version greater or equal to 3.4.41.
+This module requires the modules [Common], [Annotate] and [Data Type Geometry].
 
 The module uses external libraries, so use the release zip to install it, or use
 and init the source.
@@ -36,9 +35,7 @@ If the module was installed from the source, rename the name of the folder of
 the module to `Cartography`, go to the root of the module, and run:
 
 ```sh
-npm install
 composer install --no-dev
-gulp
 ```
 
 * Database
@@ -153,6 +150,41 @@ purpose only. In production, you must register to get a [free ign key].
 A similar js can be added for images to describe, but is not managed directly by
 the module currently.
 
+### Site page blocks
+
+Two block layouts are available to embed a cartography on any site page:
+
+- **Cartography: Describe** (`cartographyDescribe`): annotate a still image.
+- **Cartography: Locate** (`cartographyLocate`): annotate a georeferenced map.
+
+Each block uses the standard Omeka attachments picker (same widget as the
+`Media` block): attach one or more items (optionally with a specific media).
+A checkbox `Enable annotation toolbar` enables the create/edit/delete tools
+for users with the required rights.
+
+The block renders through the template
+`view/common/block-layout/cartography-block.phtml`, which wraps resources in a
+`.cartography-block.cartography-{type}` container (similar class pattern to
+module [Mapping]'s `mapping-block`).
+
+### Resource page blocks
+
+Two resource page block layouts are also registered, so a theme manager can
+append a Describe or Locate section to the public item / item set / media show
+page through the standard Omeka resource page configuration. The options are
+managed via site settings in order to switch between display/annotation (when
+the user is allowed to create annotations).
+
+For older themes that do not use resource page blocks, the site setting
+"Cartography placement" (group "Old themes") allows to append the block after
+the item view.
+
+### Admin browse
+
+A third browse view is available at `/admin/cartography/browse` (admin only):
+it lists all georeferenced annotations on a single map; the map loads
+geometries through the endpoint `/admin/cartography/browse-geometries` (JSON).
+
 ### Geometries
 
 The geometries are saved as standard Omeka values and indexed in a specific
@@ -175,14 +207,18 @@ The deprecated datatype `http://geovocab.org/geometry#asWKT` is no more used.
 }
 ```
 
+This point may be replaced by an option wkt/geojson in next version.
+
 
 TODO
 ----
 
 - [ ] Add a configurable list of styles in the style editor (or replace the fields used to edit styles).
 - [ ] Add the specific config of the wmts at the site level.
-- [ ] Omeka S v4: fix link resource.
-- [ ] Fix display of data in popup.
+- [x] Fix display of data in popup.
+- [ ] Host patched vendor libs (leaflet-paste, leaflet-styleeditor, leaflet-draw, leaflet-groupedlayercontrol) as downloadable zips and add them to `composer.json` `external-assets`, so `asset/vendor/` can be fully managed via `composer` and removed from git.
+- [ ] Manage choice between wkt/geojson
+- [ ] Migrate deprecated google kml.
 
 
 Warning
@@ -240,10 +276,10 @@ Copyright
 
 * See `asset/vendor/` and `vendor/` for the copyright of the libraries.
 * Some portions are adapterd from the modules [Numeric data types] and [Neatline].
-* Copyright Daniel Berthereau, 2018, (see [Daniel-KM] on GitLab)
+* Copyright Daniel Berthereau, 2018-2026, (see [Daniel-KM] on GitLab)
 
 This module was built first for the French École des hautes études en sciences
-sociales [EHESS]. The maintenance was done for [INHA].
+sociales [EHESS]. The maintenance was done for [INHA] and for [Archives Poincaré].
 
 
 [Cartography]: https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography
@@ -253,7 +289,7 @@ sociales [EHESS]. The maintenance was done for [INHA].
 [wms]: https://en.wikipedia.org/wiki/Web_Map_Service
 [Annotate]: https://gitlab.com/Daniel-KM/Omeka-S-module-Annotate
 [Data Type Geometry]: https://gitlab.com/Daniel-KM/Omeka-S-module-DataTypeGeometry
-[Generic]: https://gitlab.com/Daniel-KM/Omeka-S-module-Generic
+[Common]: https://gitlab.com/Daniel-KM/Omeka-S-module-Common
 [installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
 [MariaDB 10.2.2]: https://mariadb.com/kb/en/library/spatial-index/
 [mySql 5.7.5]: https://dev.mysql.com/doc/relnotes/mysql/5.7/en/news-5-7-5.html#mysqld-5-7-5-innodb
@@ -281,5 +317,6 @@ sociales [EHESS]. The maintenance was done for [INHA].
 [Neatline]: https://github.com/performant-software/neatline-omeka-s
 [EHESS]: https://www.ehess.fr
 [INHA]: https://www.inha.fr
+[Archives Poincaré]: http://poincare.univ-lorraine.fr
 [GitLab]: https://gitlab.com/Daniel-KM
 [Daniel-KM]: https://gitlab.com/Daniel-KM "Daniel Berthereau"

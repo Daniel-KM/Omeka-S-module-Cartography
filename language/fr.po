@@ -1,64 +1,62 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-06 00:00+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2026-04-06 00:00+0000\n"
+"Last-Translator: Daniel Berthereau <Daniel.fr@Berthereau.net>\n"
+"Language-Team: \n"
+"Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.6\n"
 
 #: data/scripts/upgrade.php:32
 msgid "Missing requirement. Unable to upgrade."
-msgstr ""
+msgstr "Pré-requis absent. Impossible de mettre à jour."
 
 #: src/Controller/AbstractCartographyController.php:49
 msgid "Select type…"
-msgstr ""
+msgstr "Choisir le type…"
 
 #: src/Site/BlockLayout/AbstractCartographyBlock.php:41
 msgid "Enable annotation toolbar"
-msgstr ""
+msgstr "Activer la barre d’annotation"
 
 #: view/annotate/common/cartography/browse.phtml:17
 #: view/common/cartography-admin.phtml:35
 #: view/common/cartography-public.phtml:35
 msgid "Georeferenced annotations"
-msgstr ""
+msgstr "Annotations géoréférencées"
 
 #: view/annotate/common/cartography/browse.phtml:22
 msgid "There are no georeferenced annotations."
-msgstr ""
+msgstr "Il n’y a aucune annotation géoréférencée."
 
 #: view/common/cartography-admin.phtml:14
 #: view/common/cartography-public.phtml:14
 msgid "Annotate an image"
-msgstr ""
+msgstr "Annoter une image"
 
 #: view/common/cartography-admin.phtml:20
 #: view/common/cartography-public.phtml:20
 msgid "Geolocate resource"
-msgstr ""
+msgstr "Localiser géographiquement une ressource"
 
 #: view/common/cartography-admin.phtml:30
 #: view/common/cartography-public.phtml:30
 msgid "Image annotations"
-msgstr ""
+msgstr "Annotations d’image"
 
 #: data/scripts/upgrade.php:29
 msgid ""
 "To upgrade to Cartography 3.1.0, you must follow the steps described in "
 "upgrade_from_alpha.md."
 msgstr ""
+"Pour passer à la version 3.1.0 de Cartography, vous devez suivre les étapes "
+"décrites dans le fichier upgrade_from_alpha.md."
 
 #: data/scripts/upgrade.php:50
 msgid ""
@@ -66,10 +64,14 @@ msgid ""
 "interfaces were fixed. New blocks were added to allow public to view or "
 "annotate."
 msgstr ""
+"Le module a été entièrement réécrit, corrigé et amélioré. Tous les problèmes "
+"liés aux interfaces utilisateur ont été résolus. De nouveaux blocs ont été "
+"ajoutés pour permettre au public de consulter ou d’ajouter des annotations."
 
 #: data/scripts/upgrade.php:54
 msgid "The format KML is no more supported: use wkt or geojson."
 msgstr ""
+"Le format KML n’est plus pris en charge : utilisez plutôt WKT ou GeoJSON."
 
 #: data/scripts/upgrade.php:58
 msgid ""
@@ -77,291 +79,316 @@ msgid ""
 "not specified in the w3c recommendation. Part of the IIIF format will be "
 "used when possible."
 msgstr ""
+"La prochaine version améliorera la normalisation du stockage des styles, qui "
+"n’est pas spécifiée dans la recommandation du W3C. Une partie du format IIIF "
+"sera utilisée dans la mesure du possible."
 
 #: Module.php:272
 msgid "Describe"
-msgstr ""
+msgstr "Décrire"
 
 #: Module.php:275
 msgid "Locate"
-msgstr ""
+msgstr "Localiser"
 
 #: src/Form/SiteSettingsFieldset.php:11 src/Form/SettingsFieldset.php:12
 msgid "Cartography (annotate images and maps)"
-msgstr ""
+msgstr "Cartographie (annoter des images et des cartes)"
 
 #: src/Form/SiteSettingsFieldset.php:14 src/Form/SettingsFieldset.php:15
 msgid "Annotate cartography"
-msgstr ""
+msgstr "Annoter une carte"
 
 #: src/Form/SiteSettingsFieldset.php:15
 msgid "Old themes"
-msgstr ""
+msgstr "Anciens thèmes"
 
 #: src/Form/SiteSettingsFieldset.php:29
 msgid "Resource block Describe: Enable annotation"
-msgstr ""
+msgstr "Bloc de ressource Décrire : activer les annotations"
 
 #: src/Form/SiteSettingsFieldset.php:40
 msgid "Resource block Locate: Enable annotation"
-msgstr ""
+msgstr "Bloc de ressource Localiser : activer les annotations"
 
 #: src/Form/SiteSettingsFieldset.php:52
 msgid "Cartography (old themes)"
-msgstr ""
+msgstr "Cartographie (anciens thèmes)"
 
 #: src/Form/SiteSettingsFieldset.php:54
 msgid "Describe: item show"
-msgstr ""
+msgstr "Décrire : contenu"
 
 #: src/Form/SiteSettingsFieldset.php:55
 msgid "Locate: item show"
-msgstr ""
+msgstr "Localiser : contenu"
 
 #: src/Form/SettingsFieldset.php:28
 msgid "User guide"
-msgstr ""
+msgstr "Guide de l’utilisateur"
 
 #: src/Form/SettingsFieldset.php:29
 msgid "This text will be shown below the cartography."
-msgstr ""
+msgstr "Ce texte apparaîtra sous la carte."
 
 #: src/Form/SettingsFieldset.php:33
 msgid "Feel free to use cartography!"
-msgstr ""
+msgstr "N’hésitez pas à utiliser la cartographie !"
 
 #: src/Form/SettingsFieldset.php:42
 msgid "Tabs to display in resource form"
-msgstr ""
+msgstr "Onglets à afficher dans le formulaire de ressource"
 
 #: src/Form/SettingsFieldset.php:44
 msgid "Describe: annotate images of the item"
-msgstr ""
+msgstr "Décrire : ajouter des annotations aux images du contenu"
 
 #: src/Form/SettingsFieldset.php:45
 msgid "Locate: annotate georeferenced wms (dcterms:spatial) of the item"
-msgstr ""
+msgstr "Localiser : annoter les WMS géoréférencés (dcterms:spatial) du contenu"
 
 #: src/Form/SettingsFieldset.php:61
 msgid "Templates to use for Describe"
-msgstr ""
+msgstr "Modèles à utiliser pour Décrire"
 
 #: src/Form/SettingsFieldset.php:62 src/Form/SettingsFieldset.php:96
 msgid ""
 "Allow to preset different properties to simplify cartography. If none, only "
 "the style editor will be available."
 msgstr ""
+"Permet de prédéfinir différentes propriétés pour simplifier la cartographie. "
+"Si vide, seul l’éditeur de style sera disponible."
 
 #: src/Form/SettingsFieldset.php:73
 msgid "Select templates to describe…"
-msgstr ""
+msgstr "Sélectionnez des modèles pour décrire…"
 
 #: src/Form/SettingsFieldset.php:82
 msgid "Empty form by default for Describe"
-msgstr ""
+msgstr "Formulaire vide par défaut pour Décrire"
 
 #: src/Form/SettingsFieldset.php:83 src/Form/SettingsFieldset.php:117
 msgid "If checked, the user will have to choose a resource template first."
-msgstr ""
+msgstr "Si coché, l’utilisateur devra d’abord choisir un modèle de ressource."
 
 #: src/Form/SettingsFieldset.php:95
 msgid "Templates to use for Locate"
-msgstr ""
+msgstr "Modèles à utiliser pour Localiser"
 
 #: src/Form/SettingsFieldset.php:107
 msgid "Select templates to locate…"
-msgstr ""
+msgstr "Sélectionnez des modèles pour rechercher…"
 
 #: src/Form/SettingsFieldset.php:116
 msgid "Empty form by default for Locate"
-msgstr ""
+msgstr "Formulaire vide par défaut pour Localiser"
 
 #: src/Form/SettingsFieldset.php:129
 msgid "Specific parameters for Describe (js)"
-msgstr ""
+msgstr "Paramètres spécifiques pour Décrire (js)"
 
 #: src/Form/SettingsFieldset.php:130
 msgid "See readme."
-msgstr ""
+msgstr "Voir le lisez-moi."
 
 #: src/Form/SettingsFieldset.php:142
 msgid "Specific parameters for Locate (js)"
-msgstr ""
+msgstr "Paramètres spécifiques pour Localiser (js)"
 
 #: src/Form/SettingsFieldset.php:143
 msgid "This js code allows to replace the default maps. See readme."
-msgstr ""
+msgstr "Ce code js permet de remplacer les cartes par défaut. Voir lisez-moi."
 
 #: src/Controller/Admin/CartographyController.php:10
 msgid "This url is not available."
-msgstr ""
+msgstr "Cette url n’est pas disponible."
 
 #: src/Controller/AbstractCartographyController.php:26
 msgid "The arg \"type\" (describe or locate) was not found."
-msgstr ""
+msgstr "L’argument « type » (décrire ou localiser) est introuvable."
 
 #: src/Controller/AbstractCartographyController.php:68
 #: src/Controller/AbstractCartographyController.php:92
 #: src/Controller/AbstractCartographyController.php:118
 msgid "Not found."
-msgstr ""
+msgstr "Non trouvé."
 
 #: src/Controller/AbstractCartographyController.php:226
 #: src/Controller/AbstractCartographyController.php:329
 #: src/Controller/AbstractCartographyController.php:355
 msgid "Unauthorized access."
-msgstr ""
+msgstr "Accès interdit."
 
 #: src/Controller/AbstractCartographyController.php:234
 msgid "An internal error occurred from the client: no wkt."
-msgstr ""
+msgstr "Une erreur interne s’est produite côté client : pas de fichier WKT."
 
 #: src/Controller/AbstractCartographyController.php:240
 msgid "An internal error occurred from the client: unmanaged wkt ."
-msgstr ""
+msgstr "Une erreur interne s’est produite côté client : wkt non géré."
 
 #: src/Controller/AbstractCartographyController.php:268
 msgid "An internal error occurred from the client: no resource."
-msgstr ""
+msgstr "Une erreur interne s’est produite côté client : aucune ressource."
 
 #: src/Controller/AbstractCartographyController.php:277
 #: src/Controller/AbstractCartographyController.php:349
 msgid "Resource not found."
-msgstr ""
+msgstr "Ressource non trouvée."
 
 #: src/Controller/AbstractCartographyController.php:290
 msgid "Media #{media_id} not found."
-msgstr ""
+msgstr "Média #{media_id} non trouvé."
 
 #: src/Controller/AbstractCartographyController.php:306
 msgid "Annotation not found."
-msgstr ""
+msgstr "Annotation introuvable."
 
 #: src/Controller/AbstractCartographyController.php:336
 msgid "An internal error occurred from the client: resource id not set."
 msgstr ""
+"Une erreur interne s’est produite côté client : identifiant ressource non "
+"défini."
 
 #: src/Controller/AbstractCartographyController.php:394
 #: src/Controller/AbstractCartographyController.php:445
 msgid "An internal error occurred."
-msgstr ""
+msgstr "Une erreur interne est survenue."
 
 #: src/Site/ResourcePageBlockLayout/CartographyLocate.php:9
 #: src/Site/BlockLayout/CartographyLocate.php:9
 msgid "Cartography: Locate"
-msgstr ""
+msgstr "Cartographie : Localiser"
 
 #: src/Site/ResourcePageBlockLayout/CartographyDescribe.php:9
 #: src/Site/BlockLayout/CartographyDescribe.php:9
 msgid "Cartography: Describe"
-msgstr ""
+msgstr "Cartographie : Décrire"
 
 #: config/module.config.php:148
 msgid "Cartography"
-msgstr ""
+msgstr "Cartographie"
 
 #: config/module.config.php:170
 msgid "Annotation #"
-msgstr ""
+msgstr "Annotation #"
 
 #: config/module.config.php:172
 msgid "Cancel Styling"
-msgstr ""
+msgstr "Annuler la mise en forme"
 
 #: config/module.config.php:173
 msgid "Choose another element you want to style"
-msgstr ""
+msgstr "Choisissez un autre élément que vous souhaitez mettre en forme"
 
 #: config/module.config.php:174
 msgid "Click on the element you want to style"
-msgstr ""
+msgstr "Cliquez sur l’élément que vous souhaitez mettre en forme"
 
 #: config/module.config.php:175
 msgid "Finish"
-msgstr ""
+msgstr "Terminer"
 
 #: config/module.config.php:176
 msgid "Image #"
-msgstr ""
+msgstr "Image #"
 
 #: config/module.config.php:177
 msgid "Layer"
-msgstr ""
+msgstr "Couche"
 
 #: config/module.config.php:178
 msgid "Log in to delete the geometry."
-msgstr ""
+msgstr "Connectez-vous pour supprimer la géométrie."
 
 #: config/module.config.php:179
 msgid "Log in to edit the geometry."
-msgstr ""
+msgstr "Connectez-vous pour modifier la géométrie."
 
 #: config/module.config.php:180
 msgid "Log in to save the geometry."
-msgstr ""
+msgstr "Connectez-vous pour enregistrer la géométrie."
 
 #: config/module.config.php:181
 msgid "No overlay"
-msgstr ""
+msgstr "Pas de superposition"
 
 #: config/module.config.php:182
 msgid "Related item"
-msgstr ""
+msgstr "Contenu lié"
 
 #: config/module.config.php:183
 msgid "Related items"
-msgstr ""
+msgstr "Contenus liés"
 
 #: config/module.config.php:184
 msgid "Related items:"
-msgstr ""
+msgstr "Contenus liés :"
 
 #: config/module.config.php:187
 msgid "Save Styling"
-msgstr ""
+msgstr "Enregistrer le style"
 
 #: config/module.config.php:188
 msgid "The resource is already linked to the current annotation."
-msgstr ""
+msgstr "La ressource est déjà associée à l’annotation actuelle."
 
 #: config/module.config.php:189
 msgid "There is no image attached to this resource."
-msgstr ""
+msgstr "Aucune image n’est jointe à cette ressource."
 
 #: config/module.config.php:190
 msgid "Unable to delete the geometry."
-msgstr ""
+msgstr "Impossible de supprimer la géométrie."
 
 #: config/module.config.php:191
 msgid "Unable to delete the geometry: no identifier."
-msgstr ""
+msgstr "Impossible de supprimer la géométrie : aucun identifiant."
 
 #: config/module.config.php:192
 msgid "Unable to fetch the geometries."
-msgstr ""
+msgstr "Impossible de récupérer les géométries."
 
 #: config/module.config.php:193
 msgid "Unable to find the geometry."
-msgstr ""
+msgstr "Impossible de trouver la géométrie."
 
 #: config/module.config.php:194
 msgid "Unable to save the geometry."
-msgstr ""
+msgstr "Impossible d’enregistrer la géométrie."
 
 #: config/module.config.php:195
 msgid "Unable to save the edited geometry: no identifier."
-msgstr ""
+msgstr "Impossible d’enregistrer la géométrie modifiée : aucun identifiant."
 
 #: config/module.config.php:196
 msgid "Unable to update the geometry."
-msgstr ""
+msgstr "Impossible de mettre à jour la géométrie."
 
 #: config/module.config.php:197
 msgid "Uncertainty:"
-msgstr ""
+msgstr "Incertitude :"
 
 #: config/module.config.php:201
 msgid ""
 "Feel free <strong>to annotate</strong> images and <strong>to locate</strong> "
 "resources!"
 msgstr ""
+"N’hésitez pas <strong>à annoter</strong> les images et <strong>à localiser</"
+"strong>les ressources !"
+
+#~ msgid "Append to pages"
+#~ msgstr "Ajouter aux pages"
+
+#~ msgid ""
+#~ "If unchecked, the viewer can be added via the helper in the theme or the "
+#~ "block in any page."
+#~ msgstr ""
+#~ "Si décochée, la visionneuse peut être ajoutée via l’assistant du thème ou "
+#~ "le bloc sur n’importe quelle page."
+
+#~ msgid "value_options"
+#~ msgstr "value_options"
+
+#~ msgid "cartography_append_public"
+#~ msgstr "cartographie_ajouter_public"

@@ -7,6 +7,9 @@ class CartographyController extends AbstractCartographyController
 {
     protected function notAjax()
     {
-        return $this->redirect()->toRoute('site');
+        $siteSlug = $this->params('site-slug');
+        return $siteSlug
+            ? $this->redirect()->toRoute('site', ['site-slug' => $siteSlug])
+            : $this->redirect()->toRoute('top');
     }
 }

@@ -99,13 +99,21 @@ class Cartography extends AbstractHelper
             ? 's/' . $view->params()->fromRoute('site-slug')
             : 'admin';
 
-        // The module is independant from the module Mapping, but some js are the same,
-        // so it is recommenced to choose one module or the other to avoid js conflicts.
+        // Leaflet is also loaded by module Mapping. Loading it twice causes the
+        // second `window.L` to clobber the first. Drop any previous Leaflet
+        // entry (e.g. from module Mapping) and keep Cartography's: its plugins
+        // (patched leaflet-draw, iiif, paste, styleeditor) are tested against
+        // this specific build.
+        $this->dropContainerItemsMatching($headScript, 'src', '~/leaflet(\.min)?\.js(\?|$)~');
+        $this->dropContainerItemsMatching($headLink, 'href', '~/leaflet(\.min)?\.css(\?|$)~');
+        // Prepend, without defer, so Leaflet is ready before any other
+        // non-deferred Mapping plugin script (markercluster, providers,
+        // Leaflet.Deflate, etc.) that Mapping appends right after.
         $headLink
-            ->appendStylesheet($assetUrl('vendor/leaflet/leaflet.css', 'Cartography'));
+            ->prependStylesheet($assetUrl('vendor/leaflet/leaflet.css', 'Cartography'));
         $headScript
-        ->appendFile($assetUrl('vendor/leaflet/leaflet.js', 'Cartography'), 'text/javascript', ['defer' => 'defer'])
-        ->appendFile($assetUrl('vendor/leaflet-iiif/leaflet-iiif.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
+            ->prependFile($assetUrl('vendor/leaflet/leaflet.js', 'Cartography'))
+            ->appendFile($assetUrl('vendor/leaflet-iiif/leaflet-iiif.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
 
         // Add specific code for annotation.
         if ($annotate) {
@@ -174,7 +182,11 @@ class Cartography extends AbstractHelper
         $headScript
             ->appendFile($assetUrl('vendor/terraformer-wkt/t-wkt.umd-2.2.1.js', 'DataTypeGeometry'), 'text/javascript', ['defer' => 'defer']);
 
-        // Leaflet full screen (full view).
+        // Leaflet full screen (also loaded by module Mapping). Drop the Mapping
+        // entry and keep Cartography's so there is a single plugin instance
+        // tied to the Leaflet build above.
+        $this->dropContainerItemsMatching($headScript, 'src', '~leaflet.*fullscreen.*\.js~i');
+        $this->dropContainerItemsMatching($headLink, 'href', '~leaflet.*fullscreen.*\.css~i');
         $headLink
             ->appendStylesheet($assetUrl('vendor/leaflet-fullscreen/leaflet.fullscreen.css', 'Cartography'));
         $headScript
@@ -353,5 +365,23 @@ const userRights = {"create":false,"edit":false,"delete":false};';
         }
 
         return $rights;
+    }
+
+    /**
+     * Remove already queued items from a head* placeholder whose attribute
+     * matches the given regex.
+     *
+     * Used to dedupe Leaflet assets when several modules each enqueue their own
+     * copy.
+     */
+    protected function dropContainerItemsMatching($placeholder, string $attr, string $regex): void
+    {
+        $container = $placeholder->getContainer();
+        foreach ($container as $index => $item) {
+            $value = $item->attributes[$attr] ?? null;
+            if (is_string($value) && preg_match($regex, $value)) {
+                $container->offsetUnset($index);
+            }
+        }
     }
 }

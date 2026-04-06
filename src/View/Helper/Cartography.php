@@ -137,9 +137,6 @@ class Cartography extends AbstractHelper
                 $headLink
                     ->appendStylesheet($assetUrl('vendor/leaflet-paste/css/Leaflet.paste.css', 'Cartography'));
                 $headScript
-                    ->appendFile($assetUrl('vendor/leaflet-paste/vendor/wicket.src.js', 'Cartography'), 'text/javascript', ['defer' => 'defer'])
-                    ->appendFile($assetUrl('vendor/leaflet-paste/vendor/wicket-leaflet.src.js', 'Cartography'), 'text/javascript', ['defer' => 'defer'])
-                    ->appendFile($assetUrl('vendor/leaflet-paste/js/Leaflet.Layer.WKT.js', 'Cartography'), 'text/javascript', ['defer' => 'defer'])
                     ->appendFile($assetUrl('vendor/leaflet-paste/js/Leaflet.paste.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
             }
 

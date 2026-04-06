@@ -51,7 +51,17 @@ class Module extends AbstractModule
         $api = $services->get('Omeka\ApiManager');
         $settings = $services->get('Omeka\Settings');
 
-        // The resource templates are automatically installed during install.
+        // Add cartography-specific terms to shared Annotate custom vocabs.
+        $this->enrichCustomVocab($api, 'Annotation Target dcterms:format', [
+            'application/vnd.ogc.gml',
+            'application/vnd.google-earth.kml+xml',
+        ]);
+        $this->enrichCustomVocab($api, 'Annotation Target rdf:type', [
+            'o:Media',
+        ]);
+
+        // The resource templates are automatically installed
+        // during install.
         $resourceTemplateSettings = [
             'Cartography Describe' => [
                 'setting' => 'cartography_template_describe',
@@ -94,6 +104,35 @@ class Module extends AbstractModule
                 $resourceTemplate
             );
         }
+    }
+
+    /**
+     * Add terms to an existing custom vocab without duplicates.
+     */
+    protected function enrichCustomVocab(
+        $api,
+        string $label,
+        array $newTerms
+    ): void {
+        try {
+            $customVocab = $api
+                ->read('custom_vocabs', ['label' => $label])
+                ->getContent();
+        } catch (\Throwable $e) {
+            return;
+        }
+        $terms = $customVocab->terms();
+        $terms = is_array($terms)
+            ? $terms
+            : array_map('trim', explode(PHP_EOL, $terms));
+        $merged = array_unique(array_merge($terms, $newTerms));
+        if (count($merged) === count($terms)) {
+            return;
+        }
+        $api->update('custom_vocabs', $customVocab->id(), [
+            'o:label' => $label,
+            'o:terms' => implode(PHP_EOL, $merged),
+        ], [], ['isPartial' => true]);
     }
 
     /**

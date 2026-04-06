@@ -1021,6 +1021,13 @@ abstract class AbstractCartographyController extends AbstractActionController
         }
 
         $imageType = $params['type'] ?? null;
+        $filterMediaId = isset($params['media_id']) ? (int) $params['media_id'] : null;
+        if ($filterMediaId) {
+            $medias = array_filter(
+                is_array($medias) ? $medias : iterator_to_array($medias),
+                fn ($m) => $m->id() === $filterMediaId
+            );
+        }
         foreach ($medias as $media) {
             $image = [];
             $image['id'] = $media->id();

@@ -28,6 +28,12 @@ return [
             Form\SiteSettingsFieldset::class => Form\SiteSettingsFieldset::class,
         ],
     ],
+    'block_layouts' => [
+        'invokables' => [
+            'cartographyDescribe' => Site\BlockLayout\CartographyDescribe::class,
+            'cartographyLocate' => Site\BlockLayout\CartographyLocate::class,
+        ],
+    ],
     'controllers' => [
         'invokables' => [
             Controller\Admin\CartographyController::class => Controller\Admin\CartographyController::class,

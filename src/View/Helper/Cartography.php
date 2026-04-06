@@ -265,6 +265,10 @@ const cartographySections = ' . json_encode($options['sections'], 320) . ';';
 const resourceId = ' . $resource->id() . ';';
         endif;
 
+        $mediaId = isset($options['media_id']) ? (int) $options['media_id'] : 0;
+        $script .= '
+const cartographyMediaId = ' . $mediaId . ';';
+
         if ($annotate) {
             $customVocabs = [
                 'oaMotivatedBySelect' => 'Annotation oa:motivatedBy',

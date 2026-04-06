@@ -2277,12 +2277,20 @@ var currentMediaId = function() {
     var section = window.location.hash.substr(1);
     // Fix crappy urls (universal viewer).
     section = section.indexOf('?') == -1 ? section : section.substr(0, section.indexOf('?'));
-    if (!section.length) {
-        if (currentMapElement !== 'annotate-describe') {
+    // When used in a block layout, cartographySections may contain only
+    // 'describe': in that case, skip the hash check since the page may have any
+    // hash (unrelated to Cartography tabs).
+    var describeOnly = typeof cartographySections !== 'undefined'
+        && cartographySections.length === 1
+        && cartographySections[0] === 'describe';
+    if (!describeOnly) {
+        if (!section.length) {
+            if (currentMapElement !== 'annotate-describe') {
+                return null;
+            }
+        } else if (section !== 'describe') {
             return null;
         }
-    } else if (section !== 'describe') {
-        return null;
     }
 
     var mediaId = imageMediaService.getMediaId();
@@ -2392,7 +2400,11 @@ var initDescribe = function() {
     var section = 'describe';
 
     // TODO Convert the fetch of images into a callback.
-    fetchImages(resourceId, {type: 'original'});
+    var imagesParams = {type: 'original'};
+    if (typeof cartographyMediaId !== 'undefined' && cartographyMediaId) {
+        imagesParams.media_id = cartographyMediaId;
+    }
+    fetchImages(resourceId, imagesParams);
     if (!images.length) {
         $('#annotate-' + section).html(Omeka.jsTranslate('There is no image attached to this resource.'));
         return;

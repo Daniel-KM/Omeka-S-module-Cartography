@@ -1,0 +1,30 @@
+<?php
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var array $entries List of ['resource' => item, 'media_id' => int|null]
+ * @var string $type
+ * @var bool $annotate
+ * @var bool $emitHeaders
+ */
+
+$headers = $emitHeaders;
+?>
+
+<div class="block block-cartography cartography-<?= $type ?>">
+    <?php foreach ($entries as $entry):
+        $resource = $entry['resource'];
+        $options = [
+            'type' => $type,
+            'annotate' => $annotate,
+            'headers' => $headers,
+        ];
+        if (!empty($entry['media_id'])) {
+            $options['media_id'] = $entry['media_id'];
+        }
+        ?>
+        <div class="cartography-map" data-resource-id="<?= $resource->id() ?>"<?= !empty($entry['media_id']) ? ' data-media-id="' . (int) $entry['media_id'] . '"' : '' ?>>
+            <?= $this->cartography($resource, $options) ?>
+        </div>
+        <?php $headers = false; ?>
+    <?php endforeach; ?>
+</div>

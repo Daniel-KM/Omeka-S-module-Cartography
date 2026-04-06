@@ -30,9 +30,8 @@
         background-image: url(../vendor/leaflet/images/marker-icon-2x.png);
     }
 
-    /* Marker icon: Leaflet PNG with FA icon overlay. */
+    /* Marker icon: colored SVG pin with FA icon overlay. */
     .cartography-marker {
-        background-image: url(../vendor/leaflet/images/marker-icon-2x.png);
         background-size: contain;
         background-repeat: no-repeat;
         display: flex;

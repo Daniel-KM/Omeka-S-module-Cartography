@@ -2077,31 +2077,43 @@ var annotateControl = function(map, drawnItems) {
 
     /* Style Editor (https://github.com/dwilhelm89/Leaflet.StyleEditor) */
 
-    // Marker icon base path (Leaflet default marker PNG).
-    var _markerIconBase = baseUrl + 'modules/Cartography/asset/vendor/leaflet/images/';
-
     if (L.StyleEditor && L.StyleEditor.marker) {
-        // Replace Mapbox URLs with local Leaflet marker PNG.
-        var _markerPngUrl = function() {
-            return _markerIconBase + 'marker-icon-2x.png';
+        // SVG marker matching Leaflet default proportions (25x41)
+        // with dynamic color and white inner circle.
+        var _markerSvg = function(size, color) {
+            color = color || '#2A81CB';
+            if (color.indexOf('#') !== 0) {
+                color = '#' + color;
+            }
+            return 'data:image/svg+xml,' + encodeURIComponent(
+                '<svg xmlns="http://www.w3.org/2000/svg"'
+                + ' viewBox="0 0 25 41">'
+                + '<path d="M12.5 0C5.6 0 0 5.6 0 12.5'
+                + ' 0 21.2 12.5 41 12.5 41S25 21.2 25 12.5'
+                + 'C25 5.6 19.4 0 12.5 0Z" fill="' + color + '"/>'
+                + '<circle cx="12.5" cy="12.5" r="5.5" fill="#fff"/>'
+                + '</svg>'
+            );
         };
         if (L.StyleEditor.marker.DefaultMarker) {
             L.StyleEditor.marker.DefaultMarker.prototype
-                ._getMarkerUrl = _markerPngUrl;
+                ._getMarkerUrl = _markerSvg;
         }
 
-        // GlyphiconMarker: use Leaflet marker PNG with FA icon.
+        // GlyphiconMarker: SVG marker with FA icon overlay.
         if (L.StyleEditor.marker.GlyphiconMarker) {
             L.StyleEditor.marker.GlyphiconMarker.prototype
-                ._getMarkerUrl = _markerPngUrl;
+                ._getMarkerUrl = _markerSvg;
             L.StyleEditor.marker.GlyphiconMarker.prototype
                 .getMarkerHtml = function(size, color, icon) {
+                var url = this._getMarkerUrl(size, color);
                 var inner = icon
                     ? '<i class="fas ' + icon + '"></i>'
                     : '';
                 return '<div class="cartography-marker'
                     + ' cartography-marker-'
-                    + this.sizeToName(size)[0] + '">'
+                    + this.sizeToName(size)[0]
+                    + '" style="background-image: url(' + url + ');">'
                     + inner
                     + '</div>';
             };

@@ -2,7 +2,7 @@
 namespace Cartography\Service\ViewHelper;
 
 use Cartography\View\Helper\HasValueSuggest;
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 
 class HasValueSuggestFactory implements FactoryInterface

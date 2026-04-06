@@ -826,13 +826,6 @@ abstract class AbstractCartographyController extends AbstractActionController
                 'value_resource_id' => $media->id(),
             ]];
         }
-        // Currently, selectors are managed as a type internally.
-        $target['rdf:type'] = [[
-            'property_id' => $this->propertyId('rdf:type'),
-            'type' => 'customvocab:' . $this->customVocabId('Annotation Target rdf:type'),
-            // TODO Or oa:WKTSelector when it will be extended? oa:Selector or Selector?
-            '@value' => 'oa:Selector',
-        ]];
         $target['dcterms:format'] = [[
             'property_id' => $this->propertyId('dcterms:format'),
             'type' => 'customvocab:' . $this->customVocabId('Annotation Target dcterms:format'),
@@ -1482,7 +1475,6 @@ abstract class AbstractCartographyController extends AbstractActionController
             // (source, wkt, style class…) but there may be optional properties.
             $specialProperties = [
                 'oa:hasSource' => true,
-                'rdf:type' => true,
                 'dcterms:format' => true,
                 'rdf:value' => true,
                 'oa:styleClass' => true,

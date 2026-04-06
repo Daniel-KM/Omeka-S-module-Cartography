@@ -56,9 +56,6 @@ class Module extends AbstractModule
             'application/vnd.ogc.gml',
             'application/vnd.google-earth.kml+xml',
         ]);
-        $this->enrichCustomVocab($api, 'Annotation Target rdf:type', [
-            'o:Media',
-        ]);
 
         // The resource templates are automatically installed
         // during install.

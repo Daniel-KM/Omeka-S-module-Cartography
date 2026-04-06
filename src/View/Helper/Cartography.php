@@ -221,7 +221,8 @@ class Cartography extends AbstractHelper
 
         // More common headers.
         $headLink
-            ->appendStylesheet($assetUrl('css/cartography.css', 'Cartography'));
+            ->appendStylesheet($assetUrl('css/cartography.css', 'Cartography'))
+            ->appendStylesheet($assetUrl('css/glyphicons.css', 'Cartography'));
         $headScript
             ->appendFile($assetUrl('js/cartography.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
 

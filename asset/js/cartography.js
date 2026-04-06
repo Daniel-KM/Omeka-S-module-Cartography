@@ -1965,11 +1965,76 @@ var annotateControl = function(map, drawnItems) {
     map.addControl(drawControl);
 
     /* Style Editor (https://github.com/dwilhelm89/Leaflet.StyleEditor) */
-    // Initialize the StyleEditor
+
+    // Replace Mapbox marker URLs with local SVG data URIs.
+    var _markerPinSvg = function(size, color) {
+        color = color || '#2A81CB';
+        if (color.indexOf('#') !== 0) {
+            color = '#' + color;
+        }
+        return 'data:image/svg+xml,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 35 90">'
+            + '<path d="M17.5 0C7.8 0 0 7.8 0 17.5C0 30 17.5 85'
+            + ' 17.5 85S35 30 35 17.5C35 7.8 27.2 0 17.5 0Z"'
+            + ' fill="' + color + '"/></svg>'
+        );
+    };
+    if (L.StyleEditor && L.StyleEditor.marker) {
+        if (L.StyleEditor.marker.GlyphiconMarker) {
+            L.StyleEditor.marker.GlyphiconMarker.prototype
+                ._getMarkerUrl = _markerPinSvg;
+        }
+        if (L.StyleEditor.marker.DefaultMarker) {
+            L.StyleEditor.marker.DefaultMarker.prototype
+                ._getMarkerUrl = _markerPinSvg;
+        }
+    }
+
+    // Fix icon selector clicks: the original _createColorSelect
+    // uses childNodes traversal to find the click target, which
+    // fails with GlyphiconMarker's nested HTML. Override the
+    // method to use closest() instead.
+    if (L.StyleEditor && L.StyleEditor.formElements
+        && L.StyleEditor.formElements.IconElement
+    ) {
+        var _IconEl = L.StyleEditor.formElements.IconElement;
+        _IconEl.prototype._createColorSelect = function(color) {
+            if (!this.options.selectOptions) {
+                this.options.selectOptions = {};
+            }
+            if (color in this.options.selectOptions) return;
+            var uiEl = this.options.uiElement;
+            var ul = L.DomUtil.create(
+                'ul', this._selectOptionWrapperClasses, uiEl
+            );
+            var markers = this.options.styleEditorOptions.util
+                .getMarkersForColor(color);
+            var self = this;
+            markers.forEach(function(icon) {
+                var li = L.DomUtil.create(
+                    'li', self._selectOptionClasses, ul
+                );
+                var img = self._createSelectInputImage(li);
+                self._styleSelectInputImage(img, icon, color);
+            });
+            this.options.selectOptions[color] = ul;
+            L.DomEvent.addListener(ul, 'click', function(evt) {
+                evt.stopPropagation();
+                if (evt.target.nodeName === 'UL') return;
+                var el = evt.target.closest(
+                    '.leaflet-styleeditor-select-image'
+                );
+                if (el) {
+                    self._selectMarker({target: el});
+                }
+            });
+        };
+    }
+
+    // Initialize the StyleEditor.
+    // Default marker color: Leaflet blue (#2A81CB), matching the
+    // size selector icons.
     var styleEditorControlOptions = {
-        // position: 'topleft',
-        // colorRamp: ['#1abc9c', '#2ecc71', '#3498db'],
-        // markers: ['circle-stroked', 'circle', 'square-stroked', 'square'],
         strings: {
             save: Omeka.jsTranslate('Save'),
                 saveTitle: Omeka.jsTranslate('Save Styling'),
@@ -1979,6 +2044,20 @@ var annotateControl = function(map, drawnItems) {
                 tooltipNext: Omeka.jsTranslate('Choose another element you want to style'),
         },
         useGrouping: false,
+        defaultMarkerColor: '#2A81CB',
+        defaultMarkerIcon: 'glyphicon-map-marker',
+        colorRamp: [
+            '#2A81CB', '#1abc9c', '#2ecc71', '#3498db',
+            '#9b59b6', '#34495e', '#16a085', '#27ae60',
+            '#2980b9', '#8e44ad', '#2c3e50', '#f1c40f',
+            '#e67e22', '#e74c3c', '#95a5a6', '#f39c12',
+            '#d35400', '#c0392b', '#bdc3c7', '#7f8c8d',
+        ],
+        markerType: L.StyleEditor
+            && L.StyleEditor.marker
+            && L.StyleEditor.marker.GlyphiconMarker
+            ? L.StyleEditor.marker.GlyphiconMarker
+            : undefined,
     };
 
     if (userRights && userRights.edit !== false) {

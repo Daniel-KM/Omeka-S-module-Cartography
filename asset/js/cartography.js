@@ -1594,19 +1594,31 @@ var displayGeometries = function(geometries, drawnItems) {
                 + inner
                 + '</div>';
         };
-        // Override getIconOptions so setStyle changes are
-        // not overwritten by re-reading the old divIcon.
+        // Override getIconOptions: read from the current
+        // element's divIcon, then cache in iconOptions so
+        // that setStyle changes persist within a single
+        // editing session. Reset when the element changes.
+        L.StyleEditor.marker.GlyphiconMarker.prototype
+            ._currentEditId = null;
         L.StyleEditor.marker.GlyphiconMarker.prototype
             .getIconOptions = function() {
+            var cur = this.options.styleEditorOptions
+                .currentElement;
+            var curId = cur && cur.target
+                ? cur.target._leaflet_id : null;
+            // Reset iconOptions when editing a new element.
+            if (curId !== this._currentEditId) {
+                this._currentEditId = curId;
+                this.options.iconOptions = null;
+            }
             if (this.options.iconOptions
                 && this.options.iconOptions.iconColor
             ) {
                 return this.options.iconOptions;
             }
             var t = {};
-            if (this.options.styleEditorOptions.currentElement) {
-                var icon = this.options.styleEditorOptions
-                    .currentElement.target.options.icon;
+            if (cur && cur.target) {
+                var icon = cur.target.options.icon;
                 if (icon && icon.options) {
                     t = $.extend({}, icon.options);
                 }
@@ -1733,6 +1745,51 @@ var displayGeometries = function(geometries, drawnItems) {
  * @param array geometries
  * @param L.FeatureGroup drawnItems (value inside callback reference)
  */
+/**
+ * Make a Leaflet layers control open on click only.
+ *
+ * Leaflet binds mouseenter/mouseleave on the container
+ * to expand/collapse the list. We disable pointer events
+ * on the container and re-enable them only on the toggle
+ * button and the expanded list.
+ */
+var layersControlClickOnly = function(control) {
+    var container = control.getContainer();
+    // Neutralize Leaflet's hover expand/collapse by overriding the methods
+    // called on mouseenter/mouseleave. Keep originals to reuse on click.
+    var origExpand = (control.expand || control._expand).bind(control);
+    var origCollapse = (control.collapse || control._collapse).bind(control);
+    control.expand = function () { return this; };
+    control.collapse = function () { return this; };
+    control._expand = control.expand;
+    control._collapse = control.collapse;
+
+    var toggle = container.querySelector('.leaflet-control-layers-toggle');
+    var expanded = false;
+    if (toggle) {
+        L.DomEvent.on(toggle, 'click', function (e) {
+            L.DomEvent.preventDefault(e);
+            L.DomEvent.stopPropagation(e);
+            expanded = !expanded;
+            if (expanded) {
+                origExpand();
+            } else {
+                origCollapse();
+            }
+        });
+    }
+    // Close when clicking outside the control.
+    var mapEl = container.closest('.leaflet-container');
+    if (mapEl) {
+        mapEl.addEventListener('click', function (e) {
+            if (expanded && !container.contains(e.target)) {
+                expanded = false;
+                origCollapse();
+            }
+        });
+    }
+};
+
 var displayGeometry = function(data) {
     var layer;
     var geojson = Terraformer.wktToGeoJSON(data['wkt']);
@@ -2406,9 +2463,9 @@ var initDescribe = function() {
         baseMaps[layerLabel] = layer;
     });
     if (Object.keys(baseMaps).length > 1) {
-        map.addControl(L.control.layers(baseMaps, null, {
-            collapsed: true
-        }));
+        var lc = L.control.layers(baseMaps, null, {collapsed: true});
+        map.addControl(lc);
+        layersControlClickOnly(lc);
     }
 
     map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
@@ -2530,8 +2587,9 @@ var initLocate = function() {
 
     if (!wmsLayers.length) {
         var layerControl = L.control.layers(baseMaps);
-        map.addControl(new L.Control.Layers(baseMaps));
-    } else {
+        map.addControl(layerControl);
+        layersControlClickOnly(layerControl);
+    } else {
         // Adapted from mapping-block.js (module Mapping).
         var noOverlayLayer = new L.GridLayer();
         var groupedOverlays = {
@@ -2683,8 +2741,9 @@ var initGeobrowse = function() {
 
     if (!wmsLayers.length) {
         var layerControl = L.control.layers(baseMaps);
-        map.addControl(new L.Control.Layers(baseMaps));
-    } else {
+        map.addControl(layerControl);
+        layersControlClickOnly(layerControl);
+    } else {
         // Adapted from mapping-block.js (module Mapping).
         var noOverlayLayer = new L.GridLayer();
         var groupedOverlays = {
@@ -3016,7 +3075,7 @@ var annotateGeometries = function(map, section, drawnItems) {
      * Remove a linked resource (directly via jQuery).
      */
     $('#' + section).on('click', '.leaflet-styleeditor-interior .actions .remove-value', function (element) {
-        if (!currentAnnotation || !currentAnnotation.options.oaLinking || currentAnnotation.options.oaLinking.length === 0) {
+        if (!currentAnnotation || !currentAnnotation.options.oaLinking || currentAnnotation.options.oaLinking.length === 0) {
             return;
         }
 

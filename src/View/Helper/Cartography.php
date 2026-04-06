@@ -219,10 +219,14 @@ class Cartography extends AbstractHelper
                 ->appendScript('$(document).ready( function() { ' . $js . ' });');
         }
 
+        // Font Awesome is needed for marker icons. It is loaded
+        // by the core layout, but themes may override the layout.
+        $headLink
+            ->appendStylesheet($assetUrl('css/iconfonts.css', 'Omeka'));
+
         // More common headers.
         $headLink
-            ->appendStylesheet($assetUrl('css/cartography.css', 'Cartography'))
-            ->appendStylesheet($assetUrl('css/glyphicons.css', 'Cartography'));
+            ->appendStylesheet($assetUrl('css/cartography.css', 'Cartography'));
         $headScript
             ->appendFile($assetUrl('js/cartography.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
 

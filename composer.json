@@ -61,9 +61,6 @@
             "asset/vendor/leaflet-markercluster/MarkerCluster.css": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css",
             "asset/vendor/leaflet-markercluster/MarkerCluster.Default.css": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css",
             "asset/vendor/leaflet-providers/leaflet-providers.min.js": "https://cdn.jsdelivr.net/npm/leaflet-providers@2.0.0/leaflet-providers.js",
-            "asset/vendor/leaflet-styleeditor/fonts/glyphicons-halflings-regular.ttf": "https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/fonts/glyphicons-halflings-regular.ttf",
-            "asset/vendor/leaflet-styleeditor/fonts/glyphicons-halflings-regular.woff": "https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/fonts/glyphicons-halflings-regular.woff",
-            "asset/vendor/leaflet-styleeditor/fonts/glyphicons-halflings-regular.woff2": "https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/fonts/glyphicons-halflings-regular.woff2",
             "asset/vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts.min.js": "https://cdn.jsdelivr.net/npm/leaflet-tilelayer-wmts@1.0.0/dist/leaflet-tilelayer-wmts.js"
         }
     },

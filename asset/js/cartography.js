@@ -1503,7 +1503,8 @@ var displayGeometry = function(data) {
         ) {
             var gm = new (L.StyleEditor.marker.GlyphiconMarker)();
             var markerIcon = gm.createMarkerIcon({
-                iconSize: options.iconSize || [20, 50],
+                iconSize: options.iconSize
+                    || gm.options.size.small,
                 iconColor: options.iconColor,
                 icon: options.icon || 'glyphicon-map-marker',
             });
@@ -1966,34 +1967,76 @@ var annotateControl = function(map, drawnItems) {
 
     /* Style Editor (https://github.com/dwilhelm89/Leaflet.StyleEditor) */
 
-    // Replace Mapbox marker URLs with local SVG data URIs.
-    var _markerPinSvg = function(size, color) {
-        color = color || '#2A81CB';
-        if (color.indexOf('#') !== 0) {
-            color = '#' + color;
-        }
-        return 'data:image/svg+xml,' + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 35 90">'
-            + '<path d="M17.5 0C7.8 0 0 7.8 0 17.5C0 30 17.5 85'
-            + ' 17.5 85S35 30 35 17.5C35 7.8 27.2 0 17.5 0Z"'
-            + ' fill="' + color + '"/></svg>'
-        );
-    };
+    // Marker icon base path (Leaflet default marker PNG).
+    var _markerIconBase = baseUrl + 'modules/Cartography/asset/vendor/leaflet/images/';
+
     if (L.StyleEditor && L.StyleEditor.marker) {
-        if (L.StyleEditor.marker.GlyphiconMarker) {
-            L.StyleEditor.marker.GlyphiconMarker.prototype
-                ._getMarkerUrl = _markerPinSvg;
-        }
+        // Replace Mapbox URLs with local Leaflet marker PNG.
+        var _markerPngUrl = function() {
+            return _markerIconBase + 'marker-icon-2x.png';
+        };
         if (L.StyleEditor.marker.DefaultMarker) {
             L.StyleEditor.marker.DefaultMarker.prototype
-                ._getMarkerUrl = _markerPinSvg;
+                ._getMarkerUrl = _markerPngUrl;
+        }
+
+        // GlyphiconMarker: use Leaflet marker PNG with FA icon.
+        if (L.StyleEditor.marker.GlyphiconMarker) {
+            L.StyleEditor.marker.GlyphiconMarker.prototype
+                ._getMarkerUrl = _markerPngUrl;
+            L.StyleEditor.marker.GlyphiconMarker.prototype
+                .getMarkerHtml = function(size, color, icon) {
+                return '<div class="cartography-marker'
+                    + ' cartography-marker-'
+                    + this.sizeToName(size)[0] + '">'
+                    + '<i class="fas ' + icon + '"></i>'
+                    + '</div>';
+            };
+            L.StyleEditor.marker.GlyphiconMarker.prototype
+                .createMarkerIcon = function(opts) {
+                var size = opts.iconSize;
+                var sizeName = this.sizeToName(size)[0];
+                // Marker dimensions matching Leaflet default.
+                var dims = {s: [25, 41], m: [30, 50], l: [35, 58]};
+                var d = dims[sizeName] || dims.s;
+                return L.divIcon({
+                    className: 'leaflet-styleeditor-glyphicon-marker-wrapper',
+                    html: this.getMarkerHtml(size, opts.iconColor, opts.icon),
+                    iconSize: d,
+                    iconAnchor: [d[0] / 2, d[1]],
+                    popupAnchor: [0, -d[1]],
+                    icon: opts.icon,
+                    iconColor: opts.iconColor,
+                });
+            };
+            L.StyleEditor.marker.GlyphiconMarker.prototype
+                .options.size = {
+                small: [25, 41],
+                medium: [30, 50],
+                large: [35, 58],
+            };
+            L.StyleEditor.marker.GlyphiconMarker.prototype
+                .options.markers = [
+                'fa-map-marker-alt', 'fa-thumbtack', 'fa-star',
+                'fa-heart', 'fa-home', 'fa-flag', 'fa-bookmark',
+                'fa-tag', 'fa-circle', 'fa-square', 'fa-university',
+                'fa-landmark', 'fa-monument', 'fa-church', 'fa-tree',
+                'fa-globe-americas', 'fa-map-pin', 'fa-crosshairs',
+                'fa-camera', 'fa-eye', 'fa-search', 'fa-user',
+                'fa-envelope', 'fa-music', 'fa-pencil-alt',
+                'fa-lock', 'fa-cog', 'fa-road', 'fa-parking',
+                'fa-hotel', 'fa-hospital', 'fa-school', 'fa-store',
+                'fa-industry', 'fa-warehouse', 'fa-dot-circle',
+                'fa-plus', 'fa-minus', 'fa-times', 'fa-check',
+                'fa-cloud', 'fa-film', 'fa-print', 'fa-inbox',
+                'fa-trash-alt',
+            ];
         }
     }
 
     // Fix icon selector clicks: the original _createColorSelect
     // uses childNodes traversal to find the click target, which
-    // fails with GlyphiconMarker's nested HTML. Override the
-    // method to use closest() instead.
+    // fails with the nested HTML. Use closest() instead.
     if (L.StyleEditor && L.StyleEditor.formElements
         && L.StyleEditor.formElements.IconElement
     ) {
@@ -2032,8 +2075,6 @@ var annotateControl = function(map, drawnItems) {
     }
 
     // Initialize the StyleEditor.
-    // Default marker color: Leaflet blue (#2A81CB), matching the
-    // size selector icons.
     var styleEditorControlOptions = {
         strings: {
             save: Omeka.jsTranslate('Save'),
@@ -2045,7 +2086,7 @@ var annotateControl = function(map, drawnItems) {
         },
         useGrouping: false,
         defaultMarkerColor: '#2A81CB',
-        defaultMarkerIcon: 'glyphicon-map-marker',
+        defaultMarkerIcon: 'fa-map-marker-alt',
         colorRamp: [
             '#2A81CB', '#1abc9c', '#2ecc71', '#3498db',
             '#9b59b6', '#34495e', '#16a085', '#27ae60',

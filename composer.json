@@ -1,10 +1,41 @@
 {
-    "require-dev": {
-        "biblibre/omeka-s-test-helper": "dev-master"
+    "name": "daniel-km/omeka-s-module-cartography",
+    "type": "omeka-s-module",
+    "description": "Module for Omeka S: Allows to annotate images and to locate data on standard wms maps with the w3c web annotation data model and vocabulary.",
+    "keywords": [
+        "Omeka S",
+        "Omeka S module",
+        "annotation",
+        "cartography",
+        "crowd",
+        "mapping"
+    ],
+    "license": "CECILL-2.1",
+    "homepage": "https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography",
+    "authors": [
+        {
+            "name": "Daniel Berthereau",
+            "email": "Daniel.packagist@Berthereau.net"
+        }
+    ],
+    "support": {
+        "issues": "https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/issues",
+        "forum": "https://forum.omeka.org/"
+    },
+    "_require (not set until Omeka S merges PR #2432)": {
+        "omeka/omeka-s": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Cartography\\": "src/"
+        }
     },
     "autoload-dev": {
         "psr-4": {
-            "CartographyTest\\": "test/CartographyTest/"
+            "CartographyTest\\": "tests/CartographyTest/"
         }
+    },
+    "extra": {
+        "installer-name": "Cartography"
     }
 }

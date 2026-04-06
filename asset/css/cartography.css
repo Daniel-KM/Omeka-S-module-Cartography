@@ -16,6 +16,15 @@
         background: none;
         border: none;
     }
+    /* Selection highlight: use outline instead of border to
+       avoid shifting the marker position. */
+    .leaflet-styleeditor-marker-selected {
+        border: none !important;
+        left: 0 !important;
+        top: 0 !important;
+        outline: 3px dashed rgba(254, 87, 161, .6);
+        outline-offset: -3px;
+    }
     /* Use local Leaflet marker icon for size selectors. */
     .leaflet-styleeditor-sizeicon {
         background-image: url(../vendor/leaflet/images/marker-icon-2x.png);
@@ -70,6 +79,16 @@
     /* Prevent page scroll when interacting with the map. */
     .leaflet-container {
         touch-action: none;
+    }
+
+    /* Show #select-resource sidebar above pseudo-fullscreen map only when explicitly requested (Add links). */
+    .cartography-fullscreen.cartography-sidebar-active #select-resource {
+        z-index: 100000 !important;
+        box-shadow: 0 1px 7px rgba(0, 0, 0, .65);
+    }
+
+    .leaflet-styleeditor-label {
+        width: 100%;
     }
 
     /* Leaflet layers */

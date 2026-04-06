@@ -542,6 +542,10 @@ const baseUrl = window.location.pathname.replace(/\/admin\/.*/, '/');
                 oaDiv.addClass('selecting-resource');
                 Omeka.populateSidebarContent(sidebar, selectButton.data('sidebar-content-url'));
                 Omeka.openSidebar(sidebar);
+                document.body.classList.add('cartography-sidebar-active');
+                sidebar.one('o:sidebar-closed', function() {
+                    document.body.classList.remove('cartography-sidebar-active');
+                });
             }
 
             return resourceLinksService;
@@ -1564,7 +1568,12 @@ var displayGeometry = function(data) {
         if (options.icon && typeof options.icon !== 'string') {
             delete options.icon;
         }
-        if (options.iconColor && iconName && L.StyleEditor
+        // Coerce iconSize strings to numbers (jQuery POST
+        // serializes arrays of numbers as strings).
+        if (options.iconSize && Array.isArray(options.iconSize)) {
+            options.iconSize = options.iconSize.map(Number);
+        }
+        if (options.iconColor && L.StyleEditor
             && L.StyleEditor.marker
             && L.StyleEditor.marker.GlyphiconMarker
         ) {
@@ -1708,7 +1717,7 @@ var editGeometry = function(layer) {
     var data = {
         id: identifier,
         wkt: wkt,
-        options: layer.options
+        options: cleanOptionsForSave(layer.options),
     };
 
     // Clean the post data (this should not be needed).
@@ -1897,18 +1906,35 @@ var prepareSaveOptions = function(layer, options) {
         options._isRectangle = '1';
     }
 
-    // Remove bulky icon data from saved options: only keep
-    // iconColor, icon, iconSize — the icon is rebuilt on load.
-    delete options.iconUrl;
-    delete options.shadowUrl;
-    if (options.icon && typeof options.icon === 'object') {
-        // L.Icon/L.DivIcon object — extract just the parameters.
-        var iconOpts = options.icon.options || options.icon;
-        options.iconColor = iconOpts.iconColor || options.iconColor;
-        options.iconName = iconOpts.icon || options.iconName;
-        options.iconSize = iconOpts.iconSize || options.iconSize;
-        delete options.icon;
+}
+
+/**
+ * Build a clean copy of layer options for saving to server.
+ *
+ * Removes bulky icon data (L.Icon/L.DivIcon objects, SVG data
+ * URIs) and keeps only the parameters needed to rebuild the
+ * icon on load (iconColor, iconName, iconSize).
+ *
+ * @param object options The layer.options (not modified).
+ * @return object Clean copy for POST data.
+ */
+var cleanOptionsForSave = function(options) {
+    var clean = $.extend(true, {}, options);
+    delete clean.iconUrl;
+    delete clean.shadowUrl;
+    if (clean.icon && typeof clean.icon === 'object') {
+        var iconOpts = clean.icon.options || clean.icon;
+        clean.iconColor = iconOpts.iconColor || clean.iconColor;
+        clean.iconName = iconOpts.icon || clean.iconName;
+        var sz = iconOpts.iconSize || clean.iconSize;
+        // L.point → plain array for JSON storage.
+        if (sz && sz.x !== undefined) {
+            sz = [sz.x, sz.y];
+        }
+        clean.iconSize = sz;
+        delete clean.icon;
     }
+    return clean;
 }
 
 /**
@@ -2318,6 +2344,11 @@ var initDescribe = function() {
     }
 
     map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
+    map.on('fullscreenchange', function() {
+        document.body.classList.toggle(
+            'cartography-fullscreen', map.isFullscreen()
+        );
+    });
 
     if (userRights.create) {
         annotateControl(map, drawnItems);
@@ -2504,6 +2535,11 @@ var initLocate = function() {
     fetchGeometries(resourceId, {mediaId: 0}, drawnItems);
 
     map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
+    map.on('fullscreenchange', function() {
+        document.body.classList.toggle(
+            'cartography-fullscreen', map.isFullscreen()
+        );
+    });
 
     var geoSearchControl = new window.GeoSearch.GeoSearchControl({
         provider: new window.GeoSearch.OpenStreetMapProvider,
@@ -2651,6 +2687,11 @@ var initGeobrowse = function() {
     fetchAllGeometries(drawnItems);
 
     map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
+    map.on('fullscreenchange', function() {
+        document.body.classList.toggle(
+            'cartography-fullscreen', map.isFullscreen()
+        );
+    });
 
     var geoSearchControl = new window.GeoSearch.GeoSearchControl({
         provider: new window.GeoSearch.OpenStreetMapProvider,

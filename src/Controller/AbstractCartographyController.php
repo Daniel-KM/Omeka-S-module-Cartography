@@ -248,21 +248,16 @@ abstract class AbstractCartographyController extends AbstractActionController
         $metadata = $options['metadata'] ?? [];
         $styles = $options;
         unset($styles['metadata']);
-        // Clean old styles and useless leaflet data.
-        unset($styles['annotationIdentifier']);
-        unset($styles['owner']);
-        unset($styles['right']);
-        unset($styles['onEachFeature']);
-        // Remove bulky icon data (SVG data URIs, HTML, shadow).
-        // Only iconColor, iconName and iconSize are kept; the
-        // icon is rebuilt on load from these parameters.
-        unset($styles['iconUrl']);
-        unset($styles['shadowUrl']);
-        unset($styles['html']);
-        unset($styles['className']);
-        if (isset($styles['icon']) && is_array($styles['icon'])) {
-            unset($styles['icon']);
-        }
+        // Clean useless leaflet data: keep only styling keys.
+        $allowedKeys = [
+            // Geometry styling.
+            'color', 'weight', 'opacity', 'fillColor',
+            'fillOpacity', 'dashArray', 'radius',
+            '_isRectangle',
+            // Marker icon.
+            'iconColor', 'iconName', 'iconSize',
+        ];
+        $styles = array_intersect_key($styles, array_flip($allowedKeys));
         if (empty($styles['_isRectangle'])) {
             unset($styles['_isRectangle']);
         }

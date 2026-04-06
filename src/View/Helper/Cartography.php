@@ -271,8 +271,8 @@ const cartographyMediaId = ' . $mediaId . ';';
 
         if ($annotate) {
             $customVocabs = [
-                'oaMotivatedBySelect' => 'Annotation oa:motivatedBy',
-                'oaHasPurposeSelect' => 'Annotation Body oa:hasPurpose',
+                'oaMotivatedBySelect' => 'Annotation Motivation',
+                'oaHasPurposeSelect' => 'Annotation Motivation',
                 'cartographyUncertaintySelect' => 'Cartography cartography:uncertainty',
             ];
             $api = $view->api();

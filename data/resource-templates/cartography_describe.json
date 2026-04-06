@@ -44,7 +44,7 @@
                     "data_types": [
                         {
                             "name": "customvocab:1",
-                            "label": "Annotation oa:motivatedBy"
+                            "label": "Annotation Motivation"
                         }
                     ]
                 }
@@ -52,7 +52,7 @@
             "data_types": [
                 {
                     "name": "customvocab:1",
-                    "label": "Annotation oa:motivatedBy"
+                    "label": "Annotation Motivation"
                 }
             ],
             "vocabulary_namespace_uri": "http://www.w3.org/ns/oa#",
@@ -162,7 +162,7 @@
                     "data_types": [
                         {
                             "name": "customvocab:2",
-                            "label": "Annotation Body oa:hasPurpose"
+                            "label": "Annotation Motivation"
                         }
                     ]
                 }
@@ -170,7 +170,7 @@
             "data_types": [
                 {
                     "name": "customvocab:2",
-                    "label": "Annotation Body oa:hasPurpose"
+                    "label": "Annotation Motivation"
                 }
             ],
             "vocabulary_namespace_uri": "http://www.w3.org/ns/oa#",

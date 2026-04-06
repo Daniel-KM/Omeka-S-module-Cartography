@@ -432,7 +432,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         // Base annotation (force Annotation resource class).
         $data = [];
         // Force annotation to be public by default, like all resources.
-        $data['o:is_public'] = isset($metadata['o:is_public']) && !is_null($metadata['o:is_public'])
+        $data['o:is_public'] = isset($metadata['o:is_public']) && $metadata['o:is_public'] !== null
             ? $metadata['o:is_public']
             : true;
         $data['o:resource_class'] = [

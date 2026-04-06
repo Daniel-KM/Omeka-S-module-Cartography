@@ -335,7 +335,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         $geometry,
         array $metadata,
         array $styles,
-        MediaRepresentation $media = null
+        ?MediaRepresentation $media = null
     ) {
         $data = $this->prepareAnnotation($resource, $geometry, $metadata, $styles, $media, null);
         if (!is_array($data)) {
@@ -424,8 +424,8 @@ abstract class AbstractCartographyController extends AbstractActionController
         $geometry,
         array $metadata,
         array $styles,
-        MediaRepresentation $media = null,
-        AnnotationRepresentation $annotation = null
+        ?MediaRepresentation $media = null,
+        ?AnnotationRepresentation $annotation = null
     ) {
         $api = $this->api();
 
@@ -574,7 +574,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         array $metadata,
         $templateId,
         array $data,
-        AnnotationRepresentation $annotation = null
+        ?AnnotationRepresentation $annotation = null
     ) {
         // Note: there is no resource template when created, but it's an error
         // for update (except when there are no metadata, though).
@@ -761,7 +761,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         AbstractResourceEntityRepresentation $resource,
         $geometry,
         array $styles = [],
-        MediaRepresentation $media = null
+        ?MediaRepresentation $media = null
     ) {
         $target = [];
         $target['oa:hasSource'] = [[

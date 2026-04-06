@@ -31,7 +31,7 @@ class Cartography extends AbstractHelper
      * @todo Simplify the load of headers and sections.
      * @return string The html string.
      */
-    public function __invoke(AbstractResourceEntityRepresentation $resource = null, array $options = [])
+    public function __invoke(?AbstractResourceEntityRepresentation $resource = null, array $options = [])
     {
         $view = $this->getView();
 
@@ -82,7 +82,7 @@ class Cartography extends AbstractHelper
      * @param array $options
      * @return string
      */
-    protected function prepareHeaders(AbstractResourceEntityRepresentation $resource = null, array $options)
+    protected function prepareHeaders(?AbstractResourceEntityRepresentation $resource = null, array $options)
     {
         $html = '';
 
@@ -300,7 +300,7 @@ const userRights = {"create":false,"edit":false,"delete":false};';
      * @param bool $annotate
      * @return array
      */
-    protected function globalRights(User $user = null, $annotate = false)
+    protected function globalRights(?User $user = null, $annotate = false)
     {
         // TODO Get the rights directly from the acl, not from the role.
         $role = $user ? $user->getRole() : 'annotator_visitor';

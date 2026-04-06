@@ -2304,7 +2304,9 @@ var initDescribe = function() {
             describeBounds = bounds;
             fetchGeometries(resourceId, {mediaId: image.id}, drawnItems);
         }
-        baseMaps[Omeka.jsTranslate('Image #') + (index + 1)] = layer;
+        var layerLabel = image.label
+            || (Omeka.jsTranslate('Image #') + (index + 1));
+        baseMaps[layerLabel] = layer;
     });
     if (Object.keys(baseMaps).length > 1) {
         map.addControl(L.control.layers(baseMaps, null, {

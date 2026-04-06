@@ -1030,11 +1030,17 @@ abstract class AbstractCartographyController extends AbstractActionController
             $image = [];
             $image['id'] = $media->id();
 
-            // Check for IIIF media (no original file but has image data from
-            // IIIF info.json).
+            // Check for IIIF media (no original file).
             if (!$media->hasOriginal()) {
                 $mediaData = $media->mediaData();
-                if (is_array($mediaData)
+                if (!is_array($mediaData)) {
+                    continue;
+                }
+
+                $ingester = $media->ingester();
+
+                // IIIF Image: single image with info.json.
+                if ($ingester === 'iiif'
                     && !empty($mediaData['width'])
                     && !empty($mediaData['height'])
                 ) {
@@ -1042,17 +1048,40 @@ abstract class AbstractCartographyController extends AbstractActionController
                         ?? $mediaData['id']
                         ?? null;
                     if ($iiifId) {
-                        // Use Leaflet-IIIF tile layer for IIIF images. Pass
-                        // the info.json URL so the JS can create a tile layer
-                        // with the original coordinates.
-                        $image['iiif'] = rtrim($iiifId, '/') . '/info.json';
+                        $image['iiif'] = rtrim($iiifId, '/')
+                            . '/info.json';
                         $image['size'] = [
                             (int) $mediaData['width'],
                             (int) $mediaData['height'],
                         ];
+                        $image['label'] = $media->displayTitle();
                         $images[] = $image;
                     }
                 }
+
+                // IIIF Presentation: extract each canvas.
+                elseif ($ingester === 'iiif_presentation') {
+                    $manifestLabel = $this->iiifLabel(
+                        $mediaData['label'] ?? null
+                    ) ?: $media->displayTitle();
+                    $canvases = $this->extractCanvases(
+                        $mediaData
+                    );
+                    $total = count($canvases);
+                    foreach ($canvases as $i => $canvas) {
+                        $canvasImage = [];
+                        $canvasImage['id'] = $media->id();
+                        $canvasImage['canvasIndex'] = $i;
+                        $canvasImage['label'] = $total > 1
+                            ? $manifestLabel . ' ['
+                                . ($i + 1) . '/' . $total . ']'
+                            : $manifestLabel;
+                        $canvasImage['iiif'] = $canvas['iiif'];
+                        $canvasImage['size'] = $canvas['size'];
+                        $images[] = $canvasImage;
+                    }
+                }
+
                 continue;
             }
 
@@ -1062,10 +1091,152 @@ abstract class AbstractCartographyController extends AbstractActionController
             }
             $image['url'] = $media->originalUrl();
             $image['size'] = array_values($size);
+            $image['label'] = $media->displayTitle();
             $images[] = $image;
         }
 
         return $images;
+    }
+
+    /**
+     * Extract a simple string label from IIIF label data.
+     *
+     * IIIF v3 labels are objects like {"none":["text"]}.
+     */
+    protected function iiifLabel($label): string
+    {
+        if (is_string($label)) {
+            return $label;
+        }
+        if (is_array($label)) {
+            $values = reset($label);
+            if (is_array($values)) {
+                return (string) reset($values);
+            }
+            return (string) $values;
+        }
+        return '';
+    }
+
+    /**
+     * Extract image data from IIIF Presentation canvases.
+     *
+     * Supports both IIIF Presentation v2 (sequences/canvases)
+     * and v3 (items).
+     *
+     * @return array Each entry has label, iiif, size.
+     */
+    protected function extractCanvases(array $manifest): array
+    {
+        $result = [];
+
+        // v2: sequences[0].canvases, v3: items.
+        $canvases = [];
+        if (!empty($manifest['sequences'])) {
+            foreach ($manifest['sequences'] as $seq) {
+                $canvases = array_merge(
+                    $canvases,
+                    $seq['canvases'] ?? []
+                );
+            }
+        } elseif (!empty($manifest['items'])) {
+            $canvases = $manifest['items'];
+        }
+
+        foreach ($canvases as $i => $canvas) {
+            $width = $canvas['width'] ?? null;
+            $height = $canvas['height'] ?? null;
+            if (!$width || !$height) {
+                continue;
+            }
+
+            // Extract the IIIF Image service from the canvas.
+            $serviceId = $this->extractImageService($canvas);
+            if (!$serviceId) {
+                continue;
+            }
+
+            // Extract label.
+            $label = $canvas['label'] ?? null;
+            if (is_array($label)) {
+                $label = reset($label);
+                if (is_array($label)) {
+                    $label = reset($label);
+                }
+            }
+            $label = $label ?: ('Canvas ' . ($i + 1));
+
+            $result[] = [
+                'label' => $label,
+                'iiif' => rtrim($serviceId, '/')
+                    . '/info.json',
+                'size' => [(int) $width, (int) $height],
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Extract the IIIF Image service ID from a canvas.
+     *
+     * Traverses annotation pages and annotations to find a
+     * painting annotation with an image body that has a
+     * IIIF Image service.
+     */
+    protected function extractImageService(array $canvas): ?string
+    {
+        // v2: canvas.images[].resource.service
+        // v3: canvas.items[].items[].body.service
+        $annotations = [];
+        if (!empty($canvas['images'])) {
+            $annotations = $canvas['images'];
+        } elseif (!empty($canvas['items'])) {
+            foreach ($canvas['items'] as $page) {
+                if (($page['type'] ?? '') === 'AnnotationPage'
+                    && !empty($page['items'])
+                ) {
+                    $annotations = array_merge(
+                        $annotations,
+                        $page['items']
+                    );
+                }
+            }
+        }
+
+        foreach ($annotations as $annotation) {
+            // v2: resource, v3: body.
+            $body = $annotation['body']
+                ?? $annotation['resource']
+                ?? null;
+            if (!$body) {
+                continue;
+            }
+            $type = $body['type'] ?? $body['@type'] ?? '';
+            if (stripos($type, 'Image') === false
+                && ($body['format'] ?? '') !== 'image/jpeg'
+            ) {
+                continue;
+            }
+            // Get service.
+            $service = $body['service'] ?? null;
+            if (!$service) {
+                continue;
+            }
+            if (is_array($service)
+                && isset($service[0])
+            ) {
+                $service = $service[0];
+            }
+            $serviceId = $service['@id']
+                ?? $service['id']
+                ?? null;
+            if ($serviceId) {
+                return $serviceId;
+            }
+        }
+
+        return null;
     }
 
     /**

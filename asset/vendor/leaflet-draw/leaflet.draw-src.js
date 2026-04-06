@@ -2,6 +2,11 @@
  Leaflet.draw 1.0.4, a plugin that adds drawing and editing tools to Leaflet powered maps.
  (c) 2012-2017, Jacob Toye, Jon West, Smartrak, Leaflet
 
+ PATCHED (Cartography): adds map events `leafletDraw:beforeEnableEdit` and
+ `leafletDraw:beforeEnableDelete` fired before enabling edit/delete on a layer,
+ allowing external code to veto the action (per-layer permissions) by setting
+ `data._dataFromOutside.forceExit = true`. Do NOT overwrite this file from CDN.
+
  https://github.com/Leaflet/Leaflet.draw
  http://leafletjs.com
  */

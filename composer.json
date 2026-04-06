@@ -45,6 +45,7 @@
             "asset/vendor/leaflet/images/marker-shadow.png": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png",
             "asset/vendor/leaflet/leaflet.css": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css",
             "asset/vendor/leaflet/leaflet.js": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js",
+            "asset/vendor/leaflet-draw/leaflet.draw-src.css": "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw-src.css",
             "asset/vendor/leaflet-draw/images/spritesheet.png": "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/images/spritesheet.png",
             "asset/vendor/leaflet-draw/images/spritesheet.svg": "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/images/spritesheet.svg",
             "asset/vendor/leaflet-draw/images/spritesheet-2x.png": "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/images/spritesheet-2x.png",

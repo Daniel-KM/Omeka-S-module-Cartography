@@ -1335,22 +1335,43 @@ const baseUrl = window.location.pathname.replace(/\/admin\/.*/, '/');
  */
 $(document).ready( function() {
 
-// Prevent page scrolling when interacting with a Leaflet map.
-$('.leaflet-container').each(function() {
-    L.DomEvent.disableScrollPropagation(this);
-    L.DomEvent.disableClickPropagation(this);
-});
-// Also handle dynamically created maps.
-var observer = new MutationObserver(function() {
-    $('.leaflet-container').each(function() {
-        if (!this._scrollDisabled) {
-            L.DomEvent.disableScrollPropagation(this);
-            L.DomEvent.disableClickPropagation(this);
-            this._scrollDisabled = true;
+// Prevent page scrolling/dragging when interacting with a Leaflet map.
+(function() {
+    var mapActive = false;
+    var initContainer = function(el) {
+        if (el._scrollFixed) return;
+        el._scrollFixed = true;
+        L.DomEvent.disableScrollPropagation(el);
+        L.DomEvent.disableClickPropagation(el);
+        el.addEventListener('mousedown', function() {
+            mapActive = true;
+        });
+        el.addEventListener('wheel', function(e) {
+            e.preventDefault();
+        }, {passive: false});
+    };
+    document.addEventListener('mouseup', function() {
+        mapActive = false;
+    });
+    // Firefox: block scroll while dragging on map.
+    var lastScrollY = window.scrollY;
+    document.addEventListener('scroll', function() {
+        if (mapActive) {
+            window.scrollTo(window.scrollX, lastScrollY);
+        } else {
+            lastScrollY = window.scrollY;
         }
     });
-});
-observer.observe(document.body, {childList: true, subtree: true});
+    var observer = new MutationObserver(function() {
+        document.querySelectorAll('.leaflet-container')
+            .forEach(initContainer);
+    });
+    observer.observe(document.body, {
+        childList: true, subtree: true
+    });
+    document.querySelectorAll('.leaflet-container')
+        .forEach(initContainer);
+})();
 
 /**
  * Fetch images metadata of a resource.

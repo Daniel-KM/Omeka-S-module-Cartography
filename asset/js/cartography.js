@@ -2228,26 +2228,52 @@ var initDescribe = function() {
 
     var baseMaps = {};
     images.forEach(function(image, index) {
-        // Compute image edges as positive coordinates.
-        // TODO Choose top left as 0.0 for still images?
+        var layer;
         var southWest = L.latLng(0, 0);
         var northEast = L.latLng(image.size[1], image.size[0]);
         var bounds = L.latLngBounds(southWest, northEast);
-        var imageOverlay = L.imageOverlay(image.url, bounds, {imageData: image});
+
+        if (image.iiif && L.tileLayer.iiif) {
+            // IIIF: use a layerGroup as placeholder for the
+            // layer control, load the real tile layer on select.
+            layer = L.layerGroup();
+            layer.options.imageData = image;
+            layer.options._iiifUrl = image.iiif;
+            layer.options._bounds = bounds;
+            layer.getBounds = function() { return bounds; };
+        } else {
+            layer = L.imageOverlay(image.url, bounds, {
+                imageData: image
+            });
+        }
+
         if (index === 0) {
-            imageOverlay.addTo(map);
             imageMediaService.setMediaId(image.id);
-            imageMediaService.setImageView(imageOverlay, map);
-            // Store for later re-fitBounds on tab switch.
+            if (image.iiif && L.tileLayer.iiif) {
+                var iiifLayer = L.tileLayer.iiif(image.iiif, {
+                    fitBounds: true,
+                    setMaxBounds: false,
+                });
+                iiifLayer._iiifTileLayer = true;
+                iiifLayer.addTo(map);
+                layer._iiifLayer = iiifLayer;
+                // Mark as viewed so setImageView won't fitBounds
+                // again (the plugin already did it).
+                imageMediaService.markViewed(image.id, map);
+            } else {
+                layer.addTo(map);
+                imageMediaService.setImageView(layer, map);
+            }
             describeMap = map;
             describeBounds = bounds;
             fetchGeometries(resourceId, {mediaId: image.id}, drawnItems);
         }
-        baseMaps[Omeka.jsTranslate('Image #') + (index + 1)] = imageOverlay;
+        baseMaps[Omeka.jsTranslate('Image #') + (index + 1)] = layer;
     });
     if (Object.keys(baseMaps).length > 1) {
-        var layerControl = L.control.layers(baseMaps);
-        map.addControl(new L.Control.Layers(baseMaps));
+        map.addControl(L.control.layers(baseMaps, null, {
+            collapsed: true
+        }));
     }
 
     map.addControl(new L.Control.Fullscreen( { pseudoFullscreen: true } ));
@@ -2276,13 +2302,43 @@ var initDescribe = function() {
             imageMediaService.saveView(map, prevMediaId);
         }
 
+        // Hide any previous IIIF tile layer (don't remove, to
+        // preserve its state).
+        map.eachLayer(function(l) {
+            if (l._iiifTileLayer) {
+                l.getContainer().style.display = 'none';
+            }
+        });
+
         drawnItems.clearLayers();
 
         // Set the new image id.
         try {
-            var imageId = element.layer.options.imageData.id;
+            var layer = element.layer;
+            var imageId = layer.options.imageData.id;
             imageMediaService.setMediaId(parseInt(imageId));
-            imageMediaService.setImageView(element.layer, map);
+
+            if (layer.options._iiifUrl && L.tileLayer.iiif) {
+                if (!layer._iiifLayer) {
+                    // First load: create and add the tile layer.
+                    layer._iiifLayer = L.tileLayer.iiif(
+                        layer.options._iiifUrl, {
+                            fitBounds: true,
+                            setMaxBounds: false,
+                        }
+                    );
+                    layer._iiifLayer._iiifTileLayer = true;
+                    layer._iiifLayer.addTo(map);
+                    imageMediaService.markViewed(imageId, map);
+                } else {
+                    // Subsequent: just show it and restore view.
+                    layer._iiifLayer.getContainer()
+                        .style.display = '';
+                    imageMediaService.setImageView(layer, map);
+                }
+            } else {
+                imageMediaService.setImageView(layer, map);
+            }
         } catch (e) {
             imageMediaService.setMediaId(0);
         }
@@ -3224,6 +3280,7 @@ function createImageMediaService() {
         setMediaId: setMediaId,
         getMediaId: getMediaId,
         saveView: saveView,
+        markViewed: markViewed,
     };
 
     var _data = {
@@ -3236,6 +3293,21 @@ function createImageMediaService() {
     function setMap(map) {
         _data.map = map;
         return service;
+    }
+
+    function markViewed(mediaId, map) {
+        // For IIIF, the view is set asynchronously. Save it
+        // once the map has settled.
+        if (map) {
+            map.once('moveend zoomend', function() {
+                _data.viewedMediaIds[mediaId] = {
+                    center: map.getCenter(),
+                    zoom: map.getZoom()
+                };
+            });
+        } else {
+            _data.viewedMediaIds[mediaId] = true;
+        }
     }
 
     function setMediaId(id) {

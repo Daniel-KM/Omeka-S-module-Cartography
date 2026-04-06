@@ -26,3 +26,4 @@ debug.log
 /asset/vendor/leaflet-paste/vendor/
 /asset/vendor/leaflet-providers/
 /asset/vendor/leaflet-tilelayer-wmts/
+/asset/vendor/leaflet-iiif/

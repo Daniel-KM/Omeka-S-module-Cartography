@@ -58,6 +58,7 @@
             "asset/vendor/leaflet-geosearch/style.css": "https://cdn.jsdelivr.net/npm/leaflet-geosearch@4.0.0/dist/geosearch.css",
             "asset/vendor/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.min.css": "https://cdn.jsdelivr.net/npm/leaflet-groupedlayercontrol@0.6.1/src/leaflet.groupedlayercontrol.css",
             "asset/vendor/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.min.js": "https://cdn.jsdelivr.net/npm/leaflet-groupedlayercontrol@0.6.1/src/leaflet.groupedlayercontrol.js",
+            "asset/vendor/leaflet-iiif/leaflet-iiif.js": "https://cdn.jsdelivr.net/npm/leaflet-iiif@3.0.0/leaflet-iiif.js",
             "asset/vendor/leaflet-markercluster/leaflet.markercluster.js": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js",
             "asset/vendor/leaflet-markercluster/MarkerCluster.css": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css",
             "asset/vendor/leaflet-markercluster/MarkerCluster.Default.css": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css",

@@ -104,7 +104,8 @@ class Cartography extends AbstractHelper
         $headLink
             ->appendStylesheet($assetUrl('vendor/leaflet/leaflet.css', 'Cartography'));
         $headScript
-        ->appendFile($assetUrl('vendor/leaflet/leaflet.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
+        ->appendFile($assetUrl('vendor/leaflet/leaflet.js', 'Cartography'), 'text/javascript', ['defer' => 'defer'])
+        ->appendFile($assetUrl('vendor/leaflet-iiif/leaflet-iiif.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
 
         // Add specific code for annotation.
         if ($annotate) {

@@ -1019,18 +1019,14 @@ abstract class AbstractCartographyController extends AbstractActionController
                     && !empty($mediaData['width'])
                     && !empty($mediaData['height'])
                 ) {
-                    // Build IIIF Image API URL. Use a reduced size to avoid
-                    // downloading very large images.
-                    // v2/v3: {id}/full/!w,h/0/default.jpg
                     $iiifId = $mediaData['@id']
                         ?? $mediaData['id']
                         ?? null;
-                    $imageUrl = $iiifId
-                        ? rtrim($iiifId, '/')
-                            . '/full/!2048,2048/0/default.jpg'
-                        : $media->source();
-                    if ($imageUrl) {
-                        $image['url'] = $imageUrl;
+                    if ($iiifId) {
+                        // Use Leaflet-IIIF tile layer for IIIF images. Pass
+                        // the info.json URL so the JS can create a tile layer
+                        // with the original coordinates.
+                        $image['iiif'] = rtrim($iiifId, '/') . '/info.json';
                         $image['size'] = [
                             (int) $mediaData['width'],
                             (int) $mediaData['height'],

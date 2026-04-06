@@ -1800,7 +1800,11 @@ var popupAnnotation = function(options) {
     }
 
     // 1. Display body text (rdf:value) and motivation.
-    var rdfValue = metadata['rdf:value'] || [];
+    // Filter out WKT geometry strings (POINT, LINESTRING, etc.).
+    var rdfValue = (metadata['rdf:value'] || []).filter(function(val) {
+        var text = typeof val === 'string' ? val : (val['@value'] || '');
+        return !/^\s*(POINT|LINESTRING|POLYGON|MULTI|GEOMETRY)\s*\(/i.test(text);
+    });
     if (rdfValue.length) {
         html += '<div class="annotation-body-rdf-value">';
         rdfValue.forEach(function(val) {

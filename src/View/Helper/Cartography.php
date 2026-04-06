@@ -148,11 +148,16 @@ class Cartography extends AbstractHelper
                     ->appendFile($assetUrl('vendor/leaflet-styleeditor/javascript/Leaflet.StyleEditor.min.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
 
                 // TODO Load only the item selector part of the resource-form.js.
+                $hasArt = class_exists('AdvancedResourceTemplate\Module', false);
                 $headScript
-                    ->appendFile($assetUrl('js/resource-form.js', 'Omeka'), 'text/javascript', ['defer' => 'defer']);
+                    ->appendFile($assetUrl('vendor/sortablejs/Sortable.min.js', 'Omeka'), 'text/javascript', ['defer' => 'defer'])
+                    ->appendFile($assetUrl('js/resource-form.js', $hasArt ? 'AdvancedResourceTemplate' : 'Omeka'), 'text/javascript', ['defer' => 'defer']);
 
                 // TODO Integrate the resource selector sidebar in public view (or inside the style editor, that will allow full screen linking too).
                 $html .= $view->partial('common/resource-select-sidebar');
+                // Required so resource-form.js has vaTemplates defined when the
+                // item-stub sidebar form is built on item show pages.
+                $html .= $view->partial('common/value-annotation-sidebar');
             }
         }
 

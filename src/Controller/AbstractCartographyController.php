@@ -638,7 +638,9 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         // Get the special annotation mapping of this template.
         $partValues = [];
-        $annotationPartMap = $this->resourceTemplateAnnotationPartMap($templateId);
+        $rtData = $this->settings()
+            ->get('annotate_resource_template_data', []);
+        $annotationPartMap = $rtData[$templateId] ?? [];
 
         // Fill the annotation body with the annotation id if any.
         $data['oa:hasBody'] = [[
@@ -1138,9 +1140,11 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         $geometries = [];
 
-        $mediaId = array_key_exists('media_id', $query)
-            ? (int) $query['media_id']
-            : null;
+        $mediaId = array_key_exists('mediaId', $query)
+            ? (int) $query['mediaId']
+            : (array_key_exists('media_id', $query)
+                ? (int) $query['media_id']
+                : null);
         if ($mediaId) {
             $geometryTypes = ['geometry'];
         } elseif ($mediaId === 0) {
@@ -1293,7 +1297,7 @@ abstract class AbstractCartographyController extends AbstractActionController
      * @return array
      */
     protected function appendProperties(
-        AbstractResourceEntityRepresentation $resource,
+        $resource,
         array $metadata,
         array $specialProperties = []
     ) {
@@ -1303,8 +1307,15 @@ abstract class AbstractCartographyController extends AbstractActionController
             ) {
                 continue;
             }
+            // AnnotationPartValues::values() returns
+            // [term => [ValueRep...]], while
+            // AbstractResourceEntityRepresentation::values()
+            // returns [term => ['values' => [ValueRep...]]].
+            $values = isset($property['values'])
+                ? $property['values']
+                : (is_array($property) ? $property : []);
             /** @var \Omeka\Api\Representation\ValueRepresentation $value */
-            foreach ($property['values'] as $value) {
+            foreach ($values as $value) {
                 switch ($value->type()) {
                 case 'resource':
                     if (isset($specialProperties[$term]['resource'])) {

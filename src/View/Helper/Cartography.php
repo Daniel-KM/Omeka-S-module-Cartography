@@ -124,7 +124,7 @@ class Cartography extends AbstractHelper
                 $headLink
                     ->appendStylesheet($assetUrl('css/valuesuggest.css', 'ValueSuggest'));
                 $headScript
-                    ->appendFile($assetUrl('js/jQuery-Autocomplete/1.2.26/jquery.autocomplete.min.js', 'ValueSuggest'), 'text/javascript', ['defer' => 'defer'])
+                    ->appendFile($assetUrl('vendor/jquery-autocomplete/jquery.autocomplete.min.js', 'Common'), 'text/javascript', ['defer' => 'defer'])
                     ->appendFile($assetUrl('js/valuesuggest.js', 'ValueSuggest'), 'text/javascript', ['defer' => 'defer'])
                     ->appendScript(sprintf(
                         'var valueSuggestProxyUrl = "%s";',

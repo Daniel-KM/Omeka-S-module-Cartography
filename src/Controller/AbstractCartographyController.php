@@ -436,9 +436,8 @@ abstract class AbstractCartographyController extends AbstractActionController
             ? $metadata['o:is_public']
             : true;
         $data['o:resource_class'] = [
-            'o:id' => $api
-                ->searchOne('resource_classes', ['term' => 'oa:Annotation'])
-                ->getContent()->id(),
+            'o:id' => $this->easyMeta()
+                ->resourceClassId('oa:Annotation'),
         ];
 
         // Check if the template is managed.
@@ -1300,9 +1299,7 @@ abstract class AbstractCartographyController extends AbstractActionController
 
     protected function propertyId($term)
     {
-        $api = $this->viewHelpers()->get('api');
-        $result = $api->searchOne('properties', ['term' => $term])->getContent();
-        return $result ? $result->id() : null;
+        return $this->easyMeta()->propertyId($term);
     }
 
     protected function customVocabId($label)

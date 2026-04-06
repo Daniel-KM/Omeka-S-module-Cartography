@@ -1,29 +1,32 @@
 <?php declare(strict_types=1);
+
 namespace Cartography;
 
-if (!class_exists(\Generic\AbstractModule::class)) {
-    require file_exists(dirname(__DIR__) . '/Generic/AbstractModule.php')
-        ? dirname(__DIR__) . '/Generic/AbstractModule.php'
-        : __DIR__ . '/src/Generic/AbstractModule.php';
+if (!class_exists('Common\TraitModule', false)) {
+    require_once file_exists(dirname(__DIR__) . '/Common/src/TraitModule.php')
+        ? dirname(__DIR__) . '/Common/src/TraitModule.php'
+        : dirname(__DIR__) . '/Common/TraitModule.php';
 }
 
-use Generic\AbstractModule;
+use Common\TraitModule;
 use Laminas\EventManager\Event;
 use Laminas\EventManager\SharedEventManagerInterface;
 use Laminas\Mvc\MvcEvent;
-use Laminas\ServiceManager\ServiceLocatorInterface;
+use Omeka\Module\AbstractModule;
 
 /**
  * Cartography
  *
- * Allows to annotate an image or a wms map with the w3c web annotation data
- * model and vocabulary.
+ * Allows to annotate an image or a wms map with the w3c web annotation
+ * data model and vocabulary.
  *
- * @copyright Daniel Berthereau, 2018-2023
+ * @copyright Daniel Berthereau, 2018-2026
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt
  */
 class Module extends AbstractModule
 {
+    use TraitModule;
+
     const NAMESPACE = __NAMESPACE__;
 
     protected $dependencies = [
@@ -80,23 +83,17 @@ class Module extends AbstractModule
         $settings->set('annotate_resource_template_data', $resourceTemplateData);
     }
 
-    public function uninstall(ServiceLocatorInterface $services): void
+    protected function postUninstall(): void
     {
-        $this->setServiceLocator($services);
-
-        if (!class_exists(\Generic\InstallResources::class)) {
-            require_once file_exists(dirname(__DIR__) . '/Generic/InstallResources.php')
-                ? dirname(__DIR__) . '/Generic/InstallResources.php'
-                : __DIR__ . '/src/Generic/InstallResources.php';
+        $installResources = $this->getManageModuleAndResources();
+        foreach ([
+            'Cartography Describe',
+            'Cartography Locate',
+        ] as $resourceTemplate) {
+            $installResources->removeResourceTemplate(
+                $resourceTemplate
+            );
         }
-
-        $installResources = new \Generic\InstallResources($services);
-        $installResources = $installResources();
-
-        foreach (['Cartography Describe', 'Cartography Locate'] as $resourceTemplate) {
-            $installResources->removeResourceTemplate($resourceTemplate);
-        }
-        parent::uninstall($services);
     }
 
     /**
@@ -175,19 +172,9 @@ class Module extends AbstractModule
         );
     }
 
-    public function handleMainSettings(Event $event): void
-    {
-        $ckEditorHelper = $this->getServiceLocator()->get('ViewHelperManager')
-            ->get('ckEditor');
-        $ckEditorHelper();
-        parent::handleMainSettings($event);
-    }
-
     public function handleMainSettingsFilters(Event $event): void
     {
-        $inputFilter = version_compare(\Omeka\Module::VERSION, '4', '<')
-            ? $event->getParam('inputFilter')->get('cartography')
-            : $event->getParam('inputFilter');
+        $inputFilter = $event->getParam('inputFilter');
         $inputFilter
             ->add([
                 'name' => 'cartography_display_tab',
@@ -213,9 +200,7 @@ class Module extends AbstractModule
 
     public function handleSiteSettingsFilters(Event $event): void
     {
-        $inputFilter = version_compare(\Omeka\Module::VERSION, '4', '<')
-            ? $event->getParam('inputFilter')->get('cartography')
-            : $event->getParam('inputFilter');
+        $inputFilter = $event->getParam('inputFilter');
         $inputFilter
             ->add([
                 'name' => 'cartography_append_public',

@@ -3,13 +3,13 @@
 namespace Cartography\Controller;
 
 use Annotate\Api\Representation\AnnotationRepresentation;
+use Common\Stdlib\PsrMessage;
 use Laminas\Http\Response;
 use Laminas\Mvc\Controller\AbstractActionController;
 use Laminas\View\Model\JsonModel;
 use Laminas\View\Model\ViewModel;
 use Omeka\Api\Representation\AbstractResourceEntityRepresentation;
 use Omeka\Api\Representation\MediaRepresentation;
-use Omeka\Stdlib\Message;
 
 abstract class AbstractCartographyController extends AbstractActionController
 {
@@ -22,10 +22,9 @@ abstract class AbstractCartographyController extends AbstractActionController
     {
         $type = $this->params()->fromQuery('type');
         if (!in_array($type, ['describe', 'locate'])) {
-            return new JsonModel([
-                'status' => 'error',
-                'message' => $this->translate('The arg "type" (describe or locate) was not found.'), // @translate
-            ]);
+            return $this->jsonError(new PsrMessage(
+                'The arg "type" (describe or locate) was not found.' // @translate
+            ), Response::STATUS_CODE_400);
         }
 
         $templates = $type === 'describe'
@@ -65,10 +64,9 @@ abstract class AbstractCartographyController extends AbstractActionController
     {
         $resource = $this->resourceFromParams();
         if (!$resource) {
-            return new JsonModel([
-                'status' => 'error',
-                'message' => $this->translate('Not found.'), // @translate
-            ]);
+            return $this->jsonError(new PsrMessage(
+                'Not found.' // @translate
+            ), Response::STATUS_CODE_404);
         }
 
         $query = $this->params()->fromQuery();
@@ -90,10 +88,9 @@ abstract class AbstractCartographyController extends AbstractActionController
     {
         $resource = $this->resourceFromParams();
         if (!$resource) {
-            return new JsonModel([
-                'status' => 'error',
-                'message' => $this->translate('Not found.'), // @translate
-            ]);
+            return $this->jsonError(new PsrMessage(
+                'Not found.' // @translate
+            ), Response::STATUS_CODE_404);
         }
 
         $query = $this->params()->fromQuery();
@@ -117,10 +114,9 @@ abstract class AbstractCartographyController extends AbstractActionController
     {
         $resource = $this->resourceFromParams();
         if (!$resource) {
-            return new JsonModel([
-                'status' => 'error',
-                'message' => $this->translate('Not found.'), // @translate
-            ]);
+            return $this->jsonError(new PsrMessage(
+                'Not found.' // @translate
+            ), Response::STATUS_CODE_404);
         }
 
         $query = $this->params()->fromQuery();
@@ -207,17 +203,23 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         $isPost = $this->getRequest()->isPost();
         if (!$isPost) {
-            return $this->jsonError('Unauthorized access.', Response::STATUS_CODE_403); // @translate
+            return $this->jsonError(new PsrMessage(
+                'Unauthorized access.', // @translate
+            ), Response::STATUS_CODE_403);
         }
 
         $data = $this->params()->fromPost();
 
         if (empty($data['wkt'])) {
-            return $this->jsonError('An internal error occurred from the client: no wkt.', Response::STATUS_CODE_400); // @translate
+            return $this->jsonError(new PsrMessage(
+                'An internal error occurred from the client: no wkt.', // @translate
+            ), Response::STATUS_CODE_400);
         }
         $geometry = $this->checkAndCleanWkt($data['wkt']);
         if (strlen($geometry) == 0) {
-            return $this->jsonError('An internal error occurred from the client: unmanaged wkt .', Response::STATUS_CODE_400); // @translate
+            return $this->jsonError(new PsrMessage(
+                'An internal error occurred from the client: unmanaged wkt .', // @translate
+            ), Response::STATUS_CODE_400);
         }
 
         $api = $this->viewHelpers()->get('api');
@@ -238,24 +240,32 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         if (empty($data['id'])) {
             if (empty($data['resource_id'])) {
-                return $this->jsonError('An internal error occurred from the client: no resource.', Response::STATUS_CODE_400); // @translate
+                return $this->jsonError(new PsrMessage(
+                    'An internal error occurred from the client: no resource.', // @translate
+                ), Response::STATUS_CODE_400);
             }
 
             $resourceId = $data['resource_id'];
             try {
                 $resource = $api->read('resources', ['id' => $resourceId])->getContent();
             } catch (\Omeka\Api\Exception\NotFoundException $e) {
-                return $this->jsonError('Resource not found.', Response::STATUS_CODE_404); // @translate
+                return $this->jsonError(new PsrMessage(
+                    'Resource not found.', // @translate
+                ), Response::STATUS_CODE_404);
             }
 
             // Save media id too to manage multiple media by image, else wms.
             $mediaId = empty($data['media_id']) ? null : $data['media_id'];
             if ($mediaId) {
-                $media = $api
-                    ->searchOne('media', ['id' => $mediaId])
-                    ->getContent();
-                if (!$media) {
-                    return $this->jsonError(new Message('Media #%d not found.', $mediaId), Response::STATUS_CODE_404); // @translate
+                try {
+                    $media = $api
+                        ->read('media', $mediaId)
+                        ->getContent();
+                } catch (\Omeka\Api\Exception\NotFoundException $e) {
+                    return $this->jsonError(new PsrMessage(
+                        'Media #{media_id} not found.', // @translate
+                        ['media_id' => $mediaId]
+                    ), Response::STATUS_CODE_404);
                 }
             } else {
                 $media = null;
@@ -263,11 +273,14 @@ abstract class AbstractCartographyController extends AbstractActionController
             return $this->createAnnotation($resource, $geometry, $metadata, $styles, $media);
         }
 
-        $annotation = $api
-            ->searchOne('annotations', ['id' => $data['id']])
-            ->getContent();
-        if (!$annotation) {
-            return $this->jsonError('Annotation not found.', Response::STATUS_CODE_404); // @translate
+        try {
+            $annotation = $api
+                ->read('annotations', $data['id'])
+                ->getContent();
+        } catch (\Omeka\Api\Exception\NotFoundException $e) {
+            return $this->jsonError(new PsrMessage(
+                'Annotation not found.', // @translate
+            ), Response::STATUS_CODE_404);
         }
 
         return $this->updateAnnotation($annotation, $geometry, $metadata, $styles);
@@ -288,26 +301,35 @@ abstract class AbstractCartographyController extends AbstractActionController
         // TODO Use "Delete" instead of "Post".
         $isPost = $this->getRequest()->isPost();
         if (!$isPost) {
-            return $this->jsonError('Unauthorized access.', Response::STATUS_CODE_403); // @translate
+            return $this->jsonError(new PsrMessage(
+                'Unauthorized access.', // @translate
+            ), Response::STATUS_CODE_403);
         }
 
         $data = $this->params()->fromPost();
         if (empty($data['id'])) {
-            return $this->jsonError('An internal error occurred from the client: resource id not set.', Response::STATUS_CODE_400); // @translate
+            return $this->jsonError(new PsrMessage(
+                'An internal error occurred from the client: resource id not set.', // @translate
+            ), Response::STATUS_CODE_400);
         }
 
         $id = $data['id'];
 
         $api = $this->viewHelpers()->get('api');
-        $resource = $api
-            ->searchOne('annotations', ['id' => $id])
-            ->getContent();
-        if (!$resource) {
-            return $this->jsonError('Resource not found.', Response::STATUS_CODE_404); // @translate
+        try {
+            $resource = $api
+                ->read('annotations', $id)
+                ->getContent();
+        } catch (\Omeka\Api\Exception\NotFoundException $e) {
+            return $this->jsonError(new PsrMessage(
+                'Resource not found.', // @translate
+            ), Response::STATUS_CODE_404);
         }
 
         if (!$resource->userIsAllowed('delete')) {
-            return $this->jsonError('Unauthorized access.', Response::STATUS_CODE_403); // @translate
+            return $this->jsonError(new PsrMessage(
+                'Unauthorized access.', // @translate
+            ), Response::STATUS_CODE_403);
         }
 
         $this->api()->delete('annotations', $id);
@@ -344,7 +366,9 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         $response = $this->api()->create('annotations', $data);
         if (!$response) {
-            return $this->jsonError('An internal error occurred.', Response::STATUS_CODE_500); // @translate
+            return $this->jsonError(new PsrMessage(
+                'An internal error occurred.', // @translate
+            ), Response::STATUS_CODE_500);
         }
 
         $annotation = $response->getContent();
@@ -393,7 +417,9 @@ abstract class AbstractCartographyController extends AbstractActionController
 
         $response = $this->api()->update('annotations', $annotation->id(), $data);
         if (!$response) {
-            return $this->jsonError('An internal error occurred.', Response::STATUS_CODE_500); // @translate
+            return $this->jsonError(new PsrMessage(
+                'An internal error occurred.', // @translate
+            ), Response::STATUS_CODE_500);
         }
 
         return new JsonModel([
@@ -448,10 +474,9 @@ abstract class AbstractCartographyController extends AbstractActionController
         $hasMetadata = $this->hasMetadata($metadata);
         $templateId = $this->forceTemplate($metadata, $hasMetadata, $isDescribe);
         if (empty($templateId) && $hasMetadata) {
-            $message = new Message(
+            return new PsrMessage(
                 'A template is required when there are metadata in an annotation.' // @template
             );
-            return $message;
         }
 
         // Normally, there is no resource template during creation, since it is
@@ -583,11 +608,10 @@ abstract class AbstractCartographyController extends AbstractActionController
         }
         $short = $this->shortResourceTemplate($templateId);
         if (empty($short)) {
-            $message = new Message(
-                'Resource template #%d has an issue. Fix settings of Cartography.', // @template
-                $templateId
+            return new PsrMessage(
+                'Resource template #{resource_template_id} has an issue. Fix settings of Cartography.', // @template
+                ['resource_template_id' => $templateId]
             );
-            return $message;
         }
         $shortProperties = $short['o:resource_template_property'];
 
@@ -822,10 +846,10 @@ abstract class AbstractCartographyController extends AbstractActionController
             /** @var \Omeka\Api\Representation\ResourceTemplateRepresentation $template */
             $template = $this->api()->read('resource_templates', ['id' => $templateId])->getContent();
         } catch (\Omeka\Api\Exception\NotFoundException $e) {
-            $this->logger()->err(new Message(
-                'Resource template #%d doesn’t exist any more. Fix settings of Cartography.', // @template
-                $templateId
-            ));
+            $this->logger()->err(
+                'Resource template #{template_id} doesn’t exist any more. Fix settings of Cartography.', // @template
+                ['template_id' => $templateId]
+            );
             return null;
         }
 
@@ -854,19 +878,19 @@ abstract class AbstractCartographyController extends AbstractActionController
             if ($input['o:term'] === 'oa:hasBody'
                 && !in_array($input['o:data_type'], ['resource', 'resource:item', 'resource:itemset', 'resource:media'])
             ) {
-                $this->logger()->warn(new Message(
-                    'To follow the annotation data model and for technical reasons, "oa:hasBody" must be a resource link to be managed internally. Check your resource template "%s".', // @template
-                    $template->label()
-                ));
+                $this->logger()->warn(
+                    'To follow the annotation data model and for technical reasons, "oa:hasBody" must be a resource link to be managed internally. Check your resource template "{resource_template}".', // @template
+                    ['resource_template' => $template->label()]
+                );
                 return null;
             }
             if ($input['o:term'] !== 'oa:hasBody'
                 && in_array($input['o:data_type'], ['resource', 'resource:item', 'resource:itemset', 'resource:media'])
             ) {
-                $this->logger()->warn(new Message(
-                    'To follow the annotation data model and for technical reasons, the resource links must use the property "oa:hasBody" to be managed internally. Check your resource template "%s".', // @template
-                    $template->label()
-                ));
+                $this->logger()->warn(
+                    'To follow the annotation data model and for technical reasons, the resource links must use the property "oa:hasBody" to be managed internally. Check your resource template "{resource_template}".', // @template
+                    ['resource_template' => $template->label()]
+                );
                 return null;
             }
 
@@ -880,10 +904,10 @@ abstract class AbstractCartographyController extends AbstractActionController
                     break;
                 case 'resource:itemset':
                 case 'resource:media':
-                    $this->logger()->warn(new Message(
-                        'Resource link "%s" is currently not managed: it should be a "resource" or a "resource:item".', // @template
-                        $template->label()
-                    ));
+                    $this->logger()->warn(
+                        'Resource link "{data_type}" is currently not managed for resource template "{resource_template}": it should be a "resource" or a "resource:item".', // @template
+                        ['data_type' => $dataType, 'resource_template' => $template->label()]
+                    );
                     return null;
                 case 'uri':
                     $input['type'] = 'uri';
@@ -894,10 +918,10 @@ abstract class AbstractCartographyController extends AbstractActionController
                         /** @var \CustomVocab\Api\Representation\CustomVocabRepresentation $customVocab */
                         $customVocab = $this->api()->read('custom_vocabs', ['id' => $customVocabId])->getContent();
                     } catch (\Omeka\Api\Exception\NotFoundException $e) {
-                        $this->logger()->warn(new Message(
-                            'Custom vocab #%d doesn’t exist any more. Fix resource template "%s".', // @template
-                            $customVocabId, $template->label()
-                        ));
+                        $this->logger()->warn(
+                            'Custom vocab #{custom_vocab_id} doesn’t exist any more. Fix resource template "{resource_template}".', // @template
+                            ['custom_vocab_id' => $customVocabId, 'resource_template' => $template->label()]
+                        );
                         $input['type'] = 'text';
                         break;
                     }
@@ -906,10 +930,10 @@ abstract class AbstractCartographyController extends AbstractActionController
                         $terms = array_unique(array_filter(array_map('trim', explode("\n", $terms))));
                     }
                     if (empty($terms)) {
-                        $this->logger()->warn(new Message(
-                            'Custom vocab "%s" doesn’t have terms.', // @template
-                            $template->label()
-                        ));
+                        $this->logger()->warn(
+                            'Custom vocab "{custom_vocab}" doesn’t have terms.', // @template
+                            ['custom_vocab' => $customVocab->label()]
+                        );
                         $input['type'] = 'text';
                         break;
                     }
@@ -930,10 +954,10 @@ abstract class AbstractCartographyController extends AbstractActionController
 
             // TODO Any short form should be possible (except for linking). Check if the check is still needed.
             if (isset($check[$input['o:term']]) && $input['type'] !== $check[$input['o:term']]) {
-                $this->logger()->warn(new Message(
-                    'Short resource template doesn’t support different data types for the same property. Check resource template "%s".', // @template
-                    $template->label()
-                ));
+                $this->logger()->warn(
+                    'Short resource template doesn’t support different data types for the same property. Check resource template "{resource_template}".', // @template
+                    ['resource_template' => $template->label()]
+                );
                 return null;
             }
 
@@ -1362,6 +1386,9 @@ abstract class AbstractCartographyController extends AbstractActionController
 
     protected function jsonError($message, $statusCode = Response::STATUS_CODE_500)
     {
+        if ($message instanceof PsrMessage) {
+            $message->setTranslator($this->translator());
+        }
         $response = $this->getResponse();
         $response->setStatusCode($statusCode);
         return new JsonModel([

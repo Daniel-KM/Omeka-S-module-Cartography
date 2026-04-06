@@ -526,7 +526,6 @@ const baseUrl = window.location.pathname.replace(/\/admin\/.*/, '/');
                 });
 
                 return btnElement;
-
             }
 
             function _openOmekaSidebar ( ) {
@@ -535,14 +534,17 @@ const baseUrl = window.location.pathname.replace(/\/admin\/.*/, '/');
                 let sidebar = $('#select-resource');
                 let term = 'oa:hasBody';
                 $('#select-item a').data('property-term', term);
+                // Mark the oaLinking div as selecting-resource
+                // so the core resource-form.js triggers
+                // o:prepare-value after selection.
+                $('.selecting-resource').removeClass('selecting-resource');
+                var oaDiv = $('.section.active .leaflet-styleeditor-oalinking.value');
+                oaDiv.addClass('selecting-resource');
                 Omeka.populateSidebarContent(sidebar, selectButton.data('sidebar-content-url'));
                 Omeka.openSidebar(sidebar);
-                // FIXME This should be fired only when a new item is selected, or in Omeka.
-                // this.options.styleEditorOptions.util.fireEvent('changed', this.options.styleEditorOptions.util.getCurrentElement())
             }
 
             return resourceLinksService;
-
         }
 
         function createValueSuggestService () {
@@ -1333,6 +1335,23 @@ const baseUrl = window.location.pathname.replace(/\/admin\/.*/, '/');
  */
 $(document).ready( function() {
 
+// Prevent page scrolling when interacting with a Leaflet map.
+$('.leaflet-container').each(function() {
+    L.DomEvent.disableScrollPropagation(this);
+    L.DomEvent.disableClickPropagation(this);
+});
+// Also handle dynamically created maps.
+var observer = new MutationObserver(function() {
+    $('.leaflet-container').each(function() {
+        if (!this._scrollDisabled) {
+            L.DomEvent.disableScrollPropagation(this);
+            L.DomEvent.disableClickPropagation(this);
+            this._scrollDisabled = true;
+        }
+    });
+});
+observer.observe(document.body, {childList: true, subtree: true});
+
 /**
  * Fetch images metadata of a resource.
  *
@@ -1446,7 +1465,7 @@ var displayGeometries = function(geometries, drawnItems) {
  */
 var displayGeometry = function(data) {
     var layer;
-    var geojson = Terraformer.WKT.parse(data['wkt']);
+    var geojson = Terraformer.wktToGeoJSON(data['wkt']);
     var options = data['options'] || {};
     options.annotationIdentifier = data['id'];
 
@@ -1470,14 +1489,33 @@ var displayGeometry = function(data) {
 
     // Prepare the layer.
     if (geojson.type === 'Point' && typeof options.radius !== 'undefined') {
-        // Warning: the coordinates are inversed on an image.
+        // Circle: coordinates are inversed on an image.
         layer = L.circle([geojson.coordinates[1], geojson.coordinates[0]], options);
         layer.setStyle(options);
+        cartographyDataService.bindLayerPopup(layer);
 
+    } else if (geojson.type === 'Point') {
+        // Marker: restore custom icon if styled, else default.
+        var latlng = [geojson.coordinates[1], geojson.coordinates[0]];
+        if (options.iconColor && L.StyleEditor
+            && L.StyleEditor.marker
+            && L.StyleEditor.marker.GlyphiconMarker
+        ) {
+            var gm = new (L.StyleEditor.marker.GlyphiconMarker)();
+            var markerIcon = gm.createMarkerIcon({
+                iconSize: options.iconSize || [20, 50],
+                iconColor: options.iconColor,
+                icon: options.icon || 'glyphicon-map-marker',
+            });
+            layer = L.marker(latlng, $.extend({}, options, {icon: markerIcon}));
+        } else {
+            layer = L.marker(latlng, options);
+        }
+        layer.options = $.extend(options, layer.options);
         cartographyDataService.bindLayerPopup(layer);
 
     } else {
-        layer = L.geoJson(geojson, options); // popup is binded from options
+        layer = L.geoJson(geojson, options);
 
         // Use rectangle if possible, not Polygon.
         // Keep the moving handle when editing with leaflet.draw.
@@ -1487,7 +1525,6 @@ var displayGeometry = function(data) {
             if (options.annotationIdentifier) {
                 rectangleIds[options.annotationIdentifier] = true;
             }
-
             cartographyDataService.bindLayerPopup(layer);
         }
     }
@@ -1521,11 +1558,11 @@ var addGeometry = function(layer, identifier, drawnItems) {
 
     var geojson = layer.toGeoJSON();
     var wkt;
-    // Check the process of terraformer wkt convert / reconvert (Feature/FeatureCollection).
+    // Convert GeoJSON to WKT, handling Feature/FeatureCollection.
     if (geojson.features && geojson.features[0].geometry) {
-        wkt = Terraformer.WKT.convert(geojson.features[0].geometry);
+        wkt = Terraformer.geojsonToWKT(geojson.features[0].geometry);
     } else {
-        wkt = Terraformer.WKT.convert(geojson.geometry);
+        wkt = Terraformer.geojsonToWKT(geojson.geometry);
     }
 
     var options = {};
@@ -1591,11 +1628,11 @@ var editGeometry = function(layer) {
 
     var geojson = layer.toGeoJSON();
     var wkt;
-    // Check the process of terraformer wkt convert / reconvert (Feature/FeatureCollection).
+    // Convert GeoJSON to WKT, handling Feature/FeatureCollection.
     if (geojson.features && geojson.features[0].geometry) {
-        wkt = Terraformer.WKT.convert(geojson.features[0].geometry);
+        wkt = Terraformer.geojsonToWKT(geojson.features[0].geometry);
     } else {
-        wkt = Terraformer.WKT.convert(geojson.geometry);
+        wkt = Terraformer.geojsonToWKT(geojson.geometry);
     }
     prepareSaveOptions(layer, layer.options);
 
@@ -1694,10 +1731,35 @@ var popupAnnotation = function(options) {
         html += '<div class="annotation-">' + content + '</div>';
     }
 
-    // TODO Use the resource template and/or a html file template.
-    // 1. Display property metadata.
-    // For each / if it is metadata from form template except oa:hasbody, append:
-    //  html += '<div class="annotation-cartography-uncertainty"><i>Uncertainty:</i> ' + options['cartography:uncertainty'] + '</div>';
+    // 1. Display body text (rdf:value) and motivation.
+    var rdfValue = metadata['rdf:value'] || [];
+    if (rdfValue.length) {
+        html += '<div class="annotation-body-rdf-value">';
+        rdfValue.forEach(function(val) {
+            html += '<div>' + (typeof val === 'string' ? val : (val['@value'] || val['display_title'] || '')) + '</div>';
+        });
+        html += '</div>';
+    }
+    var motivation = metadata['oa:motivatedBy'] || [];
+    if (motivation.length) {
+        html += '<div class="annotation-motivation"><i>'
+            + Omeka.jsTranslate('Motivation:') + '</i> ';
+        motivation.forEach(function(val, i) {
+            if (i > 0) html += ', ';
+            html += (typeof val === 'string' ? val : (val['@value'] || ''));
+        });
+        html += '</div>';
+    }
+    var purpose = metadata['oa:hasPurpose'] || [];
+    if (purpose.length) {
+        html += '<div class="annotation-purpose"><i>'
+            + Omeka.jsTranslate('Purpose:') + '</i> ';
+        purpose.forEach(function(val, i) {
+            if (i > 0) html += ', ';
+            html += (typeof val === 'string' ? val : (val['@value'] || ''));
+        });
+        html += '</div>';
+    }
 
     // 2. Display resource links (oa:hasBody).
     var oaLinking = metadata['oa:hasBody'] || [];
@@ -1865,16 +1927,7 @@ var currentMediaId = function() {
  * @todo Fit map bounds according to geometries for "Locate", and according to size for "Describe".
  */
 var setView = function() {
-//    if (defaultBounds) {
-//       map.fitBounds(defaultBounds);
-//    } else {
-//        var bounds = markers.getBounds();
-//        if (bounds.isValid()) {
-//            map.fitBounds(bounds);
-//        } else {
-//            map.setView([20, 0], 2)
-//        }
-//    }
+    // TODO Fit map bounds according to geometries.
 };
 
 /**
@@ -1963,18 +2016,15 @@ var initDescribe = function() {
 
     var pasteControl = userRights.create;
 
-    // Initialize the map and set default view.
+    // Initialize the map without a default view — fitBounds
+    // will set the correct zoom after adding the image overlay.
     var map = L.map('annotate-' + section, {
-        // TODO Compute the min/max zoom according to images?
         minZoom: -4,
         maxZoom: 8,
-        zoom: 0,
-        center: [0, 0],
         maxBoundsViscosity: 1,
         crs: L.CRS.Simple,
         pasteControl: pasteControl
     });
-    map.setView([0, 0], 0);
     var mapMoved = false;
 
     cartographyDataService.setMap(map, section);
@@ -1992,14 +2042,13 @@ var initDescribe = function() {
         var bounds = L.latLngBounds(southWest, northEast);
         var imageOverlay = L.imageOverlay(image.url, bounds, {imageData: image});
         if (index === 0) {
-            bounds = imageOverlay.getBounds();
             imageOverlay.addTo(map);
-            map.panTo([bounds.getNorthEast().lat / 2, bounds.getNorthEast().lng / 2]);
-            // FIXME Fit bounds first image overlay.
-            map.fitBounds(bounds);
-            fetchGeometries(resourceId, {mediaId: image.id}, drawnItems);
-
             imageMediaService.setMediaId(image.id);
+            imageMediaService.setImageView(imageOverlay, map);
+            // Store for later re-fitBounds on tab switch.
+            describeMap = map;
+            describeBounds = bounds;
+            fetchGeometries(resourceId, {mediaId: image.id}, drawnItems);
         }
         baseMaps[Omeka.jsTranslate('Image #') + (index + 1)] = imageOverlay;
     });
@@ -2014,13 +2063,17 @@ var initDescribe = function() {
         annotateControl(map, drawnItems);
     }
 
-    setView();
-
     // Handle the image change (only for describe).
     currentMapElement = 'annotate-describe';
     map.on('baselayerchange', function(element){
         currentMapElement = 'annotate-describe';
-        // TODO Keep the layers in a invisible feature group layer by image? Check memory size.
+
+        // Save current view before switching.
+        var prevMediaId = imageMediaService.getMediaId();
+        if (prevMediaId) {
+            imageMediaService.saveView(map, prevMediaId);
+        }
+
         drawnItems.clearLayers();
 
         // Set the new image id.
@@ -2029,7 +2082,6 @@ var initDescribe = function() {
             imageMediaService.setMediaId(parseInt(imageId));
             imageMediaService.setImageView(element.layer, map);
         } catch (e) {
-            // No data is passing in, set to default id 0.
             imageMediaService.setMediaId(0);
         }
 
@@ -2549,98 +2601,9 @@ var annotateGeometries = function(map, section, drawnItems) {
      * @see application/asset/js/resource-form.js
      * type: "resource"; value: empty; valueObj: data of one selected item; nameprefix: empty.
      */
-    $(document).on('o:prepare-value', function(e, type, value, valueObj, namePrefix) {
-        if (!valueObj || typeof valueObj['value_resource_id'] === 'undefined') {
-            return;
-        }
-        // Check if the current section is open.
-        if ($('.section.active').prop('id') !== section || $('#' + section + ' .leaflet-styleeditor.editor-enabled').length !== 1) {
-            return;
-        }
-        var identifier = currentAnnotation.options.annotationIdentifier || null;
-        if (!identifier) {
-            alert(Omeka.jsTranslate('Unable to find the geometry.'));
-            return;
-        }
+    // Resource linking handlers are registered once, outside
+    // annotateControl(), to avoid duplication. See below.
 
-        // Check if the selected resource is already linked.
-        var url = baseUrl + currentPath + '/cartography/' + resourceId + '/geometries';
-        var partIdentifier = currentMediaId();
-        var data = {
-            media_id: partIdentifier === null ? '0' : (partIdentifier || '-1'),
-            annotation_id: identifier,
-        }
-
-        $.get(url, data)
-            .done(function(data) {
-                if (data.status === 'error') {
-                    alert(data.message);
-                    return;
-                }
-
-                if (typeof data.geometries[identifier] !== 'undefined') {
-                    var oaLinking = data.geometries[identifier].options.oaLinking || [];
-                    var arrayLength = oaLinking.length;
-                    for (var i = 0; i < arrayLength; i++) {
-                        if (oaLinking[i]['value_resource_id'] === valueObj['value_resource_id']) {
-                            alert(Omeka.jsTranslate('The resource is already linked to the current annotation.'));
-                            return;
-                        }
-                    }
-                }
-
-                var resourceDataTypes = [
-                    'resource',
-                    'resource:item',
-                    'resource:itemset',
-                    'resource:media',
-                ];
-                if (!valueObj || resourceDataTypes.indexOf(type) === -1) {
-                    return;
-                }
-
-                // addLinkedResource(identifier, valueObj);
-                // appendLinkedResource(valueObj);
-
-                // dynamic form properties
-                map.fireEvent('styleeditor:onAddNewResourceItem', {newChoseItem: valueObj});
-
-            })
-            .fail(function(jqxhr) {
-                var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
-                    ? JSON.parse(jqxhr.responseText).message
-                    : Omeka.jsTranslate('Unable to fetch the geometries.');
-                alert(message);
-            });
-    });
-    var addLinkedResource = function(identifier, valueObj) {
-        if (typeof currentAnnotation.options.oaLinking === 'undefined') {
-            currentAnnotation.options.oaLinking = [];
-        }
-        currentAnnotation.options.oaLinking.push(valueObj);
-        // Real time saving deferred.
-        // editGeometry(currentAnnotation);
-    };
-    var appendLinkedResource = function(valueObj) {
-        // Prepare the markup for the resource data types.
-        var html = '<div class="value selecting-resource">'
-            + '<p class="selected-resource">'
-            // TODO Add ellipsis to display the title and to display the resource icon.
-            // + '<span class="o-title ' + valueObj['value_resource_name'] + '">';
-            + '<span class="o-title ' + valueObj['value_resource_name'] + '-no">'
-            + (typeof valueObj['thumbnail_url'] !== 'undefined' ? '<img src="' + valueObj['thumbnail_url'] + '">' : '')
-            + '<a href="' + valueObj['url'] + '">'
-            + (typeof valueObj['display_title'] === 'undefined' ? Omeka.jsTranslate('[Untitled]') : valueObj['display_title'])
-            + '</a>'
-            + '</span>'
-            + '</p>'
-            + '<ul class="actions">'
-            + '<li><a class="o-icon-delete remove-value" title="' + Omeka.jsTranslate('Remove value') + '" href="#" aria-label="' + Omeka.jsTranslate('Remove value') + '" data-value-resource-id="' + valueObj['value_resource_id'] + '"></a></li>'
-            + '</ul>'
-            + '</div>';
-        var oaLinkingDiv = $('.leaflet-styleeditor-oalinking.value.selecting-resource:visible');
-        oaLinkingDiv.append(html);
-    };
 
     /**
      * Remove a linked resource (directly via jQuery).
@@ -2720,20 +2683,156 @@ var imageMediaService = createImageMediaService();
 // Disable the core resource-form.js bind for the sidebar selector.
 $(document).off('o:prepare-value');
 
+/**
+ * Resource linking handlers — registered once globally.
+ *
+ * @see application/asset/js/resource-form.js
+ */
+// 1. Batch: checkboxes + "Add selected" button.
+$(document).on('click', '.select-resources-button', function() {
+    var checked = $('#item-results .resource').has('input.select-resource-checkbox:checked');
+    if (!checked.length) return;
+    checked.each(function() {
+        var valueObj = $(this).data('resource-values');
+        if (valueObj) {
+            $(document).trigger('o:prepare-value', ['resource', null, valueObj]);
+        }
+    });
+    Omeka.closeSidebar($('#select-resource'));
+});
+// 2. Single: click resource details → "Select resource".
+$(document).on('click', '#select-item a', function() {
+    var valueObj = $('.resource-details').data('resource-values');
+    if (valueObj) {
+        $(document).trigger('o:prepare-value', ['resource', null, valueObj]);
+    }
+    Omeka.closeSidebar($('#select-resource'));
+});
+// 3. Handle o:prepare-value to link the resource to the annotation.
+$(document).on('o:prepare-value', function(e, type, value, valueObj, namePrefix) {
+    if (!valueObj || typeof valueObj['value_resource_id'] === 'undefined') {
+        return;
+    }
+    // Find the active section with an open style editor.
+    var activeSection = $('.section.active').prop('id');
+    if (!activeSection
+        || $('#' + activeSection + ' .leaflet-styleeditor.editor-enabled').length !== 1
+    ) {
+        return;
+    }
+    if (!currentAnnotation || !currentAnnotation.options) {
+        return;
+    }
+    var identifier = currentAnnotation.options.annotationIdentifier || null;
+    if (!identifier) {
+        alert(Omeka.jsTranslate('Unable to find the geometry.'));
+        return;
+    }
+
+    var url = baseUrl + currentPath + '/cartography/' + resourceId + '/geometries';
+    var partIdentifier = currentMediaId();
+    var data = {
+        media_id: partIdentifier === null ? '0' : (partIdentifier || '-1'),
+        annotation_id: identifier,
+    };
+
+    $.get(url, data)
+        .done(function(data) {
+            if (data.status === 'error') {
+                alert(data.message);
+                return;
+            }
+            if (typeof data.geometries[identifier] !== 'undefined') {
+                var oaLinking = data.geometries[identifier].options.oaLinking || [];
+                for (var i = 0; i < oaLinking.length; i++) {
+                    if (oaLinking[i]['value_resource_id'] === valueObj['value_resource_id']) {
+                        alert(Omeka.jsTranslate('The resource is already linked to the current annotation.'));
+                        return;
+                    }
+                }
+            }
+            var resourceDataTypes = ['resource', 'resource:item', 'resource:itemset', 'resource:media'];
+            if (!valueObj || resourceDataTypes.indexOf(type) === -1) {
+                return;
+            }
+            var map = cartographyDataService.getMap();
+            if (map) {
+                map.fireEvent('styleeditor:onAddNewResourceItem', {newChoseItem: valueObj});
+            }
+        })
+        .fail(function(jqxhr) {
+            var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
+                ? JSON.parse(jqxhr.responseText).message
+                : Omeka.jsTranslate('Unable to fetch the geometries.');
+            alert(message);
+        });
+});
+
 // data service
 var cartographyDataService = createCartographyDataService();
+cartographyDataService.setPopupFn(popupAnnotation);
 
-if (cartographySections.indexOf('describe') > -1) {
-    // initDescribe();
+// Defer map initialization until the tab is visible, so
+// Leaflet can compute the container size correctly.
+var describeInitialized = false;
+var locateInitialized = false;
+
+// Store map references for later fitBounds.
+var describeBounds = null;
+var describeMap = null;
+var locateMap = null;
+
+var initDescribeWhenReady = function() {
+    if (describeInitialized) {
+        // Re-fit bounds when returning to the tab.
+        if (describeMap && describeBounds) {
+            describeMap.invalidateSize();
+            describeMap.fitBounds(describeBounds);
+        }
+        return;
+    }
+    var el = document.getElementById('annotate-describe');
+    if (!el || el.offsetWidth === 0) return;
+    describeInitialized = true;
+    cartographyDataService.setCurrentSection('describe');
     cartographyDataService.ajaxLoadDescribeLocateTemplateJson().then(function () {
         initDescribe();
     });
-}
-if (cartographySections.indexOf('locate') > -1) {
-    // initLocate();
+};
+
+var initLocateWhenReady = function() {
+    if (locateInitialized) {
+        if (locateMap) {
+            locateMap.invalidateSize();
+        }
+        return;
+    }
+    var el = document.getElementById('annotate-locate');
+    if (!el || el.offsetWidth === 0) return;
+    locateInitialized = true;
+    cartographyDataService.setCurrentSection('locate');
     cartographyDataService.ajaxLoadDescribeLocateTemplateJson().then(function () {
         initLocate();
     });
+};
+
+$(document).on('click', 'a[href="#describe"]', function() {
+    if (cartographySections.indexOf('describe') > -1) {
+        setTimeout(initDescribeWhenReady, 100);
+    }
+});
+$(document).on('click', 'a[href="#locate"]', function() {
+    if (cartographySections.indexOf('locate') > -1) {
+        setTimeout(initLocateWhenReady, 100);
+    }
+});
+
+// Initialize immediately if the tab is already active (hash).
+if (cartographySections.indexOf('describe') > -1) {
+    setTimeout(initDescribeWhenReady, 200);
+}
+if (cartographySections.indexOf('locate') > -1) {
+    setTimeout(initLocateWhenReady, 200);
 }
 
 if (cartographySections.indexOf('geobrowse') > -1) {
@@ -2752,7 +2851,10 @@ function createCartographyDataService() {
         getAnnotationFormTemplateData: getAnnotationFormTemplateData,
         ajaxLoadDescribeLocateTemplateJson: ajaxLoadDescribeLocateTemplateJson,
         bindLayerPopup: bindLayerPopup,
+        setPopupFn: setPopupFn,
         setMap: setMap,
+        getMap: getMap,
+        setCurrentSection: setCurrentSection,
     };
     var _data = {
         annotationTemplateJson: {
@@ -2762,7 +2864,8 @@ function createCartographyDataService() {
         currentSection: '',
         annotateFormService: L.StyleEditorAnnotation.createAnnotateFormService(),
         currentTemplateData: [],
-        maps: {}
+        maps: {},
+        popupFn: null
     };
 
     initialize();
@@ -2774,6 +2877,11 @@ function createCartographyDataService() {
 
     function setMap(map, section) {
         _data.maps[section] = map;
+    }
+
+    function getMap(section) {
+        section = section || _data.currentSection;
+        return _data.maps[section] || null;
     }
 
     function handleTabClick() {
@@ -2873,13 +2981,18 @@ function createCartographyDataService() {
         return rsPromise;
     }
 
+    function setPopupFn(fn) {
+        _data.popupFn = fn;
+    }
+
     function bindLayerPopup(layer) {
         if (!(layer instanceof L.Layer) ) {
             return false;
         }
-        var popContent = _data.annotateFormService.renderDescriptiveHtml(
-            layer, getAnnotationFormTemplateData()
-        );
+        // Build popup from annotation metadata.
+        var popContent = (layer.options && _data.popupFn)
+            ? _data.popupFn(layer.options)
+            : '';
         if (popContent) {
             // Set popup.
             if (layer.getPopup()) {
@@ -2908,10 +3021,12 @@ function createImageMediaService() {
         setImageView: setImageView,
         setMediaId: setMediaId,
         getMediaId: getMediaId,
+        saveView: saveView,
     };
 
     var _data = {
         currentMediaId: 0,
+        viewedMediaIds: {},
         mediaDrawnItems: new L.FeatureGroup(),
         map: {}
     };
@@ -2932,10 +3047,30 @@ function createImageMediaService() {
 
     // ImageOverlay, the image layer.
     // Make the whole image inside the map in center
+    function saveView(map, mediaId) {
+        if (mediaId && _data.viewedMediaIds[mediaId]) {
+            _data.viewedMediaIds[mediaId] = {
+                center: map.getCenter(),
+                zoom: map.getZoom()
+            };
+        }
+    }
+
     function setImageView(imageOverlay, map) {
         var bounds = imageOverlay.getBounds();
-        // map.panTo([bounds.getNorthEast().lat / 2, bounds.getNorthEast().lng / 2]);
-        map.fitBounds(bounds);
+        map.invalidateSize();
+        var mediaId = _data.currentMediaId;
+        if (!_data.viewedMediaIds[mediaId]) {
+            // First view: fit bounds.
+            _data.viewedMediaIds[mediaId] = true;
+            map.fitBounds(bounds);
+        } else if (typeof _data.viewedMediaIds[mediaId] === 'object') {
+            // Subsequent views: restore saved state.
+            map.setView(
+                _data.viewedMediaIds[mediaId].center,
+                _data.viewedMediaIds[mediaId].zoom
+            );
+        }
     }
     return service;
 }

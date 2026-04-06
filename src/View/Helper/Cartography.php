@@ -113,9 +113,9 @@ class Cartography extends AbstractHelper
 
             // Edition via draw (used for creation, edit or delete).
             $headLink
-                ->appendStylesheet($assetUrl('vendor/leaflet-draw/leaflet.draw.css', 'Cartography'));
+                ->appendStylesheet($assetUrl('vendor/leaflet-draw/leaflet.draw-src.css', 'Cartography'));
             $headScript
-                ->appendFile($assetUrl('vendor/leaflet-draw/leaflet.draw.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
+                ->appendFile($assetUrl('vendor/leaflet-draw/leaflet.draw-src.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
 
             // TODO Check if valuesuggest is used in one of the annotation templates.
             if ($view->hasValueSuggest()) {
@@ -162,17 +162,14 @@ class Cartography extends AbstractHelper
         if ($geoBrowse) {
             // Just to display a square or a circle.
             $headLink
-                ->appendStylesheet($assetUrl('vendor/leaflet-draw/leaflet.draw.css', 'Cartography'));
+                ->appendStylesheet($assetUrl('vendor/leaflet-draw/leaflet.draw-src.css', 'Cartography'));
             $headScript
-                ->appendFile($assetUrl('vendor/leaflet-draw/leaflet.draw.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
+                ->appendFile($assetUrl('vendor/leaflet-draw/leaflet.draw-src.js', 'Cartography'), 'text/javascript', ['defer' => 'defer']);
         }
 
-        // Leaflet terraformer.
-        // TODO See if terraformer can replace leaflet paste.
+        // Terraformer WKT ↔ GeoJSON converter.
         $headScript
-            ->appendFile($assetUrl('vendor/terraformer/terraformer-1.0.12.min.js', 'DataTypeGeometry'), 'text/javascript', ['defer' => 'defer'])
-            ->appendFile($assetUrl('vendor/terraformer-arcgis-parser/terraformer-arcgis-parser-1.1.0.min.js', 'DataTypeGeometry'), 'text/javascript', ['defer' => 'defer'])
-            ->appendFile($assetUrl('vendor/terraformer-wkt-parser/terraformer-wkt-parser-1.2.1.min.js', 'DataTypeGeometry'), 'text/javascript', ['defer' => 'defer']);
+            ->appendFile($assetUrl('vendor/terraformer-wkt/t-wkt.umd-2.2.1.js', 'DataTypeGeometry'), 'text/javascript', ['defer' => 'defer']);
 
         // Leaflet full screen (full view).
         $headLink

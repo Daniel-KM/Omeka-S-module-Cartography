@@ -153,7 +153,7 @@ abstract class AbstractCartographyController extends AbstractActionController
 
     public function browseAction()
     {
-        $this->setBrowseDefaults('created');
+        $this->browse()->setDefaults('annotations');
 
         $query = $this->params()->fromQuery();
 

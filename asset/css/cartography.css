@@ -1,74 +1,142 @@
-/* Cartography */
-
-/* Leaflet layers */
-.leaflet-control-layers input[name="leaflet-base-layers"] {
-    font-size: 16px;
-    line-height: 24px;
- }
-
-/* Popup content */
-.leaflet-popup-content .annotation-body-rdf-value,
-.leaflet-popup-content .annotation-body-oa-linking {
-    margin-bottom: 18px;
+/* Glyphicons for leaflet-styleeditor marker icons. */
+@font-face {
+    font-family: 'Glyphicons Halflings';
+    src: url('../vendor/leaflet-styleeditor/fonts/glyphicons-halflings-regular.woff2') format('woff2'),
+         url('../vendor/leaflet-styleeditor/fonts/glyphicons-halflings-regular.woff') format('woff'),
+         url('../vendor/leaflet-styleeditor/fonts/glyphicons-halflings-regular.ttf') format('truetype');
 }
-.leaflet-popup-content .annotation-body-oa-linking .value {
-    display: flex;
-}
-.leaflet-popup-content .annotation-body-oa-linking .value .resource-oa-linking {
-    margin: 0;
+.glyphicon {
     position: relative;
-}
-.leaflet-popup-content .annotation-body-oa-linking .value .resource-oa-linking img {
-    height: 24px;
-    margin-right: 6px;
-}
-.leaflet-popup-content .annotation-caption {
-    /* TODO Fix this min width when the popup is small. */
-    min-width: 60px;
-}
-.leaflet-popup-content .annotation-caption .actions {
-    /* TODO Fix this margin. */
-    margin-top: -4px;
-}
-.leaflet-popup-content .annotation-metadata {
-    color: #444444;
-    border-top: #888888 1px solid;
-    margin-top: 6px;
-    padding-top: 6px;
-}
-.leaflet-popup-content .actions {
-    float: right;
-    list-style: none;
+    top: 1px;
+    display: inline-block;
+    font-family: 'Glyphicons Halflings';
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Style editor */
-.leaflet-styleeditor-interior {
-    width: inherit;
-}
-.leaflet-styleeditor-interior .value.selecting-resource {
-    display: flex;
-}
-.leaflet-styleeditor-interior .value.selecting-resource.leaflet-styleeditor-oalinking {
-    display: grid;
-}
-.leaflet-styleeditor-interior .value.selecting-resource .actions {
-    display: flex;
-    margin-left: auto;
-    list-style: none;
-}
-.leaflet-styleeditor-interior .value.selecting-resource .actions a:link,
-.leaflet-styleeditor-interior .value.selecting-resource .actions a:visited {
-    color: #A91919;
-}
-.leaflet-styleeditor-interior  textarea.leaflet-styleeditor-input {
-    max-height: unset;
-}
-.leaflet-styleeditor-header {
-    background-color: inherit;
-}
-.leaflet-styleeditor-button:hover {
-    background-color: #e8e8e8;
-}
-.leaflet-styleeditor-button {
-    background-color: inherit;
+@media all {
+    /* Cartography admin */
+    header nav .cartography::before,
+    .cartography .subhead::before {
+        content: ""; /* fas fa-map-marked-alt */
+    }
+    .cartography .no-resources:before {
+        content: "";
+    }
+    #cartography .no-resources:before {
+        content: "";
+    }
+
+    /* Glyphicons for leaflet-styleeditor marker icons. */
+    @font-face {
+        font-family: 'Glyphicons Halflings';
+        src: url('../vendor/leaflet-styleeditor/fonts/glyphicons-halflings-regular.woff2') format('woff2'),
+             url('../vendor/leaflet-styleeditor/fonts/glyphicons-halflings-regular.woff') format('woff'),
+             url('../vendor/leaflet-styleeditor/fonts/glyphicons-halflings-regular.ttf') format('truetype');
+    }
+    .glyphicon {
+        position: relative;
+        top: 1px;
+        display: inline-block;
+        font-family: 'Glyphicons Halflings';
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* Prevent page scroll when interacting with the map. */
+    .leaflet-container {
+        touch-action: none;
+    }
+
+    /* Leaflet layers */
+    .leaflet-control-layers input[name="leaflet-base-layers"] {
+        font-size: 16px;
+        line-height: 24px;
+    }
+
+    /* Popup content */
+    .leaflet-popup-content .annotation-body-rdf-value,
+    .leaflet-popup-content .annotation-body-oa-linking {
+        margin-bottom: 18px;
+    }
+    .leaflet-popup-content .annotation-body-oa-linking .value {
+        display: flex;
+    }
+    .leaflet-popup-content .annotation-body-oa-linking .value .resource-oa-linking {
+        margin: 0;
+        position: relative;
+    }
+    .leaflet-popup-content .annotation-body-oa-linking .value .resource-oa-linking img {
+        height: 24px;
+        margin-right: 6px;
+    }
+    .leaflet-popup-content .annotation-caption {
+        /* TODO Fix this min width when the popup is small. */
+        min-width: 60px;
+    }
+    .leaflet-popup-content .annotation-caption .actions {
+        /* TODO Fix this margin. */
+        margin-top: -4px;
+    }
+    .leaflet-popup-content .annotation-metadata {
+        color: #444444;
+        border-top: #888888 1px solid;
+        margin-top: 6px;
+        padding-top: 6px;
+    }
+    .leaflet-popup-content .actions {
+        float: right;
+        list-style: none;
+    }
+
+    /* Style editor */
+    .leaflet-styleeditor-interior {
+        width: inherit;
+    }
+    .leaflet-styleeditor-interior .value.selecting-resource {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+    /* Each linked resource on its own line. */
+    .leaflet-styleeditor-interior ._oaLinking {
+        display: flex;
+        flex-direction: column;
+    }
+    .leaflet-styleeditor-interior ._oaLinking .value {
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+        width: 100%;
+    }
+    .leaflet-styleeditor-interior ._oaLinking .value img {
+        height: 24px;
+        margin-right: 4px;
+    }
+    .leaflet-styleeditor-interior .value.selecting-resource .actions {
+        display: flex;
+        margin-left: auto;
+        list-style: none;
+        flex-shrink: 0;
+    }
+    .leaflet-styleeditor-interior .value.selecting-resource .actions a:link,
+    .leaflet-styleeditor-interior .value.selecting-resource .actions a:visited {
+        color: #A91919;
+    }
+    .leaflet-styleeditor-interior  textarea.leaflet-styleeditor-input {
+        max-height: unset;
+    }
+    .leaflet-styleeditor-header {
+        background-color: inherit;
+    }
+    .leaflet-styleeditor-button:hover {
+        background-color: #e8e8e8;
+    }
+    .leaflet-styleeditor-button {
+        background-color: inherit;
+    }
 }

@@ -6,17 +6,24 @@
  * @var \Annotate\Api\Representation\AnnotationRepresentation[] $annotations
  */
 
-// $query = $this->params()->fromQuery(); // Use the helper.
-
 $translate = $this->plugin('translate');
+$assetUrl = $this->plugin('assetUrl');
 
-$this->cartography();
+$this->headLink()
+    ->appendStylesheet($assetUrl('css/cartography.css', 'Cartography'));
 
 $this->htmlElement('body')->appendAttribute('class', 'annotations cartography browse');
 ?>
-<?php echo $this->pageTitle('', 1, $translate('Georeferenced annotations')); ?>
+<?= $this->pageTitle('', 1, $translate('Georeferenced annotations')) ?>
 <?php $this->trigger('view.browse.before'); ?>
 
+<?php if (empty($annotations)): ?>
+<div class="no-resources">
+    <p><?= $translate('There are no georeferenced annotations.') ?></p>
+</div>
+<?php else: ?>
+<?php $this->cartography(); ?>
 <div id="annotate-geobrowse" style="height:600px;"></div>
+<?php endif; ?>
 
 <?php $this->trigger('view.browse.after'); ?>

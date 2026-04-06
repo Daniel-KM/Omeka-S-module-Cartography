@@ -30,6 +30,8 @@ class Module extends AbstractModule
     const NAMESPACE = __NAMESPACE__;
 
     protected $dependencies = [
+        'Common',
+        'CustomVocab',
         'Annotate',
         'DataTypeGeometry',
     ];
@@ -43,6 +45,35 @@ class Module extends AbstractModule
         }
 
         $this->addAclRules();
+    }
+
+    protected function preInstall(): void
+    {
+        $services = $this->getServiceLocator();
+        $translator = $services->get('MvcTranslator');
+
+        $minVersions = [
+            'Common' => '3.4.83',
+            'CustomVocab' => '2.1.0',
+            'Annotate' => '3.4.13',
+            'DataTypeGeometry' => '3.4.7',
+        ];
+
+        $errors = [];
+        foreach ($minVersions as $name => $version) {
+            if (!method_exists($this, 'checkModuleActiveVersion')
+                || !$this->checkModuleActiveVersion($name, $version)
+            ) {
+                $errors[] = (string) new \Omeka\Stdlib\Message(
+                    $translator->translate('The module %1$s should be upgraded to version %2$s or later.'), // @translate
+                    $name, $version
+                );
+            }
+        }
+
+        if ($errors) {
+            throw new \Omeka\Module\Exception\ModuleCannotInstallException(implode("\n", $errors));
+        }
     }
 
     protected function postInstall(): void

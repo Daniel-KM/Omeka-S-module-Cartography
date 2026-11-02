@@ -1526,16 +1526,28 @@ var fetchAllGeometries = function(drawnItems) {
                 alert(data.message);
                 return;
             }
-            if (data.geometries && data.geometries.length) {
-                displayGeometries(data.geometries, drawnItems);
-                if (drawnItems.getLayers().length && drawnItems._map) {
+            var map = drawnItems._map;
+            if (data.geometries && data.geometries.length && map) {
+                // The fetched geometries are only displayed, not edited, so
+                // they are prepared out of the map, then clustered at once.
+                var fetchedItems = new L.FeatureGroup();
+                displayGeometries(data.geometries, fetchedItems);
+                var layers = fetchedItems.getLayers();
+                if (layers.length) {
+                    if (L.markerClusterGroup) {
+                        var clusterGroup = L.markerClusterGroup({chunkedLoading: true});
+                        map.addLayer(clusterGroup);
+                        clusterGroup.addLayers(layers);
+                    } else {
+                        map.addLayer(fetchedItems);
+                    }
                     try {
-                        drawnItems._map.fitBounds(drawnItems.getBounds(), {maxZoom: 10});
+                        map.fitBounds(fetchedItems.getBounds(), {maxZoom: 10});
                     } catch (e) {}
                 }
             }
-            if (drawnItems && drawnItems._map && drawnItems._map.fireEvent) {
-                drawnItems._map.fireEvent('fetchGeometries:done', {
+            if (map && map.fireEvent) {
+                map.fireEvent('fetchGeometries:done', {
                     returnData: data,
                     drawnItems: drawnItems,
                 });
@@ -1556,7 +1568,14 @@ var fetchAllGeometries = function(drawnItems) {
  * @param L.FeatureGroup drawnItems
  */
 var displayGeometries = function(geometries, drawnItems) {
-    geometries.forEach(displayGeometry, {drawnItems: drawnItems});
+    geometries.forEach(function(geometry) {
+        // A geometry that cannot be displayed must not stop the other ones.
+        try {
+            displayGeometry.call({drawnItems: drawnItems}, geometry);
+        } catch (e) {
+            console.warn('The geometry of the annotation #' + geometry.id + ' cannot be displayed.', e);
+        }
+    });
 };
 
 /**

@@ -1049,10 +1049,12 @@ abstract class AbstractCartographyController extends AbstractActionController
                     continue;
                 }
 
-                $ingester = $media->ingester();
+                // Use the renderer (not the ingester) so digital objects, whose
+                // ingester is always "digital_object", are recognized too.
+                $renderer = $media->renderer();
 
                 // IIIF Image: single image with info.json.
-                if ($ingester === 'iiif'
+                if ($renderer === 'iiif'
                     && !empty($mediaData['width'])
                     && !empty($mediaData['height'])
                 ) {
@@ -1072,7 +1074,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 }
 
                 // IIIF Presentation: extract each canvas.
-                elseif ($ingester === 'iiif_presentation') {
+                elseif ($renderer === 'iiif_presentation') {
                     $manifestLabel = $this->iiifLabel(
                         $mediaData['label'] ?? null
                     ) ?: $media->displayTitle();

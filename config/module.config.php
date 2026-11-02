@@ -165,6 +165,7 @@ return [
     ],
     'js_translate_strings' => [
         '[Untitled]', // @translate
+        'A secure connection (https) is required to save an annotation anonymously. Log in or use the https address of the site.', // @translate
         'Annotation #', // @translate
         'Cancel', // @translate
         'Cancel Styling', // @translate

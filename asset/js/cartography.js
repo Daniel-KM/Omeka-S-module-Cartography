@@ -1970,6 +1970,8 @@ var addGeometry = function(layer, identifier, drawnItems) {
                 alert(message);
                 // The deletion is automatic when not recorded.
             });
+    }).catch(function(error) {
+        alert(error.message);
     });
 };
 
@@ -2010,8 +2012,13 @@ var spamGuardProof = (function() {
             return promise;
         }
         var challenge = typeof cartographySpamGuard !== 'undefined' ? cartographySpamGuard : null;
-        promise = (!challenge || !window.crypto || !window.crypto.subtle)
-            ? Promise.resolve(challenge ? {token: challenge.token} : null)
+        if (challenge && (!window.crypto || !window.crypto.subtle)) {
+            // The browser computes the proof only in a secure context.
+            promise = Promise.reject(new Error(Omeka.jsTranslate('A secure connection (https) is required to save an annotation anonymously. Log in or use the https address of the site.')));
+            return promise;
+        }
+        promise = !challenge
+            ? Promise.resolve(null)
             : solve(challenge.salt, challenge.difficulty).then(function(nonce) {
                 return {token: challenge.token, nonce: nonce === null ? '' : String(nonce)};
             });
@@ -2019,8 +2026,9 @@ var spamGuardProof = (function() {
     };
 })();
 
-// Start early, so the proof is ready when the first geometry is saved.
-spamGuardProof();
+// Start early, so the proof is ready when the first geometry is saved. The
+// error, if any, is displayed on save.
+spamGuardProof().catch(function() {});
 
 /**
  * Edit a geometry.

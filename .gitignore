@@ -27,10 +27,11 @@ composer.phar
 debug.log
 
 # Vendor assets managed by external-assets are ignored.
-# Patched/custom libs are force-added (leaflet-draw,
-# leaflet-paste, leaflet-styleeditor).
+# Patched/custom libs are force-added (leaflet-draw js, leaflet-paste,
+# leaflet-styleeditor).
 /asset/vendor/leaflet/
 /asset/vendor/leaflet-draw/images/
+/asset/vendor/leaflet-draw/leaflet.draw-src.css
 /asset/vendor/leaflet-fullscreen/
 /asset/vendor/leaflet-geosearch/
 /asset/vendor/leaflet-groupedlayercontrol/
@@ -39,3 +40,4 @@ debug.log
 /asset/vendor/leaflet-providers/
 /asset/vendor/leaflet-tilelayer-wmts/
 /asset/vendor/leaflet-iiif/
+

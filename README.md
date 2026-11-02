@@ -18,6 +18,9 @@ Installation
 
 This module requires the modules [Common], [Annotate] and [Data Type Geometry].
 
+When the anonymous visitors are allowed to annotate, the optional module [Spam
+Guard] protects the annotations with a proof-of-work solved by the browser.
+
 The module uses external libraries, so use the release zip to install it, or use
 and init the source.
 
@@ -47,7 +50,8 @@ Quick start
 -----------
 
 The module allows to annotate standard images and georeferenced maps.
-- To annotate a still image, simply upload it as media.
+- To annotate a still image, simply upload it as media, or as digital object
+  with the module [Digital Object].
 - To annotate a georeferenced image, the [wms] url should be set as URI in
   `dcterms:spatial`, for example: `https://mapwarper.net/maps/wms/12428` with
   label `London Hogenberg 1572`. There can be multiple [wms] layers, for example
@@ -216,7 +220,7 @@ TODO
 - [ ] Add a configurable list of styles in the style editor (or replace the fields used to edit styles).
 - [ ] Add the specific config of the wmts at the site level.
 - [x] Fix display of data in popup.
-- [ ] Host patched vendor libs (leaflet-paste, leaflet-styleeditor, leaflet-draw, leaflet-groupedlayercontrol) as downloadable zips and add them to `composer.json` `external-assets`, so `asset/vendor/` can be fully managed via `composer` and removed from git.
+- [x] Host patched vendor libs (leaflet-paste, leaflet-styleeditor, leaflet-draw) as downloadable files of the release and add them to `composer.json` `external-assets`, so `asset/vendor/` is fully managed via `composer` and removed from git.
 - [ ] Manage choice between wkt/geojson
 - [ ] Migrate deprecated google kml.
 
@@ -267,8 +271,9 @@ of the CeCILL license and that you accept its terms.
 
 ### Libraries
 
-This module uses many open source leaflet libraries. See [asset/vendor] for
-details.
+This module uses many open source leaflet libraries. See the key
+`external-assets` of [composer.json] for the list and the versions. The patched
+libraries are attached to the release of the module.
 
 
 Copyright
@@ -287,28 +292,21 @@ sociales [EHESS]. The maintenance was done for [INHA] and for [Archives Poincar√
 [web annotation data model]: https://www.w3.org/TR/annotation-model/
 [web annotation vocabulary]: https://www.w3.org/TR/annotation-vocab/
 [wms]: https://en.wikipedia.org/wiki/Web_Map_Service
-[Annotate]: https://gitlab.com/Daniel-KM/Omeka-S-module-Annotate
 [Data Type Geometry]: https://gitlab.com/Daniel-KM/Omeka-S-module-DataTypeGeometry
 [Common]: https://gitlab.com/Daniel-KM/Omeka-S-module-Common
 [installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
-[MariaDB 10.2.2]: https://mariadb.com/kb/en/library/spatial-index/
-[mySql 5.7.5]: https://dev.mysql.com/doc/relnotes/mysql/5.7/en/news-5-7-5.html#mysqld-5-7-5-innodb
-[mySql 5.5.3]: https://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-3.html
-[MariaDB 5.5.20]: https://mariadb.com/kb/en/library/mariadb-5521-release-notes/
-[mySql 5.6.1]: https://dev.mysql.com/doc/relnotes/mysql/5.6/en/news-5-6-1.html
-[MariaDB 5.3.3]: https://mariadb.com/kb/en/library/mariadb-533-release-notes/
-[spatial support matrix]: https://mariadb.com/kb/en/library/mysqlmariadb-spatial-support-matrix/
-[`data_type_geometry`]: https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/tree/master/data/install/schema.sql
-[doctrine2-spatial]: https://github.com/creof/doctrine2-spatial/blob/HEAD/doc/index.md
 [`Cartography.zip`]: https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/releases
-[Web Annotation data model]: https://www.w3.org/TR/annotation-model/#introduction
 [config file]: https://gitlab.com/Daniel-KM/Omeka-S-module-Annotate/-/tree/master/data/mappings/properties_to_annotation_parts.php
 [Annotate]: https://gitlab.com/Daniel-KM/Omeka-S-module-Annotate
+[Spam Guard]: https://gitlab.com/Daniel-KM/Omeka-S-module-SpamGuard
+[Digital Object]: https://gitlab.com/Daniel-KM/Omeka-S-module-DigitalObject
+[Mapping]: https://github.com/omeka-s-modules/Mapping
+[OGC standard]: https://www.ogc.org/standards/geosparql/
+[composer.json]: https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/blob/master/composer.json
 [IGN map service]: https://geoservices.ign.fr
 [free ign key]: https://geoservices.ign.fr/blog/2018/09/06/acces_geoportail_sans_compte.html
 [discussion]: https://github.com/json-ld/json-ld.org/issues/397
-[`geo:asWKT`]: http://geovocab.org/geometry#asWKT
-[module issues]: https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/issues
+[module issues]: https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/work_items
 [CeCILL v2.1]: https://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org

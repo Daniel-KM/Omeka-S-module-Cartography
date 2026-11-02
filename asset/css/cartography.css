@@ -11,6 +11,11 @@
         content: "";
     }
 
+    .section-nav {
+        height: initial;
+        min-height: 42px;
+    }
+
     /* Marker divIcon: override Leaflet default white bg. */
     .leaflet-styleeditor-glyphicon-marker-wrapper {
         background: none;

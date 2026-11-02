@@ -2373,7 +2373,7 @@ var annotateControl = function(map, drawnItems) {
                 cancel: Omeka.jsTranslate('Cancel'),
                 cancelTitle: Omeka.jsTranslate('Cancel Styling'),
                 tooltip: Omeka.jsTranslate('Click on the element you want to style'),
-                tooltipNext: Omeka.jsTranslate('Choose another element you want to style'),
+                tooltipNext: Omeka.jsTranslate('Close. Click on an element to style it.'),
         },
         useGrouping: false,
         defaultMarkerColor: '#2A81CB',

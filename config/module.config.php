@@ -170,8 +170,8 @@ return [
         'Annotation #', // @translate
         'Cancel', // @translate
         'Cancel Styling', // @translate
-        'Choose another element you want to style', // @translate
         'Click on the element you want to style', // @translate
+        'Close. Click on an element to style it.', // @translate
         'Finish', // @translate
         'Image #', // @translate
         'Layer', // @translate

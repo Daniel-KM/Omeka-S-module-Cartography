@@ -232,4 +232,14 @@
     .leaflet-styleeditor-button {
         background-color: inherit;
     }
+    /* The button closes the editor, so display a cross, not an arrow. */
+    .styleeditor-nextBtn {
+        background-image: none;
+        color: #333;
+        font-size: 28px;
+        line-height: 20px;
+    }
+    .styleeditor-nextBtn::before {
+        content: "\00d7";
+    }
 }

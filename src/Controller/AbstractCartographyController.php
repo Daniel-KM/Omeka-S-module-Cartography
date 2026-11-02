@@ -1453,10 +1453,12 @@ abstract class AbstractCartographyController extends AbstractActionController
             $metadata = [];
             $metadata['o:id'] = $annotation->id();
             $metadata['o:is_public'] = $annotation->isPublic();
+            // The owner is null for an anonymous annotation.
             $owner = $annotation->owner();
-            $metadata['o:owner'] = [];
-            $metadata['o:owner']['id'] = $owner->id();
-            $metadata['o:owner']['name'] = $owner->name();
+            $metadata['o:owner'] = [
+                'id' => $owner ? $owner->id() : null,
+                'name' => $owner ? $owner->name() : '',
+            ];
             $metadata['o:created'] = $annotation->created()->format('Y-m-d H:i:s');
             $metadata['o:modified'] = $annotation->modified()->format('Y-m-d H:i:s');
             // TODO Possibly return only the metadata of the template.

@@ -14,6 +14,11 @@ use Omeka\Api\Representation\MediaRepresentation;
 abstract class AbstractCartographyController extends AbstractActionController
 {
     /**
+     * @var array
+     */
+    protected $linkedResources = [];
+
+    /**
      * Get the resource templates for a resource.
      *
      * @return JsonModel
@@ -1513,6 +1518,24 @@ abstract class AbstractCartographyController extends AbstractActionController
     }
 
     /**
+     * Get the data of a linked resource used by the client, once by resource.
+     *
+     * The full value representation is not needed and the same resource (the
+     * source item, the media) is linked by all the annotations of an image.
+     */
+    protected function linkedResourceData(AbstractResourceEntityRepresentation $resource): array
+    {
+        $id = $resource->id();
+        if (!isset($this->linkedResources[$id])) {
+            $this->linkedResources[$id] = array_intersect_key(
+                $resource->valueRepresentation(),
+                array_flip(['@id', 'value_resource_id', 'value_resource_name', 'url', 'display_title', 'thumbnail_url'])
+            );
+        }
+        return $this->linkedResources[$id];
+    }
+
+    /**
      * Simplify properties of a resource.
      *
      * @param AbstractResourceEntityRepresentation $annotation
@@ -1545,7 +1568,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                     if (isset($specialProperties[$term]['resource'])) {
                         $term = $specialProperties[$term]['resource'];
                     }
-                    $metadata[$term][] = $value->valueResource()->valueRepresentation();
+                    $metadata[$term][] = $this->linkedResourceData($value->valueResource());
                     break;
                 case 'uri':
                     $metadata[$term][] = ['value' => $value->value(), 'uri' => $value->uri()];

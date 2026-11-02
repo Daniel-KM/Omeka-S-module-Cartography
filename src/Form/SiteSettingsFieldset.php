@@ -49,7 +49,7 @@ class SiteSettingsFieldset extends Fieldset
                 'type' => CommonElement\OptionalMultiCheckbox::class,
                 'options' => [
                     'element_group' => 'themes_old',
-                    'label' => 'Cartography (old themes)', // @translate
+                    'label' => 'Cartography', // @translate
                     'value_options' => [
                         'after/items/describe' => 'Describe: item show', // @translate
                         'after/items/locate' => 'Locate: item show', // @translate

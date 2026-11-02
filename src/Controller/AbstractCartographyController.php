@@ -516,7 +516,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         $templateId = $this->forceTemplate($metadata, $hasMetadata, $isDescribe);
         if (empty($templateId) && $hasMetadata) {
             return new PsrMessage(
-                'A template is required when there are metadata in an annotation.' // @template
+                'A template is required when there are metadata in an annotation.' // @translate
             );
         }
 
@@ -650,7 +650,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         $short = $this->shortResourceTemplate($templateId);
         if (empty($short)) {
             return new PsrMessage(
-                'Resource template #{resource_template_id} has an issue. Fix settings of Cartography.', // @template
+                'Resource template #{resource_template_id} has an issue. Fix settings of Cartography.', // @translate
                 ['resource_template_id' => $templateId]
             );
         }
@@ -883,7 +883,7 @@ abstract class AbstractCartographyController extends AbstractActionController
             $template = $this->api()->read('resource_templates', ['id' => $templateId])->getContent();
         } catch (\Omeka\Api\Exception\NotFoundException $e) {
             $this->logger()->err(
-                'Resource template #{template_id} doesn’t exist any more. Fix settings of Cartography.', // @template
+                'Resource template #{template_id} doesn’t exist any more. Fix settings of Cartography.', // @translate
                 ['template_id' => $templateId]
             );
             return null;
@@ -915,7 +915,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 && !in_array($input['o:data_type'], ['resource', 'resource:item', 'resource:itemset', 'resource:media'])
             ) {
                 $this->logger()->warn(
-                    'To follow the annotation data model and for technical reasons, "oa:hasBody" must be a resource link to be managed internally. Check your resource template "{resource_template}".', // @template
+                    'To follow the annotation data model and for technical reasons, "oa:hasBody" must be a resource link to be managed internally. Check your resource template "{resource_template}".', // @translate
                     ['resource_template' => $template->label()]
                 );
                 return null;
@@ -924,7 +924,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 && in_array($input['o:data_type'], ['resource', 'resource:item', 'resource:itemset', 'resource:media'])
             ) {
                 $this->logger()->warn(
-                    'To follow the annotation data model and for technical reasons, the resource links must use the property "oa:hasBody" to be managed internally. Check your resource template "{resource_template}".', // @template
+                    'To follow the annotation data model and for technical reasons, the resource links must use the property "oa:hasBody" to be managed internally. Check your resource template "{resource_template}".', // @translate
                     ['resource_template' => $template->label()]
                 );
                 return null;
@@ -941,7 +941,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                 case 'resource:itemset':
                 case 'resource:media':
                     $this->logger()->warn(
-                        'Resource link "{data_type}" is currently not managed for resource template "{resource_template}": it should be a "resource" or a "resource:item".', // @template
+                        'Resource link "{data_type}" is currently not managed for resource template "{resource_template}": it should be a "resource" or a "resource:item".', // @translate
                         ['data_type' => $dataType, 'resource_template' => $template->label()]
                     );
                     return null;
@@ -955,7 +955,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                         $customVocab = $this->api()->read('custom_vocabs', ['id' => $customVocabId])->getContent();
                     } catch (\Omeka\Api\Exception\NotFoundException $e) {
                         $this->logger()->warn(
-                            'Custom vocab #{custom_vocab_id} doesn’t exist any more. Fix resource template "{resource_template}".', // @template
+                            'Custom vocab #{custom_vocab_id} doesn’t exist any more. Fix resource template "{resource_template}".', // @translate
                             ['custom_vocab_id' => $customVocabId, 'resource_template' => $template->label()]
                         );
                         $input['type'] = 'text';
@@ -967,7 +967,7 @@ abstract class AbstractCartographyController extends AbstractActionController
                     }
                     if (empty($terms)) {
                         $this->logger()->warn(
-                            'Custom vocab "{custom_vocab}" doesn’t have terms.', // @template
+                            'Custom vocab "{custom_vocab}" doesn’t have terms.', // @translate
                             ['custom_vocab' => $customVocab->label()]
                         );
                         $input['type'] = 'text';
@@ -991,7 +991,7 @@ abstract class AbstractCartographyController extends AbstractActionController
             // TODO Any short form should be possible (except for linking). Check if the check is still needed.
             if (isset($check[$input['o:term']]) && $input['type'] !== $check[$input['o:term']]) {
                 $this->logger()->warn(
-                    'Short resource template doesn’t support different data types for the same property. Check resource template "{resource_template}".', // @template
+                    'Short resource template doesn’t support different data types for the same property. Check resource template "{resource_template}".', // @translate
                     ['resource_template' => $template->label()]
                 );
                 return null;

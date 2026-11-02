@@ -3535,10 +3535,9 @@ function createCartographyDataService() {
         return service;
     }
 
-    // For admin.
     function ajaxLoadDescribeLocateTemplateJson() {
         var requests = [];
-        var dynamicPropertiesUrl = baseUrl + 'admin/cartography/resource-templates';
+        var dynamicPropertiesUrl = baseUrl + currentPath + '/cartography/resource-templates';
         ['describe', 'locate'].map(function (section) {
 
             // test

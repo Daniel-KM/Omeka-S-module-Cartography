@@ -166,7 +166,6 @@ return [
     'js_translate_strings' => [
         '[Untitled]', // @translate
         'A secure connection (https) is required to save an annotation anonymously. Log in or use the https address of the site.', // @translate
-        'Annotation #', // @translate
         'Cancel', // @translate
         'Cancel Styling', // @translate
         'Click on the element you want to style', // @translate
@@ -177,23 +176,26 @@ return [
         'Log in to delete the geometry.', // @translate
         'Log in to edit the geometry.', // @translate
         'Log in to save the geometry.', // @translate
+        'Motivation:', // @translate
         'No overlay', // @translate
+        'Purpose:', // @translate
         'Related item', // @translate
         'Related items', // @translate
-        'Related items:', // @translate
         'Remove value', // @translate
         'Save', // @translate
         'Save Styling', // @translate
+        'Show annotation', // @translate
         'The resource is already linked to the current annotation.', // @translate
         'There is no image attached to this resource.', // @translate
         'Unable to delete the geometry.', // @translate
         'Unable to delete the geometry: no identifier.', // @translate
         'Unable to fetch the geometries.', // @translate
+        'Unable to fetch the images.', // @translate
+        'Unable to fetch the wms layers.', // @translate
         'Unable to find the geometry.', // @translate
         'Unable to save the geometry.', // @translate
         'Unable to save the edited geometry: no identifier.', // @translate
         'Unable to update the geometry.', // @translate
-        'Uncertainty:', // @translate
     ],
     'cartography' => [
         'settings' => [

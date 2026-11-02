@@ -235,7 +235,7 @@ abstract class AbstractCartographyController extends AbstractActionController
             ), Response::STATUS_CODE_400);
         }
         $geometry = $this->checkAndCleanWkt($data['wkt']);
-        if (strlen($geometry) == 0) {
+        if ((string) $geometry === '') {
             return $this->jsonError(new PsrMessage(
                 'An internal error occurred from the client: unmanaged wkt .', // @translate
             ), Response::STATUS_CODE_400);

@@ -67,8 +67,8 @@ class Module extends AbstractModule
         $minVersions = [
             'Common' => '3.4.95',
             'CustomVocab' => '2.1.0',
-            'Annotate' => '3.4.13',
-            'DataTypeGeometry' => '3.4.7',
+            'Annotate' => '3.4.14',
+            'DataTypeGeometry' => '3.4.8',
         ];
 
         $errors = [];

@@ -27,8 +27,8 @@ $entityManager = $services->get('Omeka\EntityManager');
 $minVersions = [
     'Common' => '3.4.95',
     'CustomVocab' => '2.1.0',
-    'Annotate' => '3.4.13',
-    'DataTypeGeometry' => '3.4.7',
+    'Annotate' => '3.4.14',
+    'DataTypeGeometry' => '3.4.8',
 ];
 foreach ($minVersions as $name => $version) {
     if (!method_exists($this, 'checkModuleActiveVersion')

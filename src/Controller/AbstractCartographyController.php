@@ -444,7 +444,7 @@ abstract class AbstractCartographyController extends AbstractActionController
         // The media is saved as selector of the main item (a page in a book).
         // TODO Manage other resource types.
         $mediaValue = $target->value('oa:hasSelector', ['type' => 'resource']);
-        $media = $mediaValue && $mediaValue->valueResource()->resourceName() === 'media'
+        $media = $mediaValue && in_array($mediaValue->valueResource()->resourceName(), ['media', 'digital_objects'], true)
             ? $mediaValue->valueResource()
             : null;
 

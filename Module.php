@@ -39,11 +39,6 @@ class Module extends AbstractModule
     public function onBootstrap(MvcEvent $event): void
     {
         parent::onBootstrap($event);
-        if (!$this->areModulesActive($this->dependencies)) {
-            $this->disableModule(__NAMESPACE__);
-            return;
-        }
-
         $this->addAclRules();
     }
 

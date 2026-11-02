@@ -45,6 +45,7 @@
             "asset/vendor/leaflet/images/marker-shadow.png": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png",
             "asset/vendor/leaflet/leaflet.css": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css",
             "asset/vendor/leaflet/leaflet.js": "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js",
+            "asset/vendor/leaflet-draw/leaflet.draw-src.js": "https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/releases/3.4.5/downloads/leaflet.draw-src.js",
             "asset/vendor/leaflet-draw/leaflet.draw-src.css": "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw-src.css",
             "asset/vendor/leaflet-draw/images/spritesheet.png": "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/images/spritesheet.png",
             "asset/vendor/leaflet-draw/images/spritesheet.svg": "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/images/spritesheet.svg",
@@ -62,7 +63,9 @@
             "asset/vendor/leaflet-markercluster/leaflet.markercluster.js": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js",
             "asset/vendor/leaflet-markercluster/MarkerCluster.css": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css",
             "asset/vendor/leaflet-markercluster/MarkerCluster.Default.css": "https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css",
+            "asset/vendor/leaflet-paste/": "https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/releases/3.4.5/downloads/leaflet-paste-patched.tar.gz",
             "asset/vendor/leaflet-providers/leaflet-providers.min.js": "https://cdn.jsdelivr.net/npm/leaflet-providers@2.0.0/leaflet-providers.js",
+            "asset/vendor/leaflet-styleeditor/": "https://gitlab.com/Daniel-KM/Omeka-S-module-Cartography/-/releases/3.4.5/downloads/leaflet-styleeditor-patched.tar.gz",
             "asset/vendor/leaflet-tilelayer-wmts/leaflet-tilelayer-wmts.min.js": "https://cdn.jsdelivr.net/npm/leaflet-tilelayer-wmts@1.0.0/dist/leaflet-tilelayer-wmts.js"
         }
     },

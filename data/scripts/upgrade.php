@@ -25,7 +25,7 @@ $messenger = $plugins->get('messenger');
 $entityManager = $services->get('Omeka\EntityManager');
 
 $minVersions = [
-    'Common' => '3.4.83',
+    'Common' => '3.4.95',
     'CustomVocab' => '2.1.0',
     'Annotate' => '3.4.13',
     'DataTypeGeometry' => '3.4.7',

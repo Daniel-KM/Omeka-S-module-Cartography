@@ -6,6 +6,7 @@
 /node_modules/
 /vendor/
 /.phpunit.cache/
+/.potrans/
 /.sass-cache/
 /.settings/
 /test/.phpunit.cache/

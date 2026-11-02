@@ -2,10 +2,27 @@
 
 namespace Cartography;
 
-if (!class_exists('Common\TraitModule', false)) {
-    require_once file_exists(dirname(__DIR__) . '/Common/src/TraitModule.php')
-        ? dirname(__DIR__) . '/Common/src/TraitModule.php'
-        : dirname(__DIR__) . '/Common/TraitModule.php';
+// Common may be installed but not registered in autoloader, in particular
+// during upgrade. So dynamically register all classes of the module.
+if (!defined('COMMON_PSR4_FALLBACK')) {
+    foreach ([
+        OMEKA_PATH . '/modules/Common/src',
+        OMEKA_PATH . '/composer-addons/modules/Common/src',
+        dirname(__DIR__) . '/Common/src',
+    ] as $commonSrc) {
+        if (file_exists($commonSrc . '/TraitModule.php')) {
+            define('COMMON_PSR4_FALLBACK', $commonSrc);
+            spl_autoload_register(static function ($class): void {
+                if (str_starts_with($class, 'Common\\')) {
+                    $file = COMMON_PSR4_FALLBACK . '/' . strtr(substr($class, 7), '\\', '/') . '.php';
+                    if (file_exists($file)) {
+                        require_once $file;
+                    }
+                }
+            });
+            break;
+        }
+    }
 }
 
 use Common\TraitModule;
@@ -48,7 +65,7 @@ class Module extends AbstractModule
         $translator = $services->get('MvcTranslator');
 
         $minVersions = [
-            'Common' => '3.4.83',
+            'Common' => '3.4.95',
             'CustomVocab' => '2.1.0',
             'Annotate' => '3.4.13',
             'DataTypeGeometry' => '3.4.7',

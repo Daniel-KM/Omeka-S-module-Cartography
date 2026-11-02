@@ -1933,40 +1933,94 @@ var addGeometry = function(layer, identifier, drawnItems) {
         options: options,
     };
 
-    $.post(url, data)
-        .done(function(data) {
-            // No json means error, and the only non-json error is redirect to login.
-            if (!data.result) {
-                alert(Omeka.jsTranslate('Log in to save the geometry.'));
-                return;
-            }
-            if (data.status === 'error') {
-                alert(data.message);
-                return;
-            }
+    spamGuardProof().then(function(spamguard) {
+        if (spamguard) {
+            data.spamguard = spamguard;
+        }
+        $.post(url, data)
+            .done(function(data) {
+                // No json means error, and the only non-json error is redirect to login.
+                if (!data.result) {
+                    alert(Omeka.jsTranslate('Log in to save the geometry.'));
+                    return;
+                }
+                if (data.status === 'error') {
+                    alert(data.message);
+                    return;
+                }
 
-            identifier = data.result.id;
-            layer.options.annotationIdentifier = identifier;
-            // Reserve the rectangle layer id.
-            if (identifier && layer instanceof L.Rectangle) {
-                rectangleIds[identifier] = true;
-            }
+                identifier = data.result.id;
+                layer.options.annotationIdentifier = identifier;
+                // Reserve the rectangle layer id.
+                if (identifier && layer instanceof L.Rectangle) {
+                    rectangleIds[identifier] = true;
+                }
 
-            if (permissionService) {
-                permissionService.addUserIdForNewGeometryItem(layer);
-            }
+                if (permissionService) {
+                    permissionService.addUserIdForNewGeometryItem(layer);
+                }
 
-            drawnItems.addLayer(layer);
-            console.log('Geometry added.');
-        })
-        .fail(function(jqxhr) {
-            var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
-                ? JSON.parse(jqxhr.responseText).message
-                : Omeka.jsTranslate('Unable to save the geometry.');
-            alert(message);
-            // The deletion is automatic when not recorded.
-        });
+                drawnItems.addLayer(layer);
+                console.log('Geometry added.');
+            })
+            .fail(function(jqxhr) {
+                var message = (jqxhr.responseText && jqxhr.responseText.substring(0, 1) !== '<')
+                    ? JSON.parse(jqxhr.responseText).message
+                    : Omeka.jsTranslate('Unable to save the geometry.');
+                alert(message);
+                // The deletion is automatic when not recorded.
+            });
+    });
 };
+
+/**
+ * Solve once the proof-of-work of the module SpamGuard for anonymous visitors.
+ *
+ * The browser must find a nonce such that sha256(salt + ":" + nonce) starts
+ * with as many hex zeros as the difficulty. It requires crypto.subtle (https or
+ * localhost).
+ *
+ * @return Promise resolved with the token and the nonce, or null.
+ */
+var spamGuardProof = (function() {
+    var promise = null;
+    var sha256Hex = function(message) {
+        return crypto.subtle.digest('SHA-256', new TextEncoder().encode(message))
+            .then(function(hash) {
+                return Array.from(new Uint8Array(hash), function(b) {
+                    return b.toString(16).padStart(2, '0');
+                }).join('');
+            });
+    };
+    var solve = async function(salt, difficulty) {
+        var prefix = '0'.repeat(difficulty);
+        for (var n = 0; n < 1e7; n++) {
+            if ((await sha256Hex(salt + ':' + n)).startsWith(prefix)) {
+                return n;
+            }
+            // Keep the page responsive.
+            if ((n & 0xff) === 0) {
+                await new Promise(function(r) { setTimeout(r, 0); });
+            }
+        }
+        return null;
+    };
+    return function() {
+        if (promise) {
+            return promise;
+        }
+        var challenge = typeof cartographySpamGuard !== 'undefined' ? cartographySpamGuard : null;
+        promise = (!challenge || !window.crypto || !window.crypto.subtle)
+            ? Promise.resolve(challenge ? {token: challenge.token} : null)
+            : solve(challenge.salt, challenge.difficulty).then(function(nonce) {
+                return {token: challenge.token, nonce: nonce === null ? '' : String(nonce)};
+            });
+        return promise;
+    };
+})();
+
+// Start early, so the proof is ready when the first geometry is saved.
+spamGuardProof();
 
 /**
  * Edit a geometry.

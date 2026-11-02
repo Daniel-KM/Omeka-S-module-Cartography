@@ -10,6 +10,25 @@ use Omeka\Entity\User;
 class Cartography extends AbstractHelper
 {
     /**
+     * @var \SpamGuard\Stdlib\FormToken|null
+     */
+    protected $formToken;
+
+    /**
+     * @var int
+     */
+    protected $powDifficulty;
+
+    /**
+     * @param \SpamGuard\Stdlib\FormToken|null $formToken
+     */
+    public function __construct($formToken = null, int $powDifficulty = 4)
+    {
+        $this->formToken = $formToken;
+        $this->powDifficulty = $powDifficulty;
+    }
+
+    /**
      * Return the partial to display the cartography of a resource.
      *
      * This helper manages three main parameters: describe/locate,
@@ -291,7 +310,8 @@ const cartographyMediaId = ' . $mediaId . ';';
             $user = $view->identity();
             $script .= '
 const userId = ' . ($user ? $user->getId() : 0) . ';
-const userRights = ' . json_encode($rights, 320) . ';';
+const userRights = ' . json_encode($rights, 320) . ';
+const cartographySpamGuard = ' . json_encode($user ? null : $this->spamGuardChallenge(), 320) . ';';
             if ($resource):
                 $script .= '
 const valuesJson = ' . json_encode($resource->values(), 320) . ';';
@@ -303,7 +323,8 @@ const cartographyUncertaintySelect = ' . json_encode($options['cartographyUncert
         } else {
             $script .= '
 const userId = 0;
-const userRights = {"create":false,"edit":false,"delete":false};';
+const userRights = {"create":false,"edit":false,"delete":false};
+const cartographySpamGuard = null;';
         }
 
         $headScript->appendScript($script);
@@ -314,6 +335,26 @@ const userRights = {"create":false,"edit":false,"delete":false};';
         }
 
         return $html;
+    }
+
+    /**
+     * Get the proof-of-work challenge of the module SpamGuard, when active.
+     *
+     * Anonymous annotations are checked by the module Annotate: the browser
+     * solves the challenge and sends the token and the nonce with the geometry.
+     */
+    protected function spamGuardChallenge(): ?array
+    {
+        if (!$this->formToken) {
+            return null;
+        }
+        $salt = bin2hex(random_bytes(16));
+        $ip = (new \Laminas\Http\PhpEnvironment\RemoteAddress())->getIpAddress();
+        return [
+            'token' => $this->formToken->issue($salt, (string) $ip),
+            'salt' => $salt,
+            'difficulty' => $this->powDifficulty,
+        ];
     }
 
     /**

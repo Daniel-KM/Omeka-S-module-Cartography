@@ -15,10 +15,8 @@ return [
         ],
     ],
     'view_helpers' => [
-        'invokables' => [
-            'cartography' => View\Helper\Cartography::class,
-        ],
         'factories' => [
+            'cartography' => Service\ViewHelper\CartographyFactory::class,
             'hasValueSuggest' => Service\ViewHelper\HasValueSuggestFactory::class,
         ],
     ],

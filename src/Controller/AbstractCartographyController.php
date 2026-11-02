@@ -388,7 +388,22 @@ abstract class AbstractCartographyController extends AbstractActionController
             return $this->jsonError($data, Response::STATUS_CODE_500);
         }
 
-        $response = $this->api()->create('annotations', $data);
+        // The token and the nonce of the proof-of-work are checked by the
+        // module Annotate for anonymous annotations, when the module SpamGuard
+        // is used.
+        $spamGuard = $this->params()->fromPost('spamguard');
+        try {
+            $response = $this->api()->create('annotations', $data, [], [
+                'spamguard' => is_array($spamGuard) ? $spamGuard : [],
+            ]);
+        } catch (\Omeka\Api\Exception\ValidationException $e) {
+            $messages = [];
+            $errors = $e->getErrorStore()->getErrors();
+            array_walk_recursive($errors, function ($message) use (&$messages): void {
+                $messages[] = $this->translate((string) $message);
+            });
+            return $this->jsonError(implode(' ', $messages), Response::STATUS_CODE_400);
+        }
         if (!$response) {
             return $this->jsonError(new PsrMessage(
                 'An internal error occurred.', // @translate

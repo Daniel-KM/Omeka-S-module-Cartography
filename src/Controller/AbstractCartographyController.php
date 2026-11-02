@@ -393,16 +393,11 @@ abstract class AbstractCartographyController extends AbstractActionController
         // is used.
         $spamGuard = $this->params()->fromPost('spamguard');
         try {
-            $response = $this->api()->create('annotations', $data, [], [
+            $response = $this->api(null, true)->create('annotations', $data, [], [
                 'spamguard' => is_array($spamGuard) ? $spamGuard : [],
             ]);
         } catch (\Omeka\Api\Exception\ValidationException $e) {
-            $messages = [];
-            $errors = $e->getErrorStore()->getErrors();
-            array_walk_recursive($errors, function ($message) use (&$messages): void {
-                $messages[] = $this->translate((string) $message);
-            });
-            return $this->jsonError(implode(' ', $messages), Response::STATUS_CODE_400);
+            return $this->jsonError($this->validationMessage($e), Response::STATUS_CODE_400);
         }
         if (!$response) {
             return $this->jsonError(new PsrMessage(
@@ -454,7 +449,11 @@ abstract class AbstractCartographyController extends AbstractActionController
             return $this->jsonError($data, Response::STATUS_CODE_500);
         }
 
-        $response = $this->api()->update('annotations', $annotation->id(), $data);
+        try {
+            $response = $this->api(null, true)->update('annotations', $annotation->id(), $data);
+        } catch (\Omeka\Api\Exception\ValidationException $e) {
+            return $this->jsonError($this->validationMessage($e), Response::STATUS_CODE_400);
+        }
         if (!$response) {
             return $this->jsonError(new PsrMessage(
                 'An internal error occurred.', // @translate
@@ -1625,6 +1624,19 @@ abstract class AbstractCartographyController extends AbstractActionController
         if (strpos($string, '(') && in_array($firstWord, $wktTags)) {
             return $string;
         }
+    }
+
+    /**
+     * Get the translated messages of a validation exception.
+     */
+    protected function validationMessage(\Omeka\Api\Exception\ValidationException $e): string
+    {
+        $messages = [];
+        $errors = $e->getErrorStore()->getErrors();
+        array_walk_recursive($errors, function ($message) use (&$messages): void {
+            $messages[] = $this->translate((string) $message);
+        });
+        return implode(' ', $messages);
     }
 
     protected function jsonError($message, $statusCode = Response::STATUS_CODE_500)
